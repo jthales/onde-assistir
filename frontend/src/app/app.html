@@ -33,6 +33,21 @@
             <span class="jogo-hora">{{ jogo.hora }}</span>
           </div>
           <div class="jogo-estadio">{{ jogo.estadio }}</div>
+          <div class="onde-assistir">
+            <span class="onde-label">Onde assistir</span>
+            @if (jogo.canal.length === 0 && jogo.streaming.length === 0) {
+              <span class="badge badge-confirmar">A confirmar</span>
+            } @else {
+              <div class="badges">
+                @for (canal of jogo.canal; track canal) {
+                  <span class="badge badge-tv">{{ canal }}</span>
+                }
+                @for (plataforma of jogo.streaming; track plataforma) {
+                  <span class="badge badge-streaming">{{ plataforma }}</span>
+                }
+              </div>
+            }
+          </div>
         </div>
       }
     </div>
