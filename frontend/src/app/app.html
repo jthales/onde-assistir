@@ -4,6 +4,15 @@
     <p class="subtitle">Jogos da semana</p>
   </header>
 
+  <div class="filtro-wrapper">
+    <select class="filtro-select" [value]="timeSelecionado()" (change)="timeSelecionado.set($any($event.target).value)">
+      <option value="">Todos os times</option>
+      @for (time of times; track time) {
+        <option [value]="time">{{ time }}</option>
+      }
+    </select>
+  </div>
+
   @if (loading()) {
     <div class="spinner-wrapper">
       <div class="spinner"></div>
@@ -14,13 +23,13 @@
       <span class="error-icon">⚠️</span>
       <p>{{ error() }}</p>
     </div>
-  } @else if (jogos().length === 0) {
+  } @else if (jogosFiltrados().length === 0) {
     <div class="empty-message">
       <p>Nenhum jogo encontrado para esta semana.</p>
     </div>
   } @else {
     <div class="jogos-grid">
-      @for (jogo of jogos(); track jogo.timeMandante + jogo.data) {
+      @for (jogo of jogosFiltrados(); track jogo.timeMandante + jogo.data) {
         <div class="jogo-card">
           <div class="jogo-rodada">Rodada {{ jogo.rodada }}</div>
           <div class="jogo-times">

@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { JogosService } from './services/jogos.service';
 import { Jogo } from './models/jogo';
@@ -13,6 +13,23 @@ export class App implements OnInit {
   jogos = signal<Jogo[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
+  timeSelecionado = signal<string>('');
+
+  times = [
+    'Athletico Paranaense', 'Atlético Mineiro', 'Bahia', 'Botafogo',
+    'Corinthians', 'Cruzeiro', 'Flamengo', 'Fluminense', 'Fortaleza',
+    'Grêmio', 'Internacional', 'Juventude', 'Mirassol', 'Palmeiras',
+    'Red Bull Bragantino', 'Santos', 'São Paulo', 'Sport Recife',
+    'Vasco', 'Vitória'
+  ];
+
+  jogosFiltrados = computed(() => {
+    const time = this.timeSelecionado();
+    if (!time) return this.jogos();
+    return this.jogos().filter(
+      j => j.timeMandante === time || j.timeVisitante === time
+    );
+  });
 
   constructor(private jogosService: JogosService) {}
 
