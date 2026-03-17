@@ -2,6 +2,30 @@
 Started: Tue Mar 17 15:41:49 PDT 2026
 ---
 
+## 2026-03-17T23:45 - US-004
+- Added "Onde assistir" section to each game card showing TV channels and streaming platforms
+- TV channels displayed with blue badges (.badge-tv), streaming platforms with purple badges (.badge-streaming)
+- If both canal[] and streaming[] are empty, shows "A confirmar" badge
+- Files changed: frontend/src/app/app.html, frontend/src/app/app.css
+- **Learnings for future iterations:**
+  - Jogo.canal[] = TV channels, Jogo.streaming[] = streaming platforms (both are string arrays)
+  - Badge pattern: .badge-tv (blue), .badge-streaming (purple), .badge-confirmar (gray italic)
+  - Use border-top divider to visually separate the "Onde assistir" section from match info
+---
+
+## 2026-03-17T23:30 - US-003
+- Implemented match list display in the Angular app component
+- Replaced Angular placeholder template with Brasileirão TV Guide UI
+- Files changed: frontend/src/app/app.ts, frontend/src/app/app.html, frontend/src/app/app.css
+- **Learnings for future iterations:**
+  - App uses Angular signals (signal()) for reactive state — use signal() not plain properties for loading/error/data
+  - Use @if/@else if/@else control flow syntax (Angular 17+ built-in, no need for *ngIf directive)
+  - Use @for with track expression for list rendering
+  - Sort data in the component (not service) after fetching to keep service pure
+  - Date formatting: ISO dates need 'T00:00:00' appended before parsing to avoid timezone offset issues
+  - CommonModule must be imported in standalone component to use pipes/directives
+---
+
 ## Codebase Patterns
 - Backend lives in /workspace/backend (Node.js + Express + TypeScript)
 - Frontend lives in /workspace/frontend (Angular, standalone components)

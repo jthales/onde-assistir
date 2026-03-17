@@ -51,7 +51,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "Corresponds to original US-004. Depends on US-002."
     },
     {
@@ -67,7 +67,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Corresponds to original US-005. Extends the game cards from US-003."
     },
     {
