@@ -2,6 +2,28 @@
 Started: Tue Mar 17 15:41:49 PDT 2026
 ---
 
+## 2026-03-17T24:30 - US-006
+- Added client-side team filter with dropdown (select) to the main page
+- `timeSelecionado` signal tracks the selected team; `jogosFiltrados` is a computed signal that filters the matches
+- Hardcoded list of 20 Série A 2025 teams in app.ts
+- Empty state message reused for when no matches match the filter
+- Files changed: frontend/src/app/app.ts, frontend/src/app/app.html, frontend/src/app/app.css
+- **Learnings for future iterations:**
+  - Use `computed()` from '@angular/core' for derived reactive state from signals
+  - Angular template two-way-ish binding: `[value]="signal()"` + `(change)="signal.set($any($event.target).value)"`
+  - No API call needed; filter operates on existing `jogos()` signal data
+---
+
+## 2026-03-17T24:00 - US-005
+- Added fixed footer banner with AI disclaimer text: "Informações geradas por IA. Verifique nos canais oficiais."
+- Footer is visible on all pages (fixed position, bottom of viewport)
+- Files changed: frontend/src/app/app.html, frontend/src/app/app.css
+- **Learnings for future iterations:**
+  - Used `position: fixed; bottom: 0` for the footer to keep it always visible
+  - Added `padding-bottom: 5rem` to .container to prevent content from being hidden behind fixed footer
+  - Footer styled with yellow/amber tones (#fefce8 bg, #854d0e text) to indicate a warning/notice
+---
+
 ## 2026-03-17T23:45 - US-004
 - Added "Onde assistir" section to each game card showing TV channels and streaming platforms
 - TV channels displayed with blue badges (.badge-tv), streaming platforms with purple badges (.badge-streaming)

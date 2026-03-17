@@ -81,7 +81,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "Corresponds to original US-007. Can be added as a simple footer component."
     },
     {
@@ -97,7 +97,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Corresponds to original US-006. Depends on US-003 (match list). Filter should be local/client-side only."
     }
   ]
