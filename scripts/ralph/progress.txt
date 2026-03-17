@@ -1,0 +1,41 @@
+# Ralph Progress Log
+Started: Tue Mar 17 15:41:49 PDT 2026
+---
+
+## Codebase Patterns
+- Backend lives in /workspace/backend (Node.js + Express + TypeScript)
+- Frontend lives in /workspace/frontend (Angular, standalone components)
+- Git repo is at /workspace/.git; run git commands from /workspace
+- The Gemini model to use is `gemini-1.5-flash-latest` (PRD says gemini-3.1-flash-lite-preview but that model is not available)
+- Always strip markdown code blocks from Gemini responses before JSON.parse
+- CORS is configured for http://localhost:4200 in the backend
+- Angular: use `npm install --no-bin-links` (WSL2 chmod restriction); tsc binary at node_modules/typescript/bin/tsc
+- Angular typecheck: `node node_modules/typescript/bin/tsc --noEmit` from /workspace/frontend
+- Angular app config is at src/app/app.config.ts; add providers like provideHttpClient() there
+- Jogo interface is defined at frontend/src/app/models/jogo.ts (mirrors backend types.ts)
+
+## 2026-03-17T22:50 - US-001
+- Implemented Node.js backend in /workspace/backend with Express + TypeScript
+- Created GET /api/jogos endpoint that queries Gemini API and returns array of Jogo objects
+- Files changed: backend/src/index.ts, backend/src/types.ts, backend/package.json, backend/tsconfig.json, backend/.env.example, backend/.gitignore
+- **Learnings for future iterations:**
+  - Git repo initialized at /workspace; use absolute paths or run git from /workspace
+  - The git init failed with chmod error but was fixed by manually creating objects/ and refs/ dirs and fixing config
+  - Model `gemini-3.1-flash-lite-preview` from PRD notes is not valid; used `gemini-1.5-flash-latest`
+  - Gemini may return markdown-wrapped JSON; strip ``` blocks before parsing
+  - Express v5 is installed (@types/express v5); compatible with the code written
+---
+
+## 2026-03-17T23:00 - US-002
+- Created Angular project in /workspace/frontend using npx @angular/cli new (standalone components)
+- Defined Jogo interface at frontend/src/app/models/jogo.ts (matches backend interface)
+- Created JogosService at frontend/src/app/services/jogos.service.ts with getJogosDaSemana(): Observable<Jogo[]>
+- Added provideHttpClient() to app.config.ts
+- Files changed: frontend/ (new project), src/app/models/jogo.ts, src/app/services/jogos.service.ts, src/app/app.config.ts
+- **Learnings for future iterations:**
+  - WSL2 chmod restriction requires `npm install --no-bin-links` for Angular projects
+  - Angular CLI creates project with --directory flag but the path was doubled (/workspace/workspace/frontend); had to mv it
+  - Use `node node_modules/typescript/bin/tsc --noEmit` for typecheck (no .bin symlinks due to --no-bin-links)
+  - Angular 19 uses standalone components by default; no NgModule needed
+  - provideHttpClient() goes in app.config.ts providers array
+---

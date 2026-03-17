@@ -1,0 +1,104 @@
+{
+  "project": "Brasileirão TV Guide",
+  "branchName": "ralph/brasileirao-tv-guide",
+  "description": "Web app that shows Série A matches for the current week with TV channels and streaming platforms, powered by the Gemini API.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Backend Node.js com proxy para Gemini e modelo de dados",
+      "description": "As a developer, I need a Node.js backend that securely calls the Gemini API and returns structured match data so that the API key is never exposed in the frontend.",
+      "acceptanceCriteria": [
+        "Projeto Node.js inicializado em /backend com Express e TypeScript",
+        "Variável de ambiente GEMINI_API_KEY configurada via .env (arquivo .env.example incluído)",
+        "Interface Jogo definida: { rodada: number, timeMandante: string, timeVisitante: string, data: string (ISO 8601), hora: string, canal: string[], streaming: string[], estadio: string }",
+        "Endpoint GET /api/jogos consulta o modelo gemini-3.1-flash-lite-preview via @google/generative-ai SDK",
+        "Prompt inclui data atual e solicita os jogos da Série A dos próximos 7 dias em JSON puro (sem markdown)",
+        "Resposta do Gemini é parseada e retornada como array de objetos Jogo",
+        "CORS configurado para aceitar requisições de http://localhost:4200",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Corresponds to original US-001 + US-002 merged. GEMINI_API_KEY=AIzaSyAnozmFM8DWG2Bf5OzhK7DIoDkBFLCYoPU (from PRD). Use model gemini-3.1-flash-lite-preview."
+    },
+    {
+      "id": "US-002",
+      "title": "Projeto Angular com JogosService",
+      "description": "As a developer, I need an Angular project with a service that fetches match data from the backend so that components can display it.",
+      "acceptanceCriteria": [
+        "Projeto Angular criado em /frontend com Angular CLI (standalone components)",
+        "Interface Jogo definida em TypeScript no frontend (igual à do backend)",
+        "JogosService criado com método getJogosDaSemana(): Observable<Jogo[]>",
+        "Serviço faz GET para http://localhost:3000/api/jogos usando HttpClient",
+        "HttpClientModule (ou provideHttpClient) configurado no app",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Corresponds to original US-003. Depends on US-001 for the backend to exist."
+    },
+    {
+      "id": "US-003",
+      "title": "Exibir lista de jogos da semana",
+      "description": "As a user, I want to see all Série A matches of the current week so that I know when and where to watch.",
+      "acceptanceCriteria": [
+        "Página principal exibe cards para cada jogo da semana",
+        "Cada card mostra: times (mandante x visitante), data formatada (ex: Sábado, 22/03), hora, estádio",
+        "Cards ordenados cronologicamente (jogo mais próximo primeiro)",
+        "Spinner ou skeleton exibido enquanto a API responde",
+        "Mensagem amigável exibida em caso de erro na API",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Corresponds to original US-004. Depends on US-002."
+    },
+    {
+      "id": "US-004",
+      "title": "Exibir canais e plataformas de streaming por jogo",
+      "description": "As a user, I want to see which TV channels and streaming platforms will broadcast each match so that I can find where to watch.",
+      "acceptanceCriteria": [
+        "Cada card exibe seção 'Onde assistir'",
+        "Canais de TV aberta (ex: Globo, Band) visualmente distintos dos de streaming (ex: Globoplay, Cazé TV)",
+        "Badges/ícones para cada canal e plataforma de streaming",
+        "Se canal[] e streaming[] estiverem vazios, exibe 'A confirmar'",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Corresponds to original US-005. Extends the game cards from US-003."
+    },
+    {
+      "id": "US-005",
+      "title": "Exibir aviso sobre limitações da IA",
+      "description": "As a user, I want to know that the information comes from an AI so that I understand it may not be 100% accurate.",
+      "acceptanceCriteria": [
+        "Banner ou rodapé com texto: 'Informações geradas por IA. Verifique nos canais oficiais.'",
+        "Visível em todas as páginas",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Corresponds to original US-007. Can be added as a simple footer component."
+    },
+    {
+      "id": "US-006",
+      "title": "Filtrar jogos por time",
+      "description": "As a user, I want to filter matches by a specific team so that I can follow only my team.",
+      "acceptanceCriteria": [
+        "Dropdown ou campo de busca com os 20 times da Série A 2025",
+        "Opção 'Todos os times' para remover o filtro",
+        "Ao selecionar um time, apenas os jogos daquele time são exibidos",
+        "Filtro funciona no lado do cliente sem nova chamada à API",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Corresponds to original US-006. Depends on US-003 (match list). Filter should be local/client-side only."
+    }
+  ]
+}
