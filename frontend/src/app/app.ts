@@ -18,7 +18,7 @@ function gaPush(event: string, params: Record<string, any> = {}): void {
   selector: 'app-root',
   imports: [CommonModule],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  styleUrl: './app.scss'
 })
 export class App implements OnInit, OnDestroy {
   jogos = signal<Jogo[]>([]);

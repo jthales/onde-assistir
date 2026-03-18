@@ -1,3 +1,22 @@
+// ── Mixins ──────────────────────────────────────────────────────────────────
+
+@mixin flex($gap: 0, $align: center, $justify: flex-start, $wrap: nowrap) {
+  display: flex;
+  align-items: $align;
+  @if $justify != flex-start { justify-content: $justify; }
+  @if $gap != 0 { gap: $gap; }
+  @if $wrap != nowrap { flex-wrap: $wrap; }
+}
+
+@mixin flex-col($gap: 0, $align: stretch) {
+  display: flex;
+  flex-direction: column;
+  @if $align != stretch { align-items: $align; }
+  @if $gap != 0 { gap: $gap; }
+}
+
+// ── Reset ────────────────────────────────────────────────────────────────────
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -13,12 +32,12 @@ body {
 }
 
 .page {
-  display: flex;
-  flex-direction: column;
+  @include flex-col;
   min-height: 100vh;
 }
 
-/* ── Hero ── */
+// ── Hero ─────────────────────────────────────────────────────────────────────
+
 .hero {
   background: linear-gradient(135deg, #0a2e1a 0%, #1d6f42 60%, #25a05e 100%);
   padding: 3rem 1rem 4rem;
@@ -64,9 +83,7 @@ body {
   letter-spacing: -0.02em;
 }
 
-.hero-title-accent {
-  color: #86efac;
-}
+.hero-title-accent { color: #86efac; }
 
 .hero-subtitle {
   margin-top: 0.75rem;
@@ -75,7 +92,8 @@ body {
   font-weight: 400;
 }
 
-/* ── Container ── */
+// ── Container ────────────────────────────────────────────────────────────────
+
 .container {
   max-width: 1280px;
   margin: -1.75rem auto 0;
@@ -85,12 +103,10 @@ body {
   flex: 1;
 }
 
-/* ── Times Picker ── */
+// ── Times Picker ─────────────────────────────────────────────────────────────
+
 .times-picker {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
+  @include flex-col(0.75rem, center);
   margin-bottom: 2rem;
 }
 
@@ -102,9 +118,7 @@ body {
 }
 
 .time-chip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @include flex($justify: center);
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -129,7 +143,6 @@ body {
   transform: scale(1.12);
 }
 
-/* Botão "Todos" */
 .time-chip--todos {
   width: auto;
   height: 36px;
@@ -168,25 +181,18 @@ body {
   letter-spacing: 0.02em;
 }
 
-/* ── States ── */
+// ── States ───────────────────────────────────────────────────────────────────
+
 .state-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
+  @include flex-col(1rem, center);
   padding: 4rem 2rem;
   color: #6b7280;
 }
 
-.state-text {
-  font-size: 0.95rem;
-}
+.state-text { font-size: 0.95rem; }
 
 .state-error {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
+  @include flex-col(0.75rem, center);
   padding: 2rem;
   background: #fef2f2;
   border: 1px solid #fecaca;
@@ -196,11 +202,10 @@ body {
   font-size: 0.9rem;
 }
 
-.state-error-icon {
-  font-size: 2rem;
-}
+.state-error-icon { font-size: 2rem; }
 
-/* ── Spinner ── */
+// ── Spinner ──────────────────────────────────────────────────────────────────
+
 .spinner {
   width: 44px;
   height: 44px;
@@ -210,33 +215,26 @@ body {
   animation: spin 0.75s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Grid ── */
+// ── Grid ─────────────────────────────────────────────────────────────────────
+
 .jogos-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1.25rem;
 }
 
-@media (max-width: 900px) {
-  .jogos-grid { grid-template-columns: repeat(2, 1fr); }
-  .times-grid { grid-template-columns: repeat(10, 52px); }
-}
+// ── Card ─────────────────────────────────────────────────────────────────────
 
-/* ── Card ── */
 .jogo-card {
+  @include flex-col(1rem);
   position: relative;
   background: #fff;
   border-radius: 16px;
   padding: 1.25rem;
   box-shadow: 0 2px 12px rgba(0,0,0,0.07);
   border: 1px solid #f1f3f5;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -245,9 +243,7 @@ body {
   box-shadow: 0 6px 20px rgba(0,0,0,0.1);
 }
 
-.jogo-card--ao-vivo {
-  overflow: hidden;
-}
+.jogo-card--ao-vivo { overflow: hidden; }
 
 .barra-vivo {
   position: absolute;
@@ -275,18 +271,12 @@ body {
   100% { left: 110%; }
 }
 
-/* Card top row */
 .card-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.5rem;
+  @include flex(0.5rem, flex-start, space-between);
 }
 
 .card-top-left {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
+  @include flex-col(0.3rem);
 }
 
 .campeonato-badge {
@@ -302,9 +292,7 @@ body {
 }
 
 .data-hora {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  @include flex(0.4rem);
 }
 
 .data {
@@ -354,10 +342,7 @@ body {
 }
 
 .placar-ao-vivo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.15rem;
+  @include flex-col(0.15rem, center);
 }
 
 .placar-numeros {
@@ -375,23 +360,19 @@ body {
   text-transform: uppercase;
 }
 
-/* Gols ao vivo */
+// ── Gols ao vivo ─────────────────────────────────────────────────────────────
+
 .gols-section {
-  display: flex;
-  gap: 0.5rem;
+  @include flex(0.5rem);
   margin-top: -0.25rem;
 }
 
 .gols-col {
+  @include flex-col(0.2rem);
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
 }
 
-.gols-col--visitante {
-  text-align: right;
-}
+.gols-col--visitante { text-align: right; }
 
 .gol-item {
   font-size: 0.72rem;
@@ -399,22 +380,18 @@ body {
   line-height: 1.3;
 }
 
-/* Confronto */
+// ── Confronto ────────────────────────────────────────────────────────────────
+
 .confronto {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  @include flex(0.5rem);
   background: #f8fafc;
   border-radius: 12px;
   padding: 1rem 0.75rem;
 }
 
 .time-col {
+  @include flex-col(0.25rem, flex-start);
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  align-items: flex-start;
 }
 
 .visitante-col {
@@ -439,6 +416,7 @@ body {
 }
 
 .logo-initials {
+  @include flex($justify: center);
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -446,9 +424,6 @@ body {
   color: #6b7280;
   font-weight: 800;
   font-size: 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   letter-spacing: 0.02em;
 }
 
@@ -468,13 +443,12 @@ body {
 }
 
 .vs-col {
+  @include flex($justify: center);
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .vs {
+  @include flex($justify: center);
   font-weight: 800;
   font-size: 0.75rem;
   color: #9ca3af;
@@ -482,34 +456,26 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   letter-spacing: 0.05em;
 }
 
-/* Estádio */
+// ── Estádio ──────────────────────────────────────────────────────────────────
+
 .estadio {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
+  @include flex(0.35rem);
   font-size: 0.78rem;
   color: #9ca3af;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+
+  svg { flex-shrink: 0; color: #d1d5db; }
 }
 
-.estadio svg {
-  flex-shrink: 0;
-  color: #d1d5db;
-}
+// ── Onde assistir ────────────────────────────────────────────────────────────
 
-/* Onde assistir */
 .onde-assistir {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  @include flex-col(0.5rem);
   border-top: 1px solid #f1f3f5;
   padding-top: 0.875rem;
 }
@@ -523,16 +489,11 @@ body {
 }
 
 .onde-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  @include flex(0.5rem, $wrap: wrap);
 }
 
 .onde-tipo {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
+  @include flex(0.25rem);
   font-size: 0.68rem;
   font-weight: 600;
   color: #6b7280;
@@ -541,9 +502,7 @@ body {
 }
 
 .badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+  @include flex(0.35rem, $wrap: wrap);
 }
 
 .badge {
@@ -555,36 +514,20 @@ body {
   white-space: nowrap;
 }
 
-.badge-tv {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.badge-streaming {
-  background: #ede9fe;
-  color: #6d28d9;
-}
+.badge-tv         { background: #dbeafe; color: #1d4ed8; }
+.badge-streaming  { background: #ede9fe; color: #6d28d9; }
+.badge-confirmar  { background: #f3f4f6; color: #9ca3af; font-weight: 400; }
 
 .badge-streaming--link {
   text-decoration: none;
   cursor: pointer;
+  &:hover { filter: brightness(0.88); }
 }
 
-.badge-streaming--link:hover {
-  filter: brightness(0.88);
-}
+// ── Odds Bet365 ──────────────────────────────────────────────────────────────
 
-.badge-confirmar {
-  background: #f3f4f6;
-  color: #9ca3af;
-  font-weight: 400;
-}
-
-/* Odds Bet365 */
 .odds-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  @include flex(0.5rem);
   padding-top: 0.5rem;
   border-top: 1px solid #f1f3f5;
 }
@@ -598,11 +541,7 @@ body {
   white-space: nowrap;
 }
 
-.odds-values {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
+.odds-values { @include flex(0.3rem); }
 
 .odds-item {
   font-size: 0.78rem;
@@ -613,17 +552,12 @@ body {
   border-radius: 5px;
 }
 
-.odds-sep {
-  font-size: 0.7rem;
-  color: #d1d5db;
-}
+.odds-sep { font-size: 0.7rem; color: #d1d5db; }
 
-/* ── Footer ── */
+// ── Footer ───────────────────────────────────────────────────────────────────
+
 .ai-disclaimer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+  @include flex(0.5rem, $justify: center);
   padding: 0.85rem 1rem;
   background: #fffbeb;
   border-top: 1px solid #fde68a;
@@ -633,25 +567,22 @@ body {
   margin-top: auto;
 }
 
-@media (max-width: 480px) {
-  .hero {
-    padding: 2.5rem 1rem 3.5rem;
-  }
+// ── Responsive ───────────────────────────────────────────────────────────────
 
-  .jogos-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .times-grid {
-    grid-template-columns: repeat(5, 52px);
-  }
-
-  .time-nome {
-    font-size: 0.85rem;
-  }
+@media (max-width: 900px) {
+  .jogos-grid { grid-template-columns: repeat(2, 1fr); }
+  .times-grid { grid-template-columns: repeat(10, 52px); }
 }
 
-/* ── Consent Banner ── */
+@media (max-width: 480px) {
+  .hero { padding: 2.5rem 1rem 3.5rem; }
+  .jogos-grid { grid-template-columns: 1fr; }
+  .times-grid { grid-template-columns: repeat(5, 52px); }
+  .time-nome  { font-size: 0.85rem; }
+}
+
+// ── Consent Banner ───────────────────────────────────────────────────────────
+
 .consent-banner {
   position: fixed;
   bottom: 0;
@@ -664,12 +595,9 @@ body {
 }
 
 .consent-content {
+  @include flex(1.5rem, $wrap: wrap);
   max-width: 900px;
   margin: 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  flex-wrap: wrap;
 }
 
 .consent-text {
@@ -681,8 +609,7 @@ body {
 }
 
 .consent-actions {
-  display: flex;
-  gap: 0.5rem;
+  @include flex(0.5rem);
   flex-shrink: 0;
 }
 
@@ -694,10 +621,7 @@ body {
   cursor: pointer;
   border: none;
   transition: opacity 0.15s;
-}
-
-.consent-btn:hover {
-  opacity: 0.85;
+  &:hover { opacity: 0.85; }
 }
 
 .consent-btn--decline {
