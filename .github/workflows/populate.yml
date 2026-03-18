@@ -1,4 +1,4 @@
-name: Populate jogos
+name: 🎯 Populate Jogos Diário
 
 on:
   schedule:
@@ -10,25 +10,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: 📥 Baixando o código
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: 🟢 Configurando Node.js v20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
 
-      - name: Install dependencies
+      - name: 📦 Instalando dependências
         working-directory: backend
-        run: npm ci
+        run: |
+          echo "Instalando dependências do backend..."
+          npm ci
+          echo "Dependências instaladas com sucesso."
 
-      - name: Run populate
+      - name: 🚀 Executando populate
         working-directory: backend
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
-        run: npm run populate
+        run: |
+          echo "Iniciando populate de jogos — $(date '+%d/%m/%Y %H:%M:%S UTC')"
+          npm run populate
+          echo "✅ Populate concluído com sucesso!"
+
+      - name: ✅ Resumo da execução
+        if: success()
+        run: echo "🎉 Jogos da semana atualizados com sucesso no Firestore!"
+
+      - name: ❌ Falha na execução
+        if: failure()
+        run: echo "💥 O populate falhou. Verifique os logs acima para identificar o erro."
