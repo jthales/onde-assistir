@@ -45,7 +45,10 @@
     } @else {
       <div class="jogos-grid">
         @for (jogo of jogosFiltrados(); track jogo.timeMandante + jogo.data) {
-          <div class="jogo-card">
+          <div class="jogo-card" [class.jogo-card--ao-vivo]="eAoVivo(jogo)">
+            @if (eAoVivo(jogo)) {
+              <div class="barra-vivo"></div>
+            }
             <div class="card-top">
               <div class="card-top-left">
                 @if (jogo.campeonato) {
