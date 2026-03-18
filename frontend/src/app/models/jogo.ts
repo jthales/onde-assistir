@@ -6,6 +6,16 @@ export interface Placar {
   placarVisitante: number | null;
   status: 'em-andamento' | 'encerrado' | 'agendado';
   tempo?: string;
+  periodo?: string;
+}
+
+export interface Odds {
+  timeMandante: string;
+  timeVisitante: string;
+  data: string;
+  mandante: number | null;
+  empate: number | null;
+  visitante: number | null;
 }
 
 export interface Jogo {

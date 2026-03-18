@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { JogosService } from './services/jogos.service';
-import { Jogo, Placar } from './models/jogo';
+import { Jogo, Placar, Odds } from './models/jogo';
 import { teamInitials } from './team-logos';
 
 declare global {
@@ -27,7 +27,9 @@ export class App implements OnInit, OnDestroy {
   timeSelecionado = signal<string>('');
   showConsentBanner = signal(localStorage.getItem('ga_consent') === null);
   placares = signal<Map<string, Placar>>(new Map());
+  odds = signal<Map<string, Odds>>(new Map());
   private pollingInterval?: ReturnType<typeof setInterval>;
+  private oddsInterval?: ReturnType<typeof setInterval>;
 
   times = computed(() => {
     const map = new Map<string, string>();
@@ -65,6 +67,8 @@ export class App implements OnInit, OnDestroy {
         gaPush('jogos_carregados', { total_jogos: sorted.length });
         this.atualizarPlacar();
         this.pollingInterval = setInterval(() => this.atualizarPlacar(), 30_000);
+        this.atualizarOdds();
+        this.oddsInterval = setInterval(() => this.atualizarOdds(), 5 * 60_000);
       },
       error: (err) => {
         if (err?.status === 429) {
@@ -104,6 +108,7 @@ export class App implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     clearInterval(this.pollingInterval);
+    clearInterval(this.oddsInterval);
   }
 
   getInitials = teamInitials;
@@ -144,6 +149,22 @@ export class App implements OnInit, OnDestroy {
 
   getPlacarJogo(jogo: Jogo): Placar | undefined {
     return this.placares().get(this.placarKey(jogo.timeMandante, jogo.timeVisitante, jogo.data));
+  }
+
+  private atualizarOdds(): void {
+    this.jogosService.getOdds().subscribe({
+      next: (lista) => {
+        const map = new Map<string, Odds>();
+        for (const o of lista) {
+          map.set(this.placarKey(o.timeMandante, o.timeVisitante, o.data), o);
+        }
+        this.odds.set(map);
+      }
+    });
+  }
+
+  getOddsJogo(jogo: Jogo): Odds | undefined {
+    return this.odds().get(this.placarKey(jogo.timeMandante, jogo.timeVisitante, jogo.data));
   }
 
   formatarData(dataIso: string): string {

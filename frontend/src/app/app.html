@@ -84,7 +84,7 @@
                   <div class="placar-ao-vivo">
                     <span class="placar-numeros">{{ placar.placarMandante ?? '-' }} – {{ placar.placarVisitante ?? '-' }}</span>
                     @if (placar.tempo) {
-                      <span class="placar-tempo">{{ placar.tempo }}</span>
+                      <span class="placar-tempo">{{ placar.tempo }}{{ placar.periodo ? ' · ' + placar.periodo : '' }}</span>
                     }
                   </div>
                 } @else {
@@ -147,10 +147,26 @@
                 }
               }
             </div>
+
+            @if (getOddsJogo(jogo); as o) {
+              @if (o.mandante !== null || o.empate !== null || o.visitante !== null) {
+                <div class="odds-row">
+                  <span class="odds-label">Bet365</span>
+                  <div class="odds-values">
+                    <span class="odds-item" [title]="jogo.timeMandante">{{ o.mandante | number:'1.2-2' }}</span>
+                    <span class="odds-sep">·</span>
+                    <span class="odds-item" title="Empate">{{ o.empate | number:'1.2-2' }}</span>
+                    <span class="odds-sep">·</span>
+                    <span class="odds-item" [title]="jogo.timeVisitante">{{ o.visitante | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+              }
+            }
           </div>
         }
       </div>
     }
+
 
   </main>
 

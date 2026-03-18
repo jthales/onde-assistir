@@ -563,6 +563,45 @@ body {
   font-weight: 400;
 }
 
+/* Odds Bet365 */
+.odds-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f1f3f5;
+}
+
+.odds-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.odds-values {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.odds-item {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1d6f42;
+  background: #f0fdf4;
+  padding: 0.15rem 0.4rem;
+  border-radius: 5px;
+  cursor: default;
+}
+
+.odds-sep {
+  font-size: 0.7rem;
+  color: #d1d5db;
+}
+
 /* ── Footer ── */
 .ai-disclaimer {
   display: flex;
