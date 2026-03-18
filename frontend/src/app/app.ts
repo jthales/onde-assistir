@@ -97,11 +97,28 @@ export class App implements OnInit {
   getInitials = teamInitials;
 
   formatarData(dataIso: string): string {
+    if (this.eHoje(dataIso)) return 'Hoje';
     const data = new Date(dataIso + 'T00:00:00');
     const dias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
     const diaSemana = dias[data.getDay()];
     const dia = String(data.getDate()).padStart(2, '0');
     const mes = String(data.getMonth() + 1).padStart(2, '0');
     return `${diaSemana}, ${dia}/${mes}`;
+  }
+
+  eHoje(dataIso: string): boolean {
+    // Compara com data de hoje no fuso BRT (UTC-3)
+    const hoje = new Date();
+    const brtHoje = new Date(hoje.getTime() - 3 * 60 * 60 * 1000);
+    return dataIso === brtHoje.toISOString().slice(0, 10);
+  }
+
+  eAoVivo(jogo: Jogo): boolean {
+    if (!jogo.hora || jogo.hora === '00:00') return false;
+    // hora está em BRT → monta datetime com offset -03:00
+    const inicio = new Date(`${jogo.data}T${jogo.hora}:00-03:00`);
+    const fim = new Date(inicio.getTime() + 2 * 60 * 60 * 1000); // +2h
+    const agora = new Date();
+    return agora >= inicio && agora < fim;
   }
 }

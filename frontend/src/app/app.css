@@ -285,6 +285,11 @@ body {
   color: #374151;
 }
 
+.data--hoje {
+  font-weight: 700;
+  color: #1d6f42;
+}
+
 .hora {
   font-size: 0.78rem;
   font-weight: 600;
@@ -292,6 +297,32 @@ body {
   background: #1d6f42;
   padding: 0.15rem 0.45rem;
   border-radius: 6px;
+}
+
+.ao-vivo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #fff;
+  background: #dc2626;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+}
+
+.ao-vivo-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  animation: pulsar 1.2s ease-in-out infinite;
+}
+
+@keyframes pulsar {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
 }
 
 /* Confronto */
