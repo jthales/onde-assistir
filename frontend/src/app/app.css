@@ -482,11 +482,7 @@ body {
   color: #92400e;
   font-size: 0.8rem;
   font-weight: 500;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
+  margin-top: auto;
 }
 
 /* ── Responsive ── */
