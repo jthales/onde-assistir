@@ -1,0 +1,47 @@
+## Progresso do projeto — Onde Assistir
+
+---
+
+### GitHub Actions — Populate diário
+- Criado `.github/workflows/populate.yml`
+- Roda automaticamente todo dia às 10:00 UTC (07:00 BRT) via cron
+- Permite execução manual pela aba Actions (workflow_dispatch)
+- Variáveis de ambiente necessárias (configurar em Settings → Secrets):
+  - GEMINI_API_KEY
+  - FIREBASE_PROJECT_ID
+  - FIREBASE_CLIENT_EMAIL
+  - FIREBASE_PRIVATE_KEY (valor de uma linha com \n literais, igual ao Vercel)
+- Logs em pt-br com emojis para identificar sucesso/falha
+- Nome do workflow: "🎯 Populate Jogos Diário"
+
+---
+
+### Frontend — "Hoje" e "AO VIVO"
+- Data do jogo exibe "Hoje" (em verde e negrito) quando o jogo é no dia atual (fuso BRT)
+- Badge vermelho pulsante "● AO VIVO" aparece no lugar do horário quando o jogo está em andamento
+- Lógica de detecção:
+  - eHoje(): compara data do jogo com hoje em BRT (UTC-3)
+  - eAoVivo(): combina data+hora com offset -03:00, considera ao vivo se passou do início e está dentro de 2h
+- Arquivos alterados: app.ts, app.html, app.css
+
+---
+
+### Placar ao vivo com cache
+- Nova rota GET /api/placar no backend
+- Consulta ESPN API em tempo real (mesma fonte do populate)
+- Cache em memória no servidor com TTL de 30s → máximo 2 chamadas/min à ESPN,
+  independente de quantos usuários estejam acessando simultaneamente
+- Fallback: se a ESPN falhar, serve o cache antigo
+- Frontend faz polling a cada 30s, mas SOMENTE quando temJogoAoVivo() é true
+- Quando ao vivo: "VS" é substituído pelo placar (ex: 2 – 1) em vermelho + tempo de jogo (ex: 45')
+- ngOnDestroy limpa o interval ao sair da página
+- Constantes compartilhadas (TEAM_NAME_MAP, espnScoreboardUrl) extraídas para backend/src/constants.ts
+- Arquivos alterados/criados:
+  - backend/src/constants.ts (novo)
+  - backend/src/index.ts
+  - backend/src/populate.ts
+  - frontend/src/app/models/jogo.ts (interface Placar)
+  - frontend/src/app/services/jogos.service.ts (método getPlacar)
+  - frontend/src/app/app.ts
+  - frontend/src/app/app.html
+  - frontend/src/app/app.css
