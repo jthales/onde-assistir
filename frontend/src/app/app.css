@@ -47,7 +47,6 @@ body {
   background: rgba(255,255,255,0.15);
   border: 1px solid rgba(255,255,255,0.25);
   color: #fff;
-  font-family: 'Inter', sans-serif;
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.15em;
@@ -58,7 +57,6 @@ body {
 }
 
 .hero-title {
-  font-family: 'Inter', sans-serif;
   font-weight: 800;
   font-size: clamp(2.2rem, 6vw, 3.5rem);
   color: #fff;
@@ -224,9 +222,8 @@ body {
 }
 
 @media (max-width: 900px) {
-  .jogos-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .jogos-grid { grid-template-columns: repeat(2, 1fr); }
+  .times-grid { grid-template-columns: repeat(10, 52px); }
 }
 
 /* ── Card ── */
@@ -447,7 +444,6 @@ body {
   border-radius: 50%;
   background: #e5e7eb;
   color: #6b7280;
-  font-family: 'Inter', sans-serif;
   font-weight: 800;
   font-size: 0.75rem;
   display: flex;
@@ -457,7 +453,6 @@ body {
 }
 
 .time-nome {
-  font-family: 'Inter', sans-serif;
   font-weight: 700;
   font-size: 0.9rem;
   color: #111827;
@@ -480,7 +475,6 @@ body {
 }
 
 .vs {
-  font-family: 'Inter', sans-serif;
   font-weight: 800;
   font-size: 0.75rem;
   color: #9ca3af;
@@ -554,7 +548,6 @@ body {
 
 .badge {
   display: inline-block;
-  font-family: 'Inter', sans-serif;
   font-size: 0.72rem;
   font-weight: 600;
   padding: 0.25rem 0.6rem;
@@ -618,7 +611,6 @@ body {
   background: #f0fdf4;
   padding: 0.15rem 0.4rem;
   border-radius: 5px;
-  cursor: default;
 }
 
 .odds-sep {
@@ -639,13 +631,6 @@ body {
   font-size: 0.8rem;
   font-weight: 500;
   margin-top: auto;
-}
-
-/* ── Responsive ── */
-@media (max-width: 900px) {
-  .times-grid {
-    grid-template-columns: repeat(10, 52px);
-  }
 }
 
 @media (max-width: 480px) {
