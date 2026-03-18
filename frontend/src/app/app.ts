@@ -55,9 +55,11 @@ export class App implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.jogosService.getJogosDaSemana().subscribe({
       next: (data) => {
-        const sorted = [...data].sort(
-          (a, b) => new Date(a.data).getTime() - new Date(b.data).getTime()
-        );
+        const sorted = [...data].sort((a, b) => {
+          const ta = new Date(`${a.data}T${a.hora || '00:00'}:00-03:00`).getTime();
+          const tb = new Date(`${b.data}T${b.hora || '00:00'}:00-03:00`).getTime();
+          return ta - tb;
+        });
         this.jogos.set(sorted);
         this.loading.set(false);
         gaPush('jogos_carregados', { total_jogos: sorted.length });
