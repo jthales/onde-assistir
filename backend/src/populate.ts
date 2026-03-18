@@ -19,7 +19,12 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 const ai = new GoogleGenAI({ apiKey: process.env['GEMINI_API_KEY'] ?? '' });
 const GEMINI_MODEL_ID = 'gemini-3.1-flash-lite-preview';
-const ESPN_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/scoreboard';
+function espnScoreboardUrl(): string {
+  const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '');
+  const today = new Date();
+  const in7days = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+  return `https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/scoreboard?dates=${fmt(today)}-${fmt(in7days)}`;
+}
 
 // Normaliza nomes de times da ESPN para os nossos nomes padrão
 const TEAM_NAME_MAP: Record<string, string> = {
@@ -48,6 +53,27 @@ const TEAM_NAME_MAP: Record<string, string> = {
   'Vitória':         'Vitória',
 };
 
+const LEAGUE_NAME_MAP: Record<string, string> = {
+  'Brazilian Serie A':        'Brasileirão Série A',
+  'Brazil Serie A':           'Brasileirão Série A',
+  'Brazilian Serie B':        'Brasileirão Série B',
+  'Brazil Serie B':           'Brasileirão Série B',
+  'CONMEBOL Libertadores':    'Libertadores',
+  'CONMEBOL Sudamericana':    'Sul-Americana',
+};
+
+function normalizeLeagueName(raw: string): string {
+  if (!raw) return 'Brasileirão Série A';
+  const trimmed = raw.trim();
+  // Tenta match exato primeiro
+  if (LEAGUE_NAME_MAP[trimmed]) return LEAGUE_NAME_MAP[trimmed];
+  // Tenta match parcial (ex: "2026 Brasileiro Serie A" contém "Serie A")
+  for (const [key, value] of Object.entries(LEAGUE_NAME_MAP)) {
+    if (trimmed.toLowerCase().includes(key.toLowerCase())) return value;
+  }
+  return trimmed;
+}
+
 function normalizeTeamName(name: string): string {
   return TEAM_NAME_MAP[name] ?? name;
 }
@@ -71,7 +97,7 @@ interface GeminiBroadcast {
 }
 
 async function fetchFixturesFromEspn(): Promise<EspnFixture[]> {
-  const res = await fetch(ESPN_URL);
+  const res = await fetch(espnScoreboardUrl());
   if (!res.ok) throw new Error(`ESPN API error: ${res.status}`);
   const data: any = await res.json();
 
@@ -99,7 +125,7 @@ async function fetchFixturesFromEspn(): Promise<EspnFixture[]> {
       data: data_jogo,
       hora,
       estadio: comp.venue?.fullName ?? '',
-      campeonato: data.leagues?.[0]?.name ?? 'Brasileirão Série A',
+      campeonato: normalizeLeagueName(data.leagues?.[0]?.season?.type?.name ?? data.leagues?.[0]?.name ?? ''),
     });
   }
 

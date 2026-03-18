@@ -4,6 +4,15 @@ import { JogosService } from './services/jogos.service';
 import { Jogo } from './models/jogo';
 import { teamInitials } from './team-logos';
 
+declare global {
+  interface Window { dataLayer: any[]; }
+}
+
+function gtmPush(event: string, params: Record<string, any> = {}): void {
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({ event, ...params });
+}
+
 @Component({
   selector: 'app-root',
   imports: [CommonModule],
@@ -45,6 +54,7 @@ export class App implements OnInit {
         );
         this.jogos.set(sorted);
         this.loading.set(false);
+        gtmPush('jogos_carregados', { total_jogos: sorted.length });
       },
       error: (err) => {
         if (err?.status === 429) {
@@ -57,8 +67,18 @@ export class App implements OnInit {
           this.error.set('Não foi possível carregar os jogos. Tente novamente mais tarde.');
         }
         this.loading.set(false);
+        gtmPush('jogos_erro', { status: err?.status });
       }
     });
+  }
+
+  selecionarTime(nome: string): void {
+    this.timeSelecionado.set(nome);
+    if (nome) {
+      gtmPush('filtro_time', { time: nome });
+    } else {
+      gtmPush('filtro_todos');
+    }
   }
 
   getInitials = teamInitials;
