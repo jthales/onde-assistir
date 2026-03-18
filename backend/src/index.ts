@@ -6,7 +6,12 @@ import { db } from './firebase';
 const app = express();
 const PORT = process.env['PORT'] ?? 3000;
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:4200',
+    'https://onde-assistir-five.vercel.app',
+  ],
+}));
 app.use(express.json());
 
 app.get('/api/jogos', async (_req, res) => {
