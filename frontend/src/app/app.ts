@@ -66,7 +66,7 @@ export class App implements OnInit, OnDestroy {
         this.loading.set(false);
         gaPush('jogos_carregados', { total_jogos: sorted.length });
         this.atualizarPlacar();
-        this.pollingInterval = setInterval(() => this.atualizarPlacar(), 30_000);
+        this.pollingInterval = setInterval(() => this.atualizarPlacar(), 10_000);
         this.atualizarOdds();
         this.oddsInterval = setInterval(() => this.atualizarOdds(), 5 * 60_000);
       },
