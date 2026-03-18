@@ -108,7 +108,10 @@ Atenção:
 - "Globo" = TV aberta e gratuita. Use apenas se o jogo for na TV Globo aberta.
 - "SporTV" / "SporTV 2" / "SporTV 3" = TV fechada por assinatura. Não confunda com Globo.
 - "Premiere" = pay-per-view separado do SporTV.
-- Em "streaming" use apenas plataformas digitais (Globoplay, Cazé TV, Amazon Prime Video, etc.).
+- Em "streaming" use apenas plataformas digitais:
+  - Globoplay: transmite Brasileirão, Copa do Brasil e seleção brasileira.
+  - Cazé TV: transmite Copa do Brasil, Libertadores e Sul-Americana ao vivo no YouTube. Use "Cazé TV".
+  - Amazon Prime Video: transmite alguns jogos do Brasileirão.
 - Se não tiver certeza, use [].
 
 Jogos:

@@ -112,8 +112,25 @@ export class App implements OnInit, OnDestroy {
     return `${data}_${mandante}_${visitante}`;
   }
 
+  private readonly STREAMING_URLS: Record<string, string> = {
+    'Globoplay':          'https://globoplay.globo.com',
+    'Cazé TV':            'https://www.youtube.com/@CazeTVOficial',
+    'CazéTV':             'https://www.youtube.com/@CazeTVOficial',
+    'Amazon Prime Video': 'https://www.primevideo.com',
+    'Prime Video':        'https://www.primevideo.com',
+    'Disney+':            'https://www.disneyplus.com/pt-br',
+    'DAZN':               'https://www.dazn.com/pt-BR',
+    'TNT Sports':         'https://tntbrasil.com.br',
+    'ESPN':               'https://www.espn.com.br',
+  };
+
+  getStreamingUrl(plataforma: string): string | null {
+    return this.STREAMING_URLS[plataforma] ?? null;
+  }
+
   private atualizarPlacar(): void {
-    if (!this.temJogoAoVivo()) return;
+    const temVivo = this.jogosFiltrados().some(j => this.eAoVivo(j));
+    if (!temVivo) return;
     this.jogosService.getPlacar().subscribe({
       next: (lista) => {
         const map = new Map<string, Placar>();

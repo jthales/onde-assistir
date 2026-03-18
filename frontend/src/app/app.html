@@ -133,7 +133,11 @@
                     </span>
                     <div class="badges">
                       @for (plataforma of jogo.streaming; track plataforma) {
-                        <span class="badge badge-streaming">{{ plataforma }}</span>
+                        @if (getStreamingUrl(plataforma); as url) {
+                          <a [href]="url" target="_blank" rel="noopener" class="badge badge-streaming badge-streaming--link">{{ plataforma }}</a>
+                        } @else {
+                          <span class="badge badge-streaming">{{ plataforma }}</span>
+                        }
                       }
                     </div>
                   </div>
