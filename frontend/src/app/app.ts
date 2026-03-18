@@ -1,7 +1,7 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { JogosService } from './services/jogos.service';
-import { Jogo } from './models/jogo';
+import { Jogo, Placar } from './models/jogo';
 import { teamInitials } from './team-logos';
 
 declare global {
@@ -20,12 +20,14 @@ function gaPush(event: string, params: Record<string, any> = {}): void {
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App implements OnInit {
+export class App implements OnInit, OnDestroy {
   jogos = signal<Jogo[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
   timeSelecionado = signal<string>('');
   showConsentBanner = signal(localStorage.getItem('ga_consent') === null);
+  placares = signal<Map<string, Placar>>(new Map());
+  private pollingInterval?: ReturnType<typeof setInterval>;
 
   times = computed(() => {
     const map = new Map<string, string>();
@@ -46,6 +48,8 @@ export class App implements OnInit {
     );
   });
 
+  temJogoAoVivo = computed(() => this.jogosFiltrados().some(j => this.eAoVivo(j)));
+
   constructor(private jogosService: JogosService) {}
 
   ngOnInit(): void {
@@ -57,6 +61,8 @@ export class App implements OnInit {
         this.jogos.set(sorted);
         this.loading.set(false);
         gaPush('jogos_carregados', { total_jogos: sorted.length });
+        this.atualizarPlacar();
+        this.pollingInterval = setInterval(() => this.atualizarPlacar(), 30_000);
       },
       error: (err) => {
         if (err?.status === 429) {
@@ -94,7 +100,32 @@ export class App implements OnInit {
     this.showConsentBanner.set(false);
   }
 
+  ngOnDestroy(): void {
+    clearInterval(this.pollingInterval);
+  }
+
   getInitials = teamInitials;
+
+  private placarKey(mandante: string, visitante: string, data: string): string {
+    return `${data}_${mandante}_${visitante}`;
+  }
+
+  private atualizarPlacar(): void {
+    if (!this.temJogoAoVivo()) return;
+    this.jogosService.getPlacar().subscribe({
+      next: (lista) => {
+        const map = new Map<string, Placar>();
+        for (const p of lista) {
+          map.set(this.placarKey(p.timeMandante, p.timeVisitante, p.data), p);
+        }
+        this.placares.set(map);
+      }
+    });
+  }
+
+  getPlacarJogo(jogo: Jogo): Placar | undefined {
+    return this.placares().get(this.placarKey(jogo.timeMandante, jogo.timeVisitante, jogo.data));
+  }
 
   formatarData(dataIso: string): string {
     if (this.eHoje(dataIso)) return 'Hoje';

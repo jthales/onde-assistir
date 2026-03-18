@@ -9,41 +9,9 @@ import * as admin from 'firebase-admin';
 import { GoogleGenAI } from '@google/genai';
 import { Jogo } from './types';
 import { db } from './firebase';
+import { espnScoreboardUrl, TEAM_NAME_MAP } from './constants';
 const ai = new GoogleGenAI({ apiKey: process.env['GEMINI_API_KEY'] ?? '' });
 const GEMINI_MODEL_ID = 'gemini-3.1-flash-lite-preview';
-function espnScoreboardUrl(): string {
-  const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '');
-  const today = new Date();
-  const in7days = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-  return `https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/scoreboard?dates=${fmt(today)}-${fmt(in7days)}`;
-}
-
-// Normaliza nomes de times da ESPN para os nossos nomes padrão
-const TEAM_NAME_MAP: Record<string, string> = {
-  'Athletico-PR':    'Athletico Paranaense',
-  'Atlético-MG':     'Atlético Mineiro',
-  'Atlético Mineiro':'Atlético Mineiro',
-  'Vasco da Gama':   'Vasco',
-  'Flamengo':        'Flamengo',
-  'Palmeiras':       'Palmeiras',
-  'Botafogo':        'Botafogo',
-  'Corinthians':     'Corinthians',
-  'São Paulo':       'São Paulo',
-  'Santos':          'Santos',
-  'Grêmio':          'Grêmio',
-  'Internacional':   'Internacional',
-  'Fluminense':      'Fluminense',
-  'Cruzeiro':        'Cruzeiro',
-  'Bahia':           'Bahia',
-  'Fortaleza':       'Fortaleza',
-  'Red Bull Bragantino': 'Red Bull Bragantino',
-  'RB Bragantino':   'Red Bull Bragantino',
-  'Mirassol':        'Mirassol',
-  'Sport Recife':    'Sport Recife',
-  'Sport':           'Sport Recife',
-  'Juventude':       'Juventude',
-  'Vitória':         'Vitória',
-};
 
 const LEAGUE_NAME_MAP: Record<string, string> = {
   'Brazilian Serie A':        'Brasileirão Série A',

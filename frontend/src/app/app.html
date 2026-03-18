@@ -77,7 +77,16 @@
                 <span class="time-label">Casa</span>
               </div>
               <div class="vs-col">
-                <span class="vs">VS</span>
+                @if (eAoVivo(jogo) && getPlacarJogo(jogo); as placar) {
+                  <div class="placar-ao-vivo">
+                    <span class="placar-numeros">{{ placar.placarMandante ?? '-' }} – {{ placar.placarVisitante ?? '-' }}</span>
+                    @if (placar.tempo) {
+                      <span class="placar-tempo">{{ placar.tempo }}</span>
+                    }
+                  </div>
+                } @else {
+                  <span class="vs">VS</span>
+                }
               </div>
               <div class="time-col visitante-col">
                 <div class="time-logo">

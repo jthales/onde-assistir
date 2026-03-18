@@ -1,3 +1,13 @@
+export interface Placar {
+  timeMandante: string;
+  timeVisitante: string;
+  data: string;
+  placarMandante: number | null;
+  placarVisitante: number | null;
+  status: 'em-andamento' | 'encerrado' | 'agendado';
+  tempo?: string;
+}
+
 export interface Jogo {
   rodada: number;
   timeMandante: string;
