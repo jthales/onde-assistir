@@ -8,15 +8,7 @@ import 'dotenv/config';
 import * as admin from 'firebase-admin';
 import { GoogleGenAI } from '@google/genai';
 import { Jogo } from './types';
-import * as serviceAccount from '../serviceAccount.json';
-
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
-  });
-}
-
-const db = admin.firestore();
+import { db } from './firebase';
 const ai = new GoogleGenAI({ apiKey: process.env['GEMINI_API_KEY'] ?? '' });
 const GEMINI_MODEL_ID = 'gemini-3.1-flash-lite-preview';
 function espnScoreboardUrl(): string {
@@ -184,7 +176,7 @@ async function clearCollection(ref: admin.firestore.CollectionReference): Promis
   const snap = await ref.limit(100).get();
   if (snap.empty) return;
   const batch = db.batch();
-  snap.docs.forEach((d) => batch.delete(d.ref));
+  snap.docs.forEach((doc) => batch.delete(doc.ref));
   await batch.commit();
   await clearCollection(ref);
 }

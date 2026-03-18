@@ -1,17 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import * as admin from 'firebase-admin';
 import { Jogo } from './types';
-import * as serviceAccount from '../serviceAccount.json';
-
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
-  });
-}
-
-const db = admin.firestore();
+import { db } from './firebase';
 const app = express();
 const PORT = process.env['PORT'] ?? 3000;
 
