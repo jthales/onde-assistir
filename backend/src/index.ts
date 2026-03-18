@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import 'dotenv/config'; // load env vars
 import express from 'express';
 import cors from 'cors';
 import { Jogo } from './types';
