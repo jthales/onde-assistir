@@ -103,6 +103,27 @@
               </div>
             </div>
 
+            @if (eAoVivo(jogo) && getPlacarJogo(jogo); as placar) {
+              @if (placar.gols.length > 0) {
+                <div class="gols-section">
+                  <div class="gols-col gols-col--mandante">
+                    @for (g of placar.gols; track g.nome + g.minuto) {
+                      @if (g.time === 'mandante') {
+                        <span class="gol-item">⚽ {{ g.nome }} {{ g.minuto }}{{ g.penalti ? ' (P)' : g.contra ? ' (CG)' : '' }}</span>
+                      }
+                    }
+                  </div>
+                  <div class="gols-col gols-col--visitante">
+                    @for (g of placar.gols; track g.nome + g.minuto) {
+                      @if (g.time === 'visitante') {
+                        <span class="gol-item">{{ g.nome }} {{ g.minuto }}{{ g.penalti ? ' (P)' : g.contra ? ' (CG)' : '' }} ⚽</span>
+                      }
+                    }
+                  </div>
+                </div>
+              }
+            }
+
             @if (jogo.estadio) {
               <div class="estadio">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>

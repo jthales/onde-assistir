@@ -1,3 +1,11 @@
+export interface Gol {
+  nome: string;
+  time: 'mandante' | 'visitante';
+  minuto: string;
+  penalti: boolean;
+  contra: boolean;
+}
+
 export interface Placar {
   timeMandante: string;
   timeVisitante: string;
@@ -7,6 +15,7 @@ export interface Placar {
   status: 'em-andamento' | 'encerrado' | 'agendado';
   tempo?: string;
   periodo?: string;
+  gols: Gol[];
 }
 
 export interface Odds {

@@ -76,6 +76,21 @@ app.get('/api/placar', async (_req, res) => {
 
       const dataJogo = new Date(event.date).toISOString().slice(0, 10);
 
+      const gols = (comp?.details ?? [])
+        .filter((d: any) => d.scoringPlay === true)
+        .map((d: any) => {
+          const scorer = d.athletesInvolved?.[0];
+          const teamId = d.team?.id;
+          const isHome = home?.team?.id === teamId;
+          return {
+            nome:    scorer?.shortName ?? scorer?.displayName ?? 'Desconhecido',
+            time:    isHome ? 'mandante' : 'visitante',
+            minuto:  d.clock?.displayValue ?? '',
+            penalti: d.penaltyKick === true,
+            contra:  d.ownGoal === true,
+          };
+        });
+
       return {
         timeMandante:    TEAM_NAME_MAP[home?.team?.displayName] ?? home?.team?.displayName ?? '',
         timeVisitante:   TEAM_NAME_MAP[away?.team?.displayName] ?? away?.team?.displayName ?? '',
@@ -85,6 +100,7 @@ app.get('/api/placar', async (_req, res) => {
         status,
         tempo:           event.status?.displayClock ?? undefined,
         periodo:         event.status?.period ? `${event.status.period}T` : undefined,
+        gols,
       };
     });
 
