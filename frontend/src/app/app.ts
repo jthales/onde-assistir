@@ -5,12 +5,13 @@ import { Jogo } from './models/jogo';
 import { teamInitials } from './team-logos';
 
 declare global {
-  interface Window { dataLayer: any[]; }
+  interface Window { gtag: (...args: any[]) => void; }
 }
 
-function gtmPush(event: string, params: Record<string, any> = {}): void {
-  window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push({ event, ...params });
+function gaPush(event: string, params: Record<string, any> = {}): void {
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', event, params);
+  }
 }
 
 @Component({
@@ -54,7 +55,7 @@ export class App implements OnInit {
         );
         this.jogos.set(sorted);
         this.loading.set(false);
-        gtmPush('jogos_carregados', { total_jogos: sorted.length });
+        gaPush('jogos_carregados', { total_jogos: sorted.length });
       },
       error: (err) => {
         if (err?.status === 429) {
@@ -67,7 +68,7 @@ export class App implements OnInit {
           this.error.set('Não foi possível carregar os jogos. Tente novamente mais tarde.');
         }
         this.loading.set(false);
-        gtmPush('jogos_erro', { status: err?.status });
+        gaPush('jogos_erro', { status: err?.status });
       }
     });
   }
@@ -75,9 +76,9 @@ export class App implements OnInit {
   selecionarTime(nome: string): void {
     this.timeSelecionado.set(nome);
     if (nome) {
-      gtmPush('filtro_time', { time: nome });
+      gaPush('filtro_time', { time: nome });
     } else {
-      gtmPush('filtro_todos');
+      gaPush('filtro_todos');
     }
   }
 
