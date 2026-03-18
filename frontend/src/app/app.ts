@@ -25,6 +25,7 @@ export class App implements OnInit {
   loading = signal(true);
   error = signal<string | null>(null);
   timeSelecionado = signal<string>('');
+  showConsentBanner = signal(localStorage.getItem('ga_consent') === null);
 
   times = computed(() => {
     const map = new Map<string, string>();
@@ -80,6 +81,17 @@ export class App implements OnInit {
     } else {
       gaPush('filtro_todos');
     }
+  }
+
+  aceitarConsentimento(): void {
+    localStorage.setItem('ga_consent', 'granted');
+    window.gtag('consent', 'update', { analytics_storage: 'granted' });
+    this.showConsentBanner.set(false);
+  }
+
+  recusarConsentimento(): void {
+    localStorage.setItem('ga_consent', 'declined');
+    this.showConsentBanner.set(false);
   }
 
   getInitials = teamInitials;

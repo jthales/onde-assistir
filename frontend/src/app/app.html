@@ -139,4 +139,18 @@
     Informações geradas por IA. Verifique nos canais oficiais.
   </footer>
 
+  @if (showConsentBanner()) {
+    <div class="consent-banner" role="dialog" aria-label="Aviso de cookies">
+      <div class="consent-content">
+        <p class="consent-text">
+          Usamos cookies de analytics para entender como o site é usado e melhorá-lo. Nenhum dado pessoal é vendido.
+        </p>
+        <div class="consent-actions">
+          <button class="consent-btn consent-btn--decline" (click)="recusarConsentimento()">Recusar</button>
+          <button class="consent-btn consent-btn--accept" (click)="aceitarConsentimento()">Aceitar</button>
+        </div>
+      </div>
+    </div>
+  }
+
 </div>
