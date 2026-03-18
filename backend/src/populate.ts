@@ -102,8 +102,16 @@ async function fetchBroadcastFromGemini(fixtures: EspnFixture[]): Promise<Gemini
 
   const prompt = `Você é um especialista em transmissões de futebol brasileiro.
 
-Para cada jogo abaixo, informe os canais de TV e plataformas de streaming que vão transmitir no Brasil:
+Para cada jogo abaixo, informe os canais de TV e plataformas de streaming que vão transmitir no Brasil.
 
+Atenção:
+- "Globo" = TV aberta e gratuita. Use apenas se o jogo for na TV Globo aberta.
+- "SporTV" / "SporTV 2" / "SporTV 3" = TV fechada por assinatura. Não confunda com Globo.
+- "Premiere" = pay-per-view separado do SporTV.
+- Em "streaming" use apenas plataformas digitais (Globoplay, Cazé TV, Amazon Prime Video, etc.).
+- Se não tiver certeza, use [].
+
+Jogos:
 ${jogosList}
 
 Retorne um array JSON, um objeto por jogo, na mesma ordem:
@@ -111,11 +119,11 @@ Retorne um array JSON, um objeto por jogo, na mesma ordem:
   {
     "timeMandante": "<nome igual ao da lista>",
     "timeVisitante": "<nome igual ao da lista>",
-    "canal": ["<canal TV aberta/fechada>"],
-    "streaming": ["<plataforma de streaming>"]
+    "canal": ["<TV aberta ou fechada>"],
+    "streaming": ["<plataforma digital>"]
   }
 ]
-Se não souber, use [] no campo. Retorne apenas o JSON.`;
+Retorne apenas o JSON.`;
 
   const response = await ai.models.generateContent({
     model: GEMINI_MODEL_ID,
