@@ -70,9 +70,12 @@ app.get('/api/placar', async (_req, res) => {
       const away = comp?.competitors?.find((c: any) => c.homeAway === 'away');
 
       const statusName: string = event.status?.type?.name ?? '';
-      const status =
-        statusName === 'In Progress' ? 'em-andamento' :
-        statusName === 'Final'       ? 'encerrado'    : 'agendado';
+      const STATUS_EM_ANDAMENTO = new Set([
+        'In Progress', 'Halftime', 'End Of Period', 'Overtime', 'Shootout',
+      ]);
+      const status: 'em-andamento' | 'encerrado' | 'agendado' =
+        STATUS_EM_ANDAMENTO.has(statusName) ? 'em-andamento' :
+        statusName === 'Final'              ? 'encerrado'    : 'agendado';
 
       const dataJogo = new Date(event.date).toISOString().slice(0, 10);
 
@@ -99,7 +102,9 @@ app.get('/api/placar', async (_req, res) => {
         placarVisitante: away?.score != null ? Number(away.score) : null,
         status,
         tempo:           event.status?.displayClock ?? undefined,
-        periodo:         event.status?.period ? `${event.status.period}T` : undefined,
+        periodo:         statusName === 'Halftime' ? 'Intervalo'
+                       : event.status?.period   ? `${event.status.period}T`
+                       : undefined,
         gols,
       };
     });

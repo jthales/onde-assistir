@@ -185,10 +185,14 @@ export class App implements OnInit, OnDestroy {
   }
 
   eAoVivo(jogo: Jogo): boolean {
+    // Prioridade: status autoritativo da ESPN
+    const placar = this.getPlacarJogo(jogo);
+    if (placar) return placar.status === 'em-andamento';
+
+    // Fallback por horário (antes do primeiro poll ou jogo sem dados ESPN)
     if (!jogo.hora || jogo.hora === '00:00') return false;
-    // hora está em BRT → monta datetime com offset -03:00
     const inicio = new Date(`${jogo.data}T${jogo.hora}:00-03:00`);
-    const fim = new Date(inicio.getTime() + 2 * 60 * 60 * 1000); // +2h
+    const fim = new Date(inicio.getTime() + 2 * 60 * 60 * 1000);
     const agora = new Date();
     return agora >= inicio && agora < fim;
   }
