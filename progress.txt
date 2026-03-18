@@ -29,19 +29,119 @@
 ### Placar ao vivo com cache
 - Nova rota GET /api/placar no backend
 - Consulta ESPN API em tempo real (mesma fonte do populate)
-- Cache em memória no servidor com TTL de 30s → máximo 2 chamadas/min à ESPN,
-  independente de quantos usuários estejam acessando simultaneamente
+- Cache em memória no servidor com TTL de 10s
 - Fallback: se a ESPN falhar, serve o cache antigo
-- Frontend faz polling a cada 30s, mas SOMENTE quando temJogoAoVivo() é true
-- Quando ao vivo: "VS" é substituído pelo placar (ex: 2 – 1) em vermelho + tempo de jogo (ex: 45')
+- Frontend faz polling a cada 10s, mas SOMENTE quando há jogo ao vivo (eAoVivo = true)
+- Quando ao vivo: "VS" é substituído pelo placar (ex: 2 – 1) + tempo de jogo (ex: 45')
+- Período exibido: "1T", "2T" ou "Intervalo"
+- Placar não fica em vermelho (cor neutra #111827)
 - ngOnDestroy limpa o interval ao sair da página
 - Constantes compartilhadas (TEAM_NAME_MAP, espnScoreboardUrl) extraídas para backend/src/constants.ts
 - Arquivos alterados/criados:
   - backend/src/constants.ts (novo)
   - backend/src/index.ts
   - backend/src/populate.ts
-  - frontend/src/app/models/jogo.ts (interface Placar)
+  - frontend/src/app/models/jogo.ts (interface Placar com periodo e gols)
   - frontend/src/app/services/jogos.service.ts (método getPlacar)
   - frontend/src/app/app.ts
   - frontend/src/app/app.html
   - frontend/src/app/app.css
+
+---
+
+### Barra verde animada nos jogos ao vivo
+- Card com jogo ao vivo exibe uma barra verde no topo (animação sweep esquerda → direita)
+- Implementado como <div class="barra-vivo"> (elemento real, não ::before) para funcionar com position: absolute
+- A barra fica acima do card, não sobreposta ao conteúdo
+
+---
+
+### Artilheiros ao vivo
+- Backend extrai gols do campo comp.details da ESPN (scoringPlay === true)
+- Cada gol contém: nome do jogador (shortName), minuto, time (mandante/visitante), pênalti, contra
+- Frontend exibe seção de gols abaixo do placar quando o jogo está ao vivo
+- Layout em duas colunas: mandante à esquerda (⚽ Nome Min), visitante à direita (Nome Min ⚽)
+- Exibe indicadores: (P) para pênalti, (CG) para contra
+- Interface Gol adicionada em frontend/src/app/models/jogo.ts
+- Arquivos alterados: backend/src/index.ts, models/jogo.ts, app.html, app.css
+
+---
+
+### Odds Bet365 via ESPN Core API
+- Novo endpoint GET /api/odds no backend
+- Para cada jogo da semana, busca odds em paralelo via ESPN Core API:
+  https://sports.core.api.espn.com/v2/sports/soccer/leagues/bra.1/events/{id}/competitions/{id}/odds
+- Filtra pelo provider Bet365 (ID 2000)
+- Cache de 5 minutos (odds mudam menos que placar)
+- Retorna: mandante, empate, visitante (number | null)
+- Frontend exibe bloco "Bet365 · 1.85 · 3.40 · 4.20" abaixo do onde-assistir nos cards
+- Se todos os campos forem null, o bloco não é exibido
+- Polling a cada 5 minutos no frontend (independente de jogo ao vivo)
+- Interface Odds adicionada em frontend/src/app/models/jogo.ts
+- Arquivos alterados: backend/src/index.ts, models/jogo.ts, jogos.service.ts, app.ts, app.html, app.css
+
+---
+
+### Links de streaming clicáveis
+- Badges de plataformas de streaming são links clicáveis (<a> com target="_blank")
+- Mapa de URLs em app.ts: Globoplay, Cazé TV (YouTube), Amazon Prime Video, Disney+, DAZN, TNT Sports, ESPN
+- Quando não há URL mapeada, exibe <span> sem link
+
+---
+
+### Polling automático ao vivo
+- Quando o usuário está na página e um jogo começa, o polling inicia automaticamente
+- Correção de bug: computed() cacheia new Date(), então eAoVivo() era avaliada inline dentro do interval
+- atualizarPlacar() avalia jogosFiltrados().some(j => eAoVivo(j)) diretamente, sem computed
+
+---
+
+### Ordenação dos jogos
+- Jogos ordenados do mais próximo para o mais distante
+- Ordenação usa datetime completo: data + hora em BRT (offset -03:00)
+- Jogos sem hora definida (00:00) vão para o final
+
+---
+
+### Gemini prompt melhorado
+- Distinção entre Globo (TV aberta) e SporTV/Premiere (TV fechada/pay-per-view)
+- Cazé TV reconhecida como streaming no YouTube (Copa do Brasil, Libertadores, Sul-Americana)
+- Regras simplificadas para evitar confusão do modelo
+
+---
+
+### Favicon completo
+- Pasta public/favicon/ com todos os tamanhos necessários:
+  - apple-touch-icon: 57, 60, 72, 76, 114, 120, 144, 152, 180px
+  - PNG padrão: 16x16, 32x32, 96x96, 192x192
+  - favicon.ico (fallback)
+  - Android icons, MS icons (browserconfig.xml), manifest.json
+- index.html atualizado com todas as tags de favicon, manifest e theme-color (#14532d)
+- manifest.json: nome atualizado para "Onde Assistir", caminhos corrigidos para /favicon/
+- browserconfig.xml: caminhos corrigidos para /favicon/, TileColor verde
+- Arquivos antigos favicon.ico e favicon.svg da raiz removidos
+
+---
+
+### SCSS com mixins de flexbox
+- app.css convertido para app.scss (SCSS nativo Angular)
+- Dois mixins criados no topo do arquivo:
+  - flex($gap, $align, $justify, $wrap): flex row com defaults center/flex-start
+  - flex-col($gap, $align): flex column com defaults stretch
+- Aplicados em ~25 seletores que repetiam display/align-items/gap
+- Nesting SCSS usado para hover, pseudo-seletores e SVG inline
+- Budget CSS atualizado em angular.json (warning 10kB, error 12kB)
+- Arquivo app.ts atualizado para referenciar app.scss
+
+---
+
+### Correção: jogos no intervalo (Halftime)
+- Problema: ESPN retorna statusName='Halftime' (distinto de 'In Progress')
+- Backend mapeava Halftime para 'agendado' → placar não exibia corretamente
+- Fix backend: Set com todos os estados em andamento:
+  'In Progress', 'Halftime', 'End Of Period', 'Overtime', 'Shootout' → 'em-andamento'
+- Fix backend: periodo retorna 'Intervalo' quando statusName='Halftime'
+  (antes retornava '2T' incorreto, pois event.status.period já vale 2 no intervalo)
+- eAoVivo() mantido como lógica puramente por horário (janela de 2h)
+  (tentativa de usar status ESPN criava dependência circular que parava o polling)
+- Arquivos alterados: backend/src/index.ts
