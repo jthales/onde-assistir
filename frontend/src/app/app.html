@@ -1,69 +1,140 @@
-<div class="container">
-  <header class="header">
-    <h1>Brasileirão Série A</h1>
-    <p class="subtitle">Jogos da semana</p>
+<div class="page">
+
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">2026</div>
+      <h1 class="hero-title">Onde <span class="hero-title-accent">Assistir</span></h1>
+      <p class="hero-subtitle">Jogos de futebol da semana no Brasil</p>
+    </div>
   </header>
 
-  <div class="filtro-wrapper">
-    <select class="filtro-select" [value]="timeSelecionado()" (change)="timeSelecionado.set($any($event.target).value)">
-      <option value="">Todos os times</option>
-      @for (time of times; track time) {
-        <option [value]="time">{{ time }}</option>
-      }
-    </select>
-  </div>
+  <main class="container">
 
-  @if (loading()) {
-    <div class="spinner-wrapper">
-      <div class="spinner"></div>
-      <p>Carregando jogos...</p>
-    </div>
-  } @else if (error()) {
-    <div class="error-message">
-      <span class="error-icon">⚠️</span>
-      <p>{{ error() }}</p>
-    </div>
-  } @else if (jogosFiltrados().length === 0) {
-    <div class="empty-message">
-      <p>Nenhum jogo encontrado para esta semana.</p>
-    </div>
-  } @else {
-    <div class="jogos-grid">
-      @for (jogo of jogosFiltrados(); track jogo.timeMandante + jogo.data) {
-        <div class="jogo-card">
-          <div class="jogo-rodada">Rodada {{ jogo.rodada }}</div>
-          <div class="jogo-times">
-            <span class="time mandante">{{ jogo.timeMandante }}</span>
-            <span class="vs">×</span>
-            <span class="time visitante">{{ jogo.timeVisitante }}</span>
-          </div>
-          <div class="jogo-info">
-            <span class="jogo-data">{{ formatarData(jogo.data) }}</span>
-            <span class="jogo-hora">{{ jogo.hora }}</span>
-          </div>
-          <div class="jogo-estadio">{{ jogo.estadio }}</div>
-          <div class="onde-assistir">
-            <span class="onde-label">Onde assistir</span>
-            @if (jogo.canal.length === 0 && jogo.streaming.length === 0) {
-              <span class="badge badge-confirmar">A confirmar</span>
-            } @else {
-              <div class="badges">
-                @for (canal of jogo.canal; track canal) {
-                  <span class="badge badge-tv">{{ canal }}</span>
-                }
-                @for (plataforma of jogo.streaming; track plataforma) {
-                  <span class="badge badge-streaming">{{ plataforma }}</span>
+    @if (times().length > 0) {
+      <div class="times-picker">
+        <button class="time-chip" [class.ativo]="timeSelecionado() === ''" (click)="timeSelecionado.set('')">
+          Todos
+        </button>
+        @for (time of times(); track time.nome) {
+          <button class="time-chip" [class.ativo]="timeSelecionado() === time.nome" (click)="timeSelecionado.set(time.nome)" [title]="time.nome">
+            @if (time.logo) {
+              <img [src]="time.logo" [alt]="time.nome" class="chip-logo" (error)="$any($event.target).style.display='none'">
+            }
+            <span class="chip-initials">{{ getInitials(time.nome) }}</span>
+          </button>
+        }
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="state-wrapper">
+        <div class="spinner"></div>
+        <p class="state-text">Carregando jogos...</p>
+      </div>
+    } @else if (error()) {
+      <div class="state-error">
+        <div class="state-error-icon">⚠️</div>
+        <p>{{ error() }}</p>
+      </div>
+    } @else if (jogosFiltrados().length === 0) {
+      <div class="state-wrapper">
+        <p class="state-text">Nenhum jogo encontrado para esta semana.</p>
+      </div>
+    } @else {
+      <div class="jogos-grid">
+        @for (jogo of jogosFiltrados(); track jogo.timeMandante + jogo.data) {
+          <div class="jogo-card">
+            <div class="card-top">
+              <div class="card-top-left">
+                @if (jogo.campeonato) {
+                  <span class="campeonato-badge">{{ jogo.campeonato }}</span>
                 }
               </div>
-            }
-          </div>
-        </div>
-      }
-    </div>
-  }
-</div>
+              <div class="data-hora">
+                <span class="data">{{ formatarData(jogo.data) }}</span>
 
-<footer class="ai-disclaimer">
-  <span class="ai-disclaimer-icon">🤖</span>
-  Informações geradas por IA. Verifique nos canais oficiais.
-</footer>
+                @if (jogo.hora && jogo.hora !== '00:00') {
+                  <span class="hora">{{ jogo.hora }}</span>
+                }
+              </div>
+            </div>
+
+            <div class="confronto">
+              <div class="time-col">
+                <div class="time-logo">
+                  @if (jogo.logoMandante) {
+                    <img [src]="jogo.logoMandante" [alt]="jogo.timeMandante" class="logo-img" (error)="$any($event.target).style.display='none'">
+                  }
+                  <span class="logo-initials">{{ getInitials(jogo.timeMandante) }}</span>
+                </div>
+                <span class="time-nome">{{ jogo.timeMandante }}</span>
+                <span class="time-label">Casa</span>
+              </div>
+              <div class="vs-col">
+                <span class="vs">VS</span>
+              </div>
+              <div class="time-col visitante-col">
+                <div class="time-logo">
+                  @if (jogo.logoVisitante) {
+                    <img [src]="jogo.logoVisitante" [alt]="jogo.timeVisitante" class="logo-img" (error)="$any($event.target).style.display='none'">
+                  }
+                  <span class="logo-initials">{{ getInitials(jogo.timeVisitante) }}</span>
+                </div>
+                <span class="time-nome">{{ jogo.timeVisitante }}</span>
+                <span class="time-label">Fora</span>
+              </div>
+            </div>
+
+            @if (jogo.estadio) {
+              <div class="estadio">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                {{ jogo.estadio }}
+              </div>
+            }
+
+            <div class="onde-assistir">
+              <span class="onde-label">Onde assistir</span>
+              @if (jogo.canal.length === 0 && jogo.streaming.length === 0) {
+                <span class="badge badge-confirmar">A confirmar</span>
+              } @else {
+                @if (jogo.canal.length > 0) {
+                  <div class="onde-row">
+                    <span class="onde-tipo">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>
+                      TV
+                    </span>
+                    <div class="badges">
+                      @for (canal of jogo.canal; track canal) {
+                        <span class="badge badge-tv">{{ canal }}</span>
+                      }
+                    </div>
+                  </div>
+                }
+                @if (jogo.streaming.length > 0) {
+                  <div class="onde-row">
+                    <span class="onde-tipo">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+                      Streaming
+                    </span>
+                    <div class="badges">
+                      @for (plataforma of jogo.streaming; track plataforma) {
+                        <span class="badge badge-streaming">{{ plataforma }}</span>
+                      }
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+  </main>
+
+  <footer class="ai-disclaimer">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Informações geradas por IA. Verifique nos canais oficiais.
+  </footer>
+
+</div>

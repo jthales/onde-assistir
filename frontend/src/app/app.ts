@@ -2,6 +2,7 @@ import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { JogosService } from './services/jogos.service';
 import { Jogo } from './models/jogo';
+import { teamInitials } from './team-logos';
 
 @Component({
   selector: 'app-root',
@@ -15,13 +16,16 @@ export class App implements OnInit {
   error = signal<string | null>(null);
   timeSelecionado = signal<string>('');
 
-  times = [
-    'Athletico Paranaense', 'Atlético Mineiro', 'Bahia', 'Botafogo',
-    'Corinthians', 'Cruzeiro', 'Flamengo', 'Fluminense', 'Fortaleza',
-    'Grêmio', 'Internacional', 'Juventude', 'Mirassol', 'Palmeiras',
-    'Red Bull Bragantino', 'Santos', 'São Paulo', 'Sport Recife',
-    'Vasco', 'Vitória'
-  ];
+  times = computed(() => {
+    const map = new Map<string, string>();
+    for (const j of this.jogos()) {
+      if (!map.has(j.timeMandante)) map.set(j.timeMandante, j.logoMandante ?? '');
+      if (!map.has(j.timeVisitante)) map.set(j.timeVisitante, j.logoVisitante ?? '');
+    }
+    return Array.from(map.entries())
+      .map(([nome, logo]) => ({ nome, logo }))
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+  });
 
   jogosFiltrados = computed(() => {
     const time = this.timeSelecionado();
@@ -42,12 +46,22 @@ export class App implements OnInit {
         this.jogos.set(sorted);
         this.loading.set(false);
       },
-      error: () => {
-        this.error.set('Não foi possível carregar os jogos. Tente novamente mais tarde.');
+      error: (err) => {
+        if (err?.status === 429) {
+          const delay = err?.error?.retryDelay;
+          const msg = delay
+            ? `Muitas requisições à IA. Tente novamente em ${delay}.`
+            : 'Muitas requisições à IA. Aguarde alguns instantes e tente novamente.';
+          this.error.set(msg);
+        } else {
+          this.error.set('Não foi possível carregar os jogos. Tente novamente mais tarde.');
+        }
         this.loading.set(false);
       }
     });
   }
+
+  getInitials = teamInitials;
 
   formatarData(dataIso: string): string {
     const data = new Date(dataIso + 'T00:00:00');
