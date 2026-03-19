@@ -95,7 +95,7 @@ async function salvarResultado(placar: any): Promise<void> {
   try {
     await db.collection('resultados').doc(id).set({
       ...placar,
-      savedAt: new Date().toISOString(),
+      savedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
     });
     resultadosCacheTime = 0; // invalida cache para próxima leitura
   } catch (e) {

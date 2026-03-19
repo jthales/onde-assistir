@@ -56,7 +56,9 @@
                 }
               </div>
               <div class="data-hora">
-                <span class="data" [class.data--hoje]="eHoje(jogo.data)">{{ formatarData(jogo.data) }}</span>
+                @if (!eAoVivo(jogo) && !eEncerrado(jogo)) {
+                  <span class="data" [class.data--hoje]="eHoje(jogo.data)">{{ formatarData(jogo.data) }}</span>
+                }
 
                 @if (eAoVivo(jogo)) {
                   <span class="ao-vivo-badge">
