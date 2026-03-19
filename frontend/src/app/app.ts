@@ -55,7 +55,7 @@ export class App implements OnInit, OnDestroy {
   private podeTerPlacar(jogo: Jogo): boolean {
     if (!jogo.hora || jogo.hora === '00:00') return false;
     const inicio = new Date(`${jogo.data}T${jogo.hora}:00-03:00`);
-    const fim = new Date(inicio.getTime() + 4 * 60 * 60 * 1000);
+    const fim = new Date(inicio.getTime() + 6 * 60 * 60 * 1000);
     return new Date() >= inicio && new Date() < fim;
   }
 

@@ -52,6 +52,47 @@ app.get('/api/jogos', async (_req, res) => {
 let placarCache: { dados: any[]; fetchedAt: number } | null = null;
 const CACHE_TTL_MS = 10_000;
 
+// Persistência de resultados finais no Firestore
+function slugify(s: string): string {
+  return s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
+function resultadoDocId(data: string, mandante: string, visitante: string): string {
+  return `${data}-${slugify(mandante)}-${slugify(visitante)}`;
+}
+
+let resultadosCache: any[] = [];
+let resultadosCacheTime = 0;
+const RESULTADOS_TTL_MS = 60_000;
+const jogosJaSalvos = new Set<string>();
+
+async function getSavedResultados(): Promise<any[]> {
+  if (Date.now() - resultadosCacheTime < RESULTADOS_TTL_MS) return resultadosCache;
+  try {
+    const snap = await db.collection('resultados').get();
+    resultadosCache = snap.docs.map(d => d.data());
+    resultadosCacheTime = Date.now();
+  } catch (e) {
+    console.error('Erro ao ler resultados do Firestore:', e);
+  }
+  return resultadosCache;
+}
+
+async function salvarResultado(placar: any): Promise<void> {
+  const id = resultadoDocId(placar.data, placar.timeMandante, placar.timeVisitante);
+  if (jogosJaSalvos.has(id)) return;
+  jogosJaSalvos.add(id);
+  try {
+    await db.collection('resultados').doc(id).set({
+      ...placar,
+      savedAt: new Date().toISOString(),
+    });
+    resultadosCacheTime = 0; // invalida cache para próxima leitura
+  } catch (e) {
+    jogosJaSalvos.delete(id); // permite retry em caso de falha
+    console.error('Erro ao salvar resultado:', e);
+  }
+}
+
 app.get('/api/placar', async (_req, res) => {
   const agora = Date.now();
 
@@ -109,8 +150,21 @@ app.get('/api/placar', async (_req, res) => {
       };
     });
 
-    placarCache = { dados: placares, fetchedAt: Date.now() };
-    res.json(placares);
+    // Salvar resultados encerrados no Firestore (fire-and-forget)
+    for (const p of placares) {
+      if (p.status === 'encerrado') salvarResultado(p);
+    }
+
+    // Mesclar com resultados salvos: ESPN tem prioridade
+    const savedResultados = await getSavedResultados();
+    const espnKeys = new Set(placares.map((p: any) => `${p.data}_${p.timeMandante}_${p.timeVisitante}`));
+    const extras = savedResultados.filter(
+      r => !espnKeys.has(`${r.data}_${r.timeMandante}_${r.timeVisitante}`)
+    );
+    const merged = [...placares, ...extras];
+
+    placarCache = { dados: merged, fetchedAt: Date.now() };
+    res.json(merged);
   } catch (error) {
     console.error('Erro ao buscar placares da ESPN:', error);
     if (placarCache) { res.json(placarCache.dados); return; }
