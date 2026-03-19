@@ -345,6 +345,21 @@ body {
   @include flex-col(0.15rem, center);
 }
 
+.placar-encerrado .placar-numeros {
+  color: #374151;
+}
+
+.encerrado-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
 .placar-numeros {
   font-size: 1.4rem;
   font-weight: 800;

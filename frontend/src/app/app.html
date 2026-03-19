@@ -45,7 +45,7 @@
     } @else {
       <div class="jogos-grid">
         @for (jogo of jogosFiltrados(); track jogo.timeMandante + jogo.data) {
-          <div class="jogo-card" [class.jogo-card--ao-vivo]="eAoVivo(jogo)">
+          <div class="jogo-card" [class.jogo-card--ao-vivo]="eAoVivo(jogo)" [class.jogo-card--encerrado]="eEncerrado(jogo)">
             @if (eAoVivo(jogo)) {
               <div class="barra-vivo"></div>
             }
@@ -62,6 +62,8 @@
                   <span class="ao-vivo-badge">
                     <span class="ao-vivo-dot"></span>AO VIVO
                   </span>
+                } @else if (eEncerrado(jogo)) {
+                  <span class="encerrado-badge">Encerrado</span>
                 } @else if (jogo.hora && jogo.hora !== '00:00') {
                   <span class="hora">{{ jogo.hora }}</span>
                 }
@@ -80,10 +82,10 @@
                 <span class="time-label">Casa</span>
               </div>
               <div class="vs-col">
-                @if (eAoVivo(jogo) && getPlacarJogo(jogo); as placar) {
-                  <div class="placar-ao-vivo">
+                @if ((eAoVivo(jogo) || eEncerrado(jogo)) && getPlacarJogo(jogo); as placar) {
+                  <div class="placar-ao-vivo" [class.placar-encerrado]="eEncerrado(jogo)">
                     <span class="placar-numeros">{{ placar.placarMandante ?? '-' }} – {{ placar.placarVisitante ?? '-' }}</span>
-                    @if (placar.tempo) {
+                    @if (eAoVivo(jogo) && placar.tempo) {
                       <span class="placar-tempo">{{ placar.tempo }}{{ placar.periodo ? ' · ' + placar.periodo : '' }}</span>
                     }
                   </div>
@@ -103,7 +105,7 @@
               </div>
             </div>
 
-            @if (eAoVivo(jogo) && getPlacarJogo(jogo); as placar) {
+            @if ((eAoVivo(jogo) || eEncerrado(jogo)) && getPlacarJogo(jogo); as placar) {
               @if (placar.gols.length > 0) {
                 <div class="gols-section">
                   <div class="gols-col gols-col--mandante">

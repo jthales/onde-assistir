@@ -52,6 +52,13 @@ export class App implements OnInit, OnDestroy {
 
   temJogoAoVivo = computed(() => this.jogosFiltrados().some(j => this.eAoVivo(j)));
 
+  private podeTerPlacar(jogo: Jogo): boolean {
+    if (!jogo.hora || jogo.hora === '00:00') return false;
+    const inicio = new Date(`${jogo.data}T${jogo.hora}:00-03:00`);
+    const fim = new Date(inicio.getTime() + 4 * 60 * 60 * 1000);
+    return new Date() >= inicio && new Date() < fim;
+  }
+
   constructor(private jogosService: JogosService) {}
 
   ngOnInit(): void {
@@ -134,8 +141,8 @@ export class App implements OnInit, OnDestroy {
   }
 
   private atualizarPlacar(): void {
-    const temVivo = this.jogosFiltrados().some(j => this.eAoVivo(j));
-    if (!temVivo) return;
+    const temAtivo = this.jogos().some(j => this.eAoVivo(j) || this.podeTerPlacar(j));
+    if (!temAtivo) return;
     this.jogosService.getPlacar().subscribe({
       next: (lista) => {
         const map = new Map<string, Placar>();
@@ -185,10 +192,16 @@ export class App implements OnInit, OnDestroy {
   }
 
   eAoVivo(jogo: Jogo): boolean {
+    const placar = this.getPlacarJogo(jogo);
+    if (placar) return placar.status === 'em-andamento';
     if (!jogo.hora || jogo.hora === '00:00') return false;
     const inicio = new Date(`${jogo.data}T${jogo.hora}:00-03:00`);
     const fim = new Date(inicio.getTime() + 2 * 60 * 60 * 1000);
     const agora = new Date();
     return agora >= inicio && agora < fim;
+  }
+
+  eEncerrado(jogo: Jogo): boolean {
+    return this.getPlacarJogo(jogo)?.status === 'encerrado';
   }
 }
