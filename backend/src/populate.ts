@@ -113,6 +113,7 @@ Direitos de transmissão atuais:
 - Streaming:
   - "Globoplay": transmite todos os jogos do Brasileirão, Copa do Brasil e seleção brasileira.
   - "Cazé TV": transmite ao vivo no YouTube jogos do Brasileirão Série A (jogos de grande audiência), Copa do Brasil, Libertadores e Sul-Americana. Jogos como Corinthians, Flamengo, Palmeiras, São Paulo costumam estar na Cazé TV.
+  - "Ge TV": canal do YouTube do Ge/Globo Esporte que transmite alguns jogos ao vivo gratuitamente.
   - "Amazon Prime Video": transmite alguns jogos do Brasileirão Série A.
 - Se não tiver certeza sobre um canal ou plataforma específica, use [].
 

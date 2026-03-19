@@ -171,8 +171,9 @@ export class App implements OnInit, OnDestroy {
 
   private readonly STREAMING_URLS: Record<string, string> = {
     'Globoplay':          'https://globoplay.globo.com',
-    'Cazé TV':            'https://www.youtube.com/@CazeTVOficial',
-    'CazéTV':             'https://www.youtube.com/@CazeTVOficial',
+    'Cazé TV':            'https://www.youtube.com/cazetv',
+    'CazéTV':             'https://www.youtube.com/cazetv',
+    'Ge TV':              'https://www.youtube.com/geglobo',
     'Amazon Prime Video': 'https://www.primevideo.com',
     'Prime Video':        'https://www.primevideo.com',
     'Disney+':            'https://www.disneyplus.com/pt-br',
@@ -264,7 +265,7 @@ export class App implements OnInit, OnDestroy {
     const hora = jogo.hora && jogo.hora !== '00:00' ? jogo.hora : '12:00';
     const inicio = new Date(`${jogo.data}T${hora}:00-03:00`);
     const fim = new Date(inicio.getTime() + 2 * 60 * 60 * 1000);
-    const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').slice(0, 15);
+    const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
     const startUtc = fmt(inicio);
     const endUtc = fmt(fim);
 
