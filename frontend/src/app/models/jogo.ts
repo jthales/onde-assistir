@@ -22,6 +22,7 @@ export interface Odds {
   timeMandante: string;
   timeVisitante: string;
   data: string;
+  provedor: string | null;
   mandante: number | null;
   empate: number | null;
   visitante: number | null;

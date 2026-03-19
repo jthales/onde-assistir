@@ -174,7 +174,7 @@
             @if (getOddsJogo(jogo); as o) {
               @if (o.mandante !== null || o.empate !== null || o.visitante !== null) {
                 <div class="odds-row">
-                  <span class="odds-label">Bet365</span>
+                  <span class="odds-label">{{ o.provedor ?? 'Odds' }}</span>
                   <div class="odds-values">
                     <span class="odds-item" [title]="jogo.timeMandante">{{ o.mandante | number:'1.2-2' }}</span>
                     <span class="odds-sep">·</span>
