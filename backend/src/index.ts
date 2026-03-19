@@ -111,12 +111,12 @@ app.get('/api/placar', async (_req, res) => {
       const away = comp?.competitors?.find((c: any) => c.homeAway === 'away');
 
       const statusName: string = event.status?.type?.name ?? '';
-      const STATUS_EM_ANDAMENTO = new Set([
-        'In Progress', 'Halftime', 'End Of Period', 'Overtime', 'Shootout',
-      ]);
+      const statusState: string = event.status?.type?.state ?? 'pre';
+      const statusCompleted: boolean = event.status?.type?.completed === true;
       const status: 'em-andamento' | 'encerrado' | 'agendado' =
-        STATUS_EM_ANDAMENTO.has(statusName) ? 'em-andamento' :
-        statusName === 'Final'              ? 'encerrado'    : 'agendado';
+        (statusCompleted || statusState === 'post') ? 'encerrado' :
+        statusState === 'in'                        ? 'em-andamento' :
+                                                      'agendado';
 
       const brtDate = new Date(new Date(event.date).getTime() - 3 * 60 * 60 * 1000);
       const dataJogo = brtDate.toISOString().slice(0, 10); // data BRT (não UTC)
@@ -144,7 +144,7 @@ app.get('/api/placar', async (_req, res) => {
         placarVisitante: away?.score != null ? Number(away.score) : null,
         status,
         tempo:           event.status?.displayClock ?? undefined,
-        periodo:         statusName === 'Halftime' ? 'Intervalo'
+        periodo:         (statusName === 'Halftime' || statusName === 'STATUS_HALFTIME') ? 'Intervalo'
                        : event.status?.period   ? `${event.status.period}T`
                        : undefined,
         gols,
