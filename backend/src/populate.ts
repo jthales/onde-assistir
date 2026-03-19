@@ -14,8 +14,10 @@ const ai = new GoogleGenAI({ apiKey: process.env['GEMINI_API_KEY'] ?? '' });
 const GEMINI_MODEL_ID = 'gemini-3.1-flash-lite-preview';
 
 const LEAGUE_NAME_MAP: Record<string, string> = {
-  'Brazilian Serie A':        'Brasileirão Série A',
-  'Brazil Serie A':           'Brasileirão Série A',
+  'Brasileiro Serie A':       'Brasileirão',
+  'Brazilian Serie A':        'Brasileirão',
+  'Brazil Serie A':           'Brasileirão',
+  'Brasileiro Serie B':       'Brasileirão Série B',
   'Brazilian Serie B':        'Brasileirão Série B',
   'Brazil Serie B':           'Brasileirão Série B',
   'CONMEBOL Libertadores':    'Libertadores',
@@ -97,22 +99,22 @@ async function fetchBroadcastFromGemini(fixtures: EspnFixture[]): Promise<Gemini
   if (fixtures.length === 0) return [];
 
   const jogosList = fixtures
-    .map((f, i) => `${i + 1}. ${f.timeMandante} x ${f.timeVisitante} (${f.data})`)
+    .map((f, i) => `${i + 1}. ${f.timeMandante} x ${f.timeVisitante} — ${f.campeonato} (${f.data}${f.hora ? ' ' + f.hora : ''})`)
     .join('\n');
 
   const prompt = `Você é um especialista em transmissões de futebol brasileiro.
 
 Para cada jogo abaixo, informe os canais de TV e plataformas de streaming que vão transmitir no Brasil.
 
-Atenção:
-- "Globo" = TV aberta e gratuita. Use apenas se o jogo for na TV Globo aberta.
-- "SporTV" / "SporTV 2" / "SporTV 3" = TV fechada por assinatura. Não confunda com Globo.
-- "Premiere" = pay-per-view separado do SporTV.
-- Em "streaming" use apenas plataformas digitais:
-  - Globoplay: transmite Brasileirão, Copa do Brasil e seleção brasileira.
-  - Cazé TV: transmite Copa do Brasil, Libertadores e Sul-Americana ao vivo no YouTube. Use "Cazé TV".
-  - Amazon Prime Video: transmite alguns jogos do Brasileirão.
-- Se não tiver certeza, use [].
+Direitos de transmissão atuais:
+- TV aberta: "Globo" transmite jogos selecionados do Brasileirão Série A e Copa do Brasil.
+- TV fechada: "SporTV", "SporTV 2", "SporTV 3" transmitem Brasileirão, Copa do Brasil, Libertadores e Sul-Americana.
+- Pay-per-view: "Premiere" transmite Brasileirão Série A (exceto jogos da Globo).
+- Streaming:
+  - "Globoplay": transmite todos os jogos do Brasileirão, Copa do Brasil e seleção brasileira.
+  - "Cazé TV": transmite ao vivo no YouTube jogos do Brasileirão Série A (jogos de grande audiência), Copa do Brasil, Libertadores e Sul-Americana. Jogos como Corinthians, Flamengo, Palmeiras, São Paulo costumam estar na Cazé TV.
+  - "Amazon Prime Video": transmite alguns jogos do Brasileirão Série A.
+- Se não tiver certeza sobre um canal ou plataforma específica, use [].
 
 Jogos:
 ${jogosList}
@@ -200,7 +202,7 @@ async function runPopulate(): Promise<void> {
       streaming: broadcast?.streaming ?? [],
       estadio: fixture.estadio,
       campeonato: fixture.campeonato,
-      lastUpdated: new Date().toISOString(),
+      lastUpdated: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
     };
 
     batch.set(db.collection('jogos').doc(jogo.id), jogo, { merge: true });
@@ -209,7 +211,7 @@ async function runPopulate(): Promise<void> {
   }
 
   batch.set(db.collection('meta').doc('lastUpdated'), {
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
     totalJogos: total,
   });
 
