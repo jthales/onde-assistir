@@ -118,7 +118,8 @@ app.get('/api/placar', async (_req, res) => {
         STATUS_EM_ANDAMENTO.has(statusName) ? 'em-andamento' :
         statusName === 'Final'              ? 'encerrado'    : 'agendado';
 
-      const dataJogo = new Date(event.date).toISOString().slice(0, 10);
+      const brtDate = new Date(new Date(event.date).getTime() - 3 * 60 * 60 * 1000);
+      const dataJogo = brtDate.toISOString().slice(0, 10); // data BRT (não UTC)
 
       const gols = (comp?.details ?? [])
         .filter((d: any) => d.scoringPlay === true)
@@ -196,7 +197,8 @@ app.get('/api/odds', async (_req, res) => {
         const away = comp?.competitors?.find((c: any) => c.homeAway === 'away');
         const eventId = event.id;
         const compId = comp?.id ?? eventId;
-        const dataJogo = new Date(event.date).toISOString().slice(0, 10);
+        const brtDate = new Date(new Date(event.date).getTime() - 3 * 60 * 60 * 1000);
+      const dataJogo = brtDate.toISOString().slice(0, 10); // data BRT (não UTC)
         const base = {
           timeMandante:  TEAM_NAME_MAP[home?.team?.displayName] ?? home?.team?.displayName ?? '',
           timeVisitante: TEAM_NAME_MAP[away?.team?.displayName] ?? away?.team?.displayName ?? '',

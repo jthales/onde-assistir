@@ -72,9 +72,9 @@ async function fetchFixturesFromEspn(): Promise<EspnFixture[]> {
     if (!home || !away) continue;
 
     const dateObj = new Date(event.date);
-    const data_jogo = dateObj.toISOString().slice(0, 10);
     // Converte UTC para horário de Brasília (UTC-3)
     const brt = new Date(dateObj.getTime() - 3 * 60 * 60 * 1000);
+    const data_jogo = brt.toISOString().slice(0, 10); // data BRT (não UTC)
     const hora = brt.toISOString().slice(11, 16);
 
     fixtures.push({
