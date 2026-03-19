@@ -1,8 +1,9 @@
 export function espnScoreboardUrl(): string {
   const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '');
-  const today = new Date();
-  const in7days = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-  return `https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/scoreboard?dates=${fmt(today)}-${fmt(in7days)}`;
+  // Usar data BRT (UTC-3) para não perder jogos do dia após as 21h (quando UTC vira dia seguinte)
+  const brtNow = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  const in7days = new Date(brtNow.getTime() + 7 * 24 * 60 * 60 * 1000);
+  return `https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/scoreboard?dates=${fmt(brtNow)}-${fmt(in7days)}`;
 }
 
 export const TEAM_NAME_MAP: Record<string, string> = {
