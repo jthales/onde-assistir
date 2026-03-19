@@ -1,11 +1,19 @@
 import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Meta, Title } from '@angular/platform-browser';
 import { JogosService } from './services/jogos.service';
 import { Jogo, Placar, Odds } from './models/jogo';
 import { teamInitials } from './team-logos';
 
 declare global {
   interface Window { gtag: (...args: any[]) => void; }
+}
+
+function slugify(s: string): string {
+  return s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
 }
 
 function gaPush(event: string, params: Record<string, any> = {}): void {
@@ -59,7 +67,7 @@ export class App implements OnInit, OnDestroy {
     return new Date() >= inicio && new Date() < fim;
   }
 
-  constructor(private jogosService: JogosService) {}
+  constructor(private jogosService: JogosService, private meta: Meta, private titleService: Title) {}
 
   ngOnInit(): void {
     this.jogosService.getJogosDaSemana().subscribe({
@@ -72,6 +80,14 @@ export class App implements OnInit, OnDestroy {
         this.jogos.set(sorted);
         this.loading.set(false);
         gaPush('jogos_carregados', { total_jogos: sorted.length });
+        const slug = window.location.pathname.replace(/^\//, '').toLowerCase();
+        if (slug) {
+          const match = this.times().find(t => slugify(t.nome) === slug);
+          if (match) {
+            this.timeSelecionado.set(match.nome);
+            this.atualizarMeta(match.nome);
+          }
+        }
         this.atualizarPlacar();
         this.pollingInterval = setInterval(() => this.atualizarPlacar(), 10_000);
         this.atualizarOdds();
@@ -95,11 +111,40 @@ export class App implements OnInit, OnDestroy {
 
   selecionarTime(nome: string): void {
     this.timeSelecionado.set(nome);
+    history.replaceState(null, '', nome ? '/' + slugify(nome) : '/');
+    this.atualizarMeta(nome);
     if (nome) {
       gaPush('filtro_time', { time: nome });
     } else {
       gaPush('filtro_todos');
     }
+  }
+
+  private atualizarMeta(nome: string): void {
+    const baseUrl = 'https://onde-assistir-five.vercel.app';
+    if (!nome) {
+      this.titleService.setTitle('Onde Assistir — Jogos de futebol da semana no Brasil');
+      this.meta.updateTag({ property: 'og:title', content: 'Onde Assistir — Jogos de futebol da semana no Brasil' });
+      this.meta.updateTag({ property: 'og:description', content: 'Veja onde assistir os jogos de futebol desta semana no Brasil.' });
+      this.meta.updateTag({ property: 'og:url', content: baseUrl });
+      return;
+    }
+    const proximo = this.jogosFiltrados().find(j => {
+      const inicio = new Date(`${j.data}T${j.hora || '23:59'}:00-03:00`);
+      return new Date() < inicio;
+    });
+    const title = `${nome} — Onde Assistir`;
+    let description = `Veja todos os jogos do ${nome} desta semana e onde assistir.`;
+    if (proximo) {
+      const adversario = proximo.timeMandante === nome ? proximo.timeVisitante : proximo.timeMandante;
+      const canais = [...proximo.canal, ...proximo.streaming].join(', ') || 'A confirmar';
+      const [, m, d] = proximo.data.split('-');
+      description = `${nome} x ${adversario} em ${d}/${m}. Assista em: ${canais}.`;
+    }
+    this.titleService.setTitle(title);
+    this.meta.updateTag({ property: 'og:title', content: title });
+    this.meta.updateTag({ property: 'og:description', content: description });
+    this.meta.updateTag({ property: 'og:url', content: `${baseUrl}/${slugify(nome)}` });
   }
 
   aceitarConsentimento(): void {
@@ -203,5 +248,30 @@ export class App implements OnInit, OnDestroy {
 
   eEncerrado(jogo: Jogo): boolean {
     return this.getPlacarJogo(jogo)?.status === 'encerrado';
+  }
+
+  eJogoFuturo(jogo: Jogo): boolean {
+    if (!jogo.hora || jogo.hora === '00:00') return true;
+    const inicio = new Date(`${jogo.data}T${jogo.hora}:00-03:00`);
+    return new Date() < inicio;
+  }
+
+  buildCalendarUrl(jogo: Jogo): string {
+    const titulo = `${jogo.timeMandante} x ${jogo.timeVisitante}`;
+    const camp = jogo.campeonato ? ` — ${jogo.campeonato}` : '';
+    const text = encodeURIComponent(titulo + camp);
+
+    const hora = jogo.hora && jogo.hora !== '00:00' ? jogo.hora : '12:00';
+    const inicio = new Date(`${jogo.data}T${hora}:00-03:00`);
+    const fim = new Date(inicio.getTime() + 2 * 60 * 60 * 1000);
+    const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').slice(0, 15);
+    const startUtc = fmt(inicio);
+    const endUtc = fmt(fim);
+
+    const canais = [...jogo.canal, ...jogo.streaming].join(', ') || 'A confirmar';
+    const details = encodeURIComponent(`Onde assistir: ${canais}`);
+
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE` +
+      `&text=${text}&dates=${startUtc}/${endUtc}&details=${details}`;
   }
 }

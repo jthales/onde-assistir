@@ -56,6 +56,17 @@ const CACHE_TTL_MS = 10_000;
 function slugify(s: string): string {
   return s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 }
+
+function slugifyFull(s: string): string {
+  return s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 function resultadoDocId(data: string, mandante: string, visitante: string): string {
   return `${data}-${slugify(mandante)}-${slugify(visitante)}`;
 }
@@ -253,6 +264,96 @@ app.get('/api/odds', async (_req, res) => {
     if (oddsCache) { res.json(oddsCache.dados); return; }
     res.status(500).json({ error: 'Falha ao buscar odds' });
   }
+});
+
+const FRONTEND_URL = 'https://onde-assistir-five.vercel.app';
+
+app.get('/og', async (req, res) => {
+  const slug = String(req.query['time'] ?? '').toLowerCase();
+
+  let title = 'Onde Assistir — Jogos de futebol da semana no Brasil';
+  let description = 'Veja onde assistir os jogos de futebol desta semana no Brasil.';
+  let imageUrl = `${FRONTEND_URL}/icons/icon-512x512.png`;
+  let canonicalUrl = FRONTEND_URL;
+
+  try {
+    const snap = await db.collection('jogos').get();
+    const jogos: Jogo[] = snap.docs.map(doc => {
+      const d = doc.data();
+      return {
+        rodada: d['rodada'],
+        timeMandante: d['timeMandante'],
+        timeVisitante: d['timeVisitante'],
+        logoMandante: d['logoMandante'] ?? '',
+        logoVisitante: d['logoVisitante'] ?? '',
+        data: d['data'],
+        hora: d['hora'],
+        canal: d['canal'] ?? [],
+        streaming: d['streaming'] ?? [],
+        estadio: d['estadio'] ?? '',
+        campeonato: d['campeonato'] ?? '',
+      };
+    });
+
+    const now = new Date();
+
+    if (slug) {
+      const timesJogos = jogos.filter(j =>
+        slugifyFull(j.timeMandante) === slug || slugifyFull(j.timeVisitante) === slug
+      );
+      const nomeTime = timesJogos[0]
+        ? (slugifyFull(timesJogos[0].timeMandante) === slug ? timesJogos[0].timeMandante : timesJogos[0].timeVisitante)
+        : slug;
+
+      const proximos = timesJogos
+        .filter(j => new Date(`${j.data}T${j.hora || '23:59'}:00-03:00`) >= now)
+        .sort((a, b) => a.data.localeCompare(b.data));
+
+      const proximo = proximos[0];
+      canonicalUrl = `${FRONTEND_URL}/${slug}`;
+      title = `${nomeTime} — Onde Assistir`;
+
+      if (proximo) {
+        const adversario = slugifyFull(proximo.timeMandante) === slug
+          ? proximo.timeVisitante : proximo.timeMandante;
+        const canais = [...proximo.canal, ...proximo.streaming].join(', ') || 'A confirmar';
+        const [, m, d] = proximo.data.split('-');
+        const dataFmt = `${d}/${m}`;
+        description = `${nomeTime} x ${adversario} em ${dataFmt}. Assista em: ${canais}.`;
+        if (proximo.logoMandante || proximo.logoVisitante) {
+          imageUrl = (slugifyFull(proximo.timeMandante) === slug
+            ? proximo.logoMandante : proximo.logoVisitante) || imageUrl;
+        }
+      } else {
+        description = `Veja todos os jogos do ${nomeTime} desta semana e onde assistir.`;
+      }
+    }
+  } catch (e) {
+    console.error('Erro ao gerar OG para', slug, e);
+  }
+
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.send(`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>${escapeHtml(title)}</title>
+  <meta property="og:title" content="${escapeHtml(title)}" />
+  <meta property="og:description" content="${escapeHtml(description)}" />
+  <meta property="og:image" content="${escapeHtml(imageUrl)}" />
+  <meta property="og:url" content="${escapeHtml(canonicalUrl)}" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${escapeHtml(title)}" />
+  <meta name="twitter:description" content="${escapeHtml(description)}" />
+  <meta name="twitter:image" content="${escapeHtml(imageUrl)}" />
+  <meta http-equiv="refresh" content="0; url=${escapeHtml(canonicalUrl)}" />
+</head>
+<body>
+  <p>Redirecionando para <a href="${escapeHtml(canonicalUrl)}">${escapeHtml(canonicalUrl)}</a>...</p>
+</body>
+</html>`);
 });
 
 if (process.env['NODE_ENV'] !== 'production') {

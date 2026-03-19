@@ -171,6 +171,14 @@
               }
             </div>
 
+            @if (eJogoFuturo(jogo)) {
+              <div class="calendario-row">
+                <a [href]="buildCalendarUrl(jogo)" target="_blank" rel="noopener" class="btn-calendario">
+                  📅 Adicionar ao calendário
+                </a>
+              </div>
+            }
+
             @if (getOddsJogo(jogo); as o) {
               @if (o.mandante !== null || o.empate !== null || o.visitante !== null) {
                 <div class="odds-row">
