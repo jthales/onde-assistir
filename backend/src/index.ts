@@ -210,17 +210,34 @@ app.get('/api/odds', async (_req, res) => {
             `https://sports.core.api.espn.com/v2/sports/soccer/leagues/bra.1/events/${eventId}/competitions/${compId}/odds`
           );
           const oddsData: any = await oddsResp.json();
-          const bet365 = (oddsData.items ?? []).find(
-            (item: any) => String(item.provider?.id) === '2000'
-          );
+          const PROVIDERS = [
+            { id: '2000', nome: 'Bet365' },
+            { id: '68',   nome: 'ESPN BET' },
+            { id: '41',   nome: 'DraftKings' },
+            { id: '37',   nome: 'FanDuel' },
+            { id: '58',   nome: 'BetMGM' },
+            { id: '38',   nome: 'Caesars' },
+          ];
+          const items: any[] = oddsData.items ?? [];
+          let provedor: string | null = null;
+          let provider: any = null;
+          for (const p of PROVIDERS) {
+            const found = items.find((item: any) => String(item.provider?.id) === p.id);
+            if (found?.homeTeamOdds?.moneyLine != null || found?.drawOdds?.moneyLine != null || found?.awayTeamOdds?.moneyLine != null) {
+              provider = found;
+              provedor = p.nome;
+              break;
+            }
+          }
           return {
             ...base,
-            mandante:  bet365?.homeTeamOdds?.moneyLine ?? null,
-            empate:    bet365?.drawOdds?.moneyLine ?? null,
-            visitante: bet365?.awayTeamOdds?.moneyLine ?? null,
+            provedor,
+            mandante:  provider?.homeTeamOdds?.moneyLine ?? null,
+            empate:    provider?.drawOdds?.moneyLine ?? null,
+            visitante: provider?.awayTeamOdds?.moneyLine ?? null,
           };
         } catch {
-          return { ...base, mandante: null, empate: null, visitante: null };
+          return { ...base, provedor: null, mandante: null, empate: null, visitante: null };
         }
       })
     );
