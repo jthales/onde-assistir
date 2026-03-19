@@ -530,13 +530,41 @@ body {
 }
 
 .badge-tv         { background: #dbeafe; color: #1d4ed8; }
-.badge-streaming  { background: #ede9fe; color: #6d28d9; }
 .badge-confirmar  { background: #f3f4f6; color: #9ca3af; font-weight: 400; }
+
+.badge-streaming {
+  background: #ede9fe;
+  color: #6d28d9;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.75rem;
+}
 
 .badge-streaming--link {
   text-decoration: none;
   cursor: pointer;
+  &::after { content: ' ↗'; font-size: 0.75em; opacity: 0.65; }
   &:hover { filter: brightness(0.88); }
+}
+
+// ── Calendário ───────────────────────────────────────────────────────────────
+
+.calendario-row {
+  padding-top: 0.5rem;
+  border-top: 1px solid #f1f3f5;
+}
+
+.btn-calendario {
+  @include flex(0.3rem);
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6d28d9;
+  text-decoration: none;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #ede9fe;
+  border-radius: 6px;
+  background: #faf5ff;
+  &:hover { background: #ede9fe; }
 }
 
 // ── Odds Bet365 ──────────────────────────────────────────────────────────────
