@@ -52,10 +52,14 @@ export class App implements OnInit, OnDestroy {
 
   jogosFiltrados = computed(() => {
     const time = this.timeSelecionado();
-    if (!time) return this.jogos();
-    return this.jogos().filter(
-      j => j.timeMandante === time || j.timeVisitante === time
-    );
+    const jogos = time
+      ? this.jogos().filter(j => j.timeMandante === time || j.timeVisitante === time)
+      : this.jogos();
+    return [...jogos].sort((a, b) => {
+      const ordemA = this.eEncerrado(a) ? 2 : this.eAoVivo(a) ? 0 : 1;
+      const ordemB = this.eEncerrado(b) ? 2 : this.eAoVivo(b) ? 0 : 1;
+      return ordemA - ordemB;
+    });
   });
 
   temJogoAoVivo = computed(() => this.jogosFiltrados().some(j => this.eAoVivo(j)));
