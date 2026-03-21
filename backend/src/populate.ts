@@ -10,6 +10,7 @@ import { GoogleGenAI } from '@google/genai';
 import { Jogo } from './types';
 import { db } from './firebase';
 import { espnScoreboardUrl, TEAM_NAME_MAP } from './constants';
+import { buscarDadosRodada, buscarOndeAssistir } from './scraper';
 const ai = new GoogleGenAI({ apiKey: process.env['GEMINI_API_KEY'] ?? '' });
 const GEMINI_MODEL_ID = 'gemini-3.1-flash-lite-preview';
 
@@ -173,14 +174,43 @@ async function runPopulate(): Promise<void> {
 
   if (fixtures.length === 0) throw new Error('Nenhum jogo encontrado na ESPN');
 
-  console.log('Buscando transmissões no Gemini...');
-  const broadcasts = await fetchBroadcastFromGemini(fixtures);
+  // Passo 1: buscar artigo de rodada uma vez (1 request) para extrair rodada + transmissões em lote
+  console.log('\nBuscando artigo de rodada no ge.globo...');
+  const dadosRodada = await buscarDadosRodada(fixtures);
+  const rodadaNum = dadosRodada?.rodada ?? 0;
 
-  // Monta mapa de transmissão por confronto
+  // Passo 2: para cada jogo, tenta rodada primeiro; fallback busca individual; fallback Gemini
   const broadcastMap = new Map<string, GeminiBroadcast>();
-  for (const b of broadcasts) {
-    const key = `${b.timeMandante}|${b.timeVisitante}`;
-    broadcastMap.set(key, b);
+  const failedFixtures: EspnFixture[] = [];
+
+  for (const fixture of fixtures) {
+    const key = `${fixture.timeMandante}|${fixture.timeVisitante}`;
+
+    // Tenta artigo de rodada (sem request adicional)
+    const fromRodada = dadosRodada?.buscarTransmissao(fixture.timeMandante, fixture.timeVisitante);
+    if (fromRodada && (fromRodada.canal.length > 0 || fromRodada.streaming.length > 0)) {
+      broadcastMap.set(key, { timeMandante: fixture.timeMandante, timeVisitante: fixture.timeVisitante, ...fromRodada });
+      console.log(`✅ Rodada: ${fixture.timeMandante} x ${fixture.timeVisitante} → ${[...fromRodada.canal, ...fromRodada.streaming].join(', ')}`);
+      continue;
+    }
+
+    // Fallback: matéria individual
+    const { canal, streaming } = await buscarOndeAssistir(fixture.timeMandante, fixture.timeVisitante);
+    if (canal.length > 0 || streaming.length > 0) {
+      broadcastMap.set(key, { timeMandante: fixture.timeMandante, timeVisitante: fixture.timeVisitante, canal, streaming });
+    } else {
+      failedFixtures.push(fixture);
+    }
+  }
+
+  // Passo 3: fallback Gemini para jogos onde o scrape falhou
+  if (failedFixtures.length > 0) {
+    console.log(`\nFallback Gemini para ${failedFixtures.length} jogo(s) sem scrape...`);
+    const geminiResults = await fetchBroadcastFromGemini(failedFixtures);
+    for (const b of geminiResults) {
+      const key = `${b.timeMandante}|${b.timeVisitante}`;
+      if (!broadcastMap.has(key)) broadcastMap.set(key, b);
+    }
   }
 
   const batch = db.batch();
@@ -192,7 +222,7 @@ async function runPopulate(): Promise<void> {
 
     const jogo: Jogo & { id: string; lastUpdated: string } = {
       id: jogoId(fixture.data, fixture.timeMandante, fixture.timeVisitante),
-      rodada: 0,
+      rodada: rodadaNum,
       timeMandante: fixture.timeMandante,
       timeVisitante: fixture.timeVisitante,
       logoMandante: fixture.logoMandante,
