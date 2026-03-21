@@ -15,10 +15,12 @@
   "description": "",
   "dependencies": {
     "@google/genai": "^1.45.0",
+    "cheerio": "^1.2.0",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "firebase-admin": "^13.7.0"
+    "firebase-admin": "^13.7.0",
+    "puppeteer": "^24.40.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
