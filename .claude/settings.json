@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null || echo ''); block=false; if echo \"$cmd\" | grep -qE '^git push' && echo \"$cmd\" | grep -q 'main'; then block=true; fi; if echo \"$cmd\" | grep -qE '^git (commit|merge|reset|rebase)'; then branch=$(git branch --show-current 2>/dev/null); [ \"$branch\" = \"main\" ] && block=true; fi; if [ \"$block\" = \"true\" ]; then echo '{\"decision\":\"block\",\"reason\":\"A branch main é protegida e não aceita push direto. Nunca faça commit, push, merge ou reset diretamente na main — crie ou mude para uma branch de feature.\"}'; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
