@@ -287,7 +287,7 @@ export async function buscarOndeAssistir(
         const result = extrairDeMateria(bodyText);
         if (result) {
           const channels = [...result.canal, ...result.streaming].join(', ');
-          console.log(`✅ Scrape OK: ${mandante} x ${visitante} → ${channels}`);
+          console.log(`✅ Scrape OK: ${mandante} x ${visitante} → ${channels}\n   📎 ${hit.url}`);
           return result;
         }
       } catch { /* tenta próximo */ }
