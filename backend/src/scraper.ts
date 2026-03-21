@@ -184,7 +184,7 @@ async function buscarNaApi(query: string): Promise<SearchHit[]> {
 
 /** Extrai transmissão de matéria individual ("Transmissão: SporTV e Premiere"). */
 function extrairDeMateria(bodyText: string): { canal: string[]; streaming: string[] } | null {
-  const match = bodyText.match(/Transmiss[aã]o[:\s]+([^.;]{5,150})/i);
+  const match = bodyText.match(/Transmiss[aã]o[:\s]+([^.;]{5,300})/i);
   if (!match) return null;
   const result = classifyChannels(match[1]);
   return (result.canal.length > 0 || result.streaming.length > 0) ? result : null;
@@ -215,7 +215,7 @@ function extrairDeRodada(
     if (!hasMandante || !hasVisitante) continue;
 
     const sectionOrig = (sectionsOrig[i] ?? '').substring(0, 600);
-    const match = sectionOrig.match(/Transmiss[aã]o[:\s]+([^;.]{5,150})/i);
+    const match = sectionOrig.match(/Transmiss[aã]o[:\s]+([^;.]{5,300})/i);
     if (!match) continue;
 
     const result = classifyChannels(match[1]);
