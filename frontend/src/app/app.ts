@@ -123,8 +123,8 @@ export class App implements OnInit, OnDestroy {
   private atualizarMeta(nome: string): void {
     const baseUrl = 'https://onde-assistir-five.vercel.app';
     if (!nome) {
-      this.titleService.setTitle('Onde Assistir — Jogos de futebol da semana no Brasil');
-      this.meta.updateTag({ property: 'og:title', content: 'Onde Assistir — Jogos de futebol da semana no Brasil' });
+      this.titleService.setTitle('Onde Assistir — Futebol ao Vivo: TV e Streaming no Brasil');
+      this.meta.updateTag({ property: 'og:title', content: 'Onde Assistir — Futebol ao Vivo: TV e Streaming no Brasil' });
       this.meta.updateTag({ property: 'og:description', content: 'Veja onde assistir os jogos de futebol desta semana no Brasil.' });
       this.meta.updateTag({ property: 'og:url', content: baseUrl });
       return;
