@@ -1,6 +1,7 @@
 {
   "outputDirectory": "dist/frontend/browser",
   "rewrites": [
+    { "source": "/sitemap.xml", "destination": "https://onde-assistir-k8rm.vercel.app/sitemap.xml" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

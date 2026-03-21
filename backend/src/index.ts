@@ -358,6 +358,33 @@ app.get('/og', async (req, res) => {
 </html>`);
 });
 
+app.get('/sitemap.xml', async (_req, res) => {
+  try {
+    const snap = await db.collection('jogos').get();
+    const times = new Set<string>();
+    snap.docs.forEach(doc => {
+      const d = doc.data();
+      if (d['timeMandante']) times.add(slugifyFull(d['timeMandante']));
+      if (d['timeVisitante']) times.add(slugifyFull(d['timeVisitante']));
+    });
+
+    const today = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const urls = [
+      `  <url><loc>${FRONTEND_URL}/</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>`,
+      ...[...times].sort().map(slug =>
+        `  <url><loc>${FRONTEND_URL}/${slug}</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>`
+      ),
+    ].join('\n');
+
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`);
+  } catch (e) {
+    console.error('Erro ao gerar sitemap:', e);
+    res.status(500).send('Erro ao gerar sitemap');
+  }
+});
+
 if (process.env['NODE_ENV'] !== 'production') {
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
