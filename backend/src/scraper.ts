@@ -106,6 +106,12 @@ function classifyChannels(transmissaoText: string): { canal: string[]; streaming
   for (const { match, display } of CANAIS_STREAMING) {
     if (text.includes(match) && !streaming.includes(display)) streaming.push(display);
   }
+
+  // Qualquer Globo (regional ou nacional) implica Globoplay no streaming
+  if (canal.some(c => c === 'TV Globo' || c.startsWith('Globo')) && !streaming.includes('Globoplay')) {
+    streaming.unshift('Globoplay');
+  }
+
   return { canal, streaming };
 }
 
