@@ -1,0 +1,51 @@
+{
+  "$schema": "./node_modules/@angular/service-worker/config/schema.json",
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "app-shell",
+      "installMode": "prefetch",
+      "resources": {
+        "files": [
+          "/favicon.ico",
+          "/index.html",
+          "/*.css",
+          "/*.js"
+        ]
+      }
+    },
+    {
+      "name": "assets",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": [
+          "/favicon/**",
+          "/robots.txt"
+        ]
+      }
+    }
+  ],
+  "dataGroups": [
+    {
+      "name": "api-jogos",
+      "urls": ["https://onde-assistir-k8rm.vercel.app/api/jogos"],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 5,
+        "maxAge": "1h",
+        "timeout": "5s"
+      }
+    },
+    {
+      "name": "api-placar",
+      "urls": ["https://onde-assistir-k8rm.vercel.app/api/placar"],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 5,
+        "maxAge": "30s",
+        "timeout": "3s"
+      }
+    }
+  ]
+}
