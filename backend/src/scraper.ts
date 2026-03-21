@@ -51,6 +51,17 @@ const CANAIS_STREAMING: Array<{ match: string; display: string }> = [
   { match: 'star+',        display: 'Star+'               },
 ];
 
+// Mapa de estado (normalizado, sem acento) → sigla UF
+const ESTADO_UF: Record<string, string> = {
+  'acre': 'AC', 'alagoas': 'AL', 'amapa': 'AP', 'amazonas': 'AM',
+  'bahia': 'BA', 'ceara': 'CE', 'distrito federal': 'DF', 'espirito santo': 'ES',
+  'goias': 'GO', 'maranhao': 'MA', 'mato grosso do sul': 'MS', 'mato grosso': 'MT',
+  'minas gerais': 'MG', 'para': 'PA', 'paraiba': 'PB', 'parana': 'PR',
+  'pernambuco': 'PE', 'piaui': 'PI', 'rio de janeiro': 'RJ', 'rio grande do norte': 'RN',
+  'rio grande do sul': 'RS', 'rondonia': 'RO', 'roraima': 'RR',
+  'santa catarina': 'SC', 'sao paulo': 'SP', 'sergipe': 'SE', 'tocantins': 'TO',
+};
+
 // Aliases de nomes como aparecem nos artigos do ge.globo (vs. nomes normalizados da ESPN)
 const TEAM_ALIASES: Record<string, string[]> = {
   'Atlético Mineiro':     ['Atlético-MG', 'Atletico-MG'],
@@ -79,7 +90,17 @@ function classifyChannels(transmissaoText: string): { canal: string[]; streaming
   const streaming: string[] = [];
   const text = removeAccents(transmissaoText).toLowerCase();
 
+  // Globo regional: "Globo (São Paulo, Minas Gerais...)" → "Globo SP"
+  const globoRegional = text.match(/\bglobo\s*\(([^)]+)\)/);
+  if (globoRegional) {
+    const firstState = globoRegional[1].split(',')[0].trim();
+    const uf = ESTADO_UF[firstState];
+    canal.push(uf ? `Globo ${uf}` : 'Globo');
+  }
+
   for (const { match, display } of CANAIS_TV) {
+    // Pula 'globo' genérico se já foi adicionado com sigla regional
+    if (match === 'globo' && canal.some(c => c.startsWith('Globo'))) continue;
     if (text.includes(match) && !canal.includes(display)) canal.push(display);
   }
   for (const { match, display } of CANAIS_STREAMING) {
