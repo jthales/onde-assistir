@@ -530,6 +530,12 @@ body {
 }
 
 .badge-tv         { background: #dbeafe; color: #1d4ed8; }
+.badge-tv--link {
+  text-decoration: none;
+  cursor: pointer;
+  &::after { content: ' ↗'; font-size: 0.75em; opacity: 0.65; }
+  &:hover { filter: brightness(0.88); }
+}
 .badge-confirmar  { background: #f3f4f6; color: #9ca3af; font-weight: 400; }
 
 .badge-streaming {

@@ -148,7 +148,11 @@
                     </span>
                     <div class="badges">
                       @for (canal of jogo.canal; track canal) {
-                        <span class="badge badge-tv">{{ canal }}</span>
+                        @if (getStreamingUrl(canal); as url) {
+                          <a [href]="url" target="_blank" rel="noopener" class="badge badge-tv badge-tv--link">{{ canal }}</a>
+                        } @else {
+                          <span class="badge badge-tv">{{ canal }}</span>
+                        }
                       }
                     </div>
                   </div>

@@ -171,6 +171,10 @@ export class App implements OnInit, OnDestroy {
 
   private readonly STREAMING_URLS: Record<string, string> = {
     'Globoplay':          'https://globoplay.globo.com',
+    'Premiere':           'https://globoplay.globo.com',
+    'SporTV':             'https://globoplay.globo.com',
+    'SporTV 2':           'https://globoplay.globo.com',
+    'SporTV 3':           'https://globoplay.globo.com',
     'Cazé TV':            'https://www.youtube.com/cazetv',
     'CazéTV':             'https://www.youtube.com/cazetv',
     'Ge TV':              'https://www.youtube.com/geglobo',
