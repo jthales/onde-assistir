@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background verde escuro (cobre toda a área safe zone para maskable) -->
+  <rect width="512" height="512" fill="#14532d"/>
+  <!-- TV screen -->
+  <rect x="72" y="120" width="368" height="240" rx="32" fill="white"/>
+  <rect x="96" y="144" width="320" height="192" rx="18" fill="#0a2e1a"/>
+  <!-- Triângulo play -->
+  <polygon points="192,208 192,304 336,256" fill="#25a05e"/>
+  <!-- Suporte da TV -->
+  <rect x="216" y="360" width="80" height="22" rx="8" fill="white"/>
+  <rect x="160" y="380" width="192" height="16" rx="8" fill="white"/>
+</svg>
