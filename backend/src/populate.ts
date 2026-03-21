@@ -190,7 +190,7 @@ async function runPopulate(): Promise<void> {
     const fromRodada = dadosRodada?.buscarTransmissao(fixture.timeMandante, fixture.timeVisitante);
     if (fromRodada && (fromRodada.canal.length > 0 || fromRodada.streaming.length > 0)) {
       broadcastMap.set(key, { timeMandante: fixture.timeMandante, timeVisitante: fixture.timeVisitante, ...fromRodada });
-      console.log(`✅ Rodada: ${fixture.timeMandante} x ${fixture.timeVisitante} → ${[...fromRodada.canal, ...fromRodada.streaming].join(', ')}\n   📎 ${dadosRodada!.url}`);
+      console.log(`✅ Rodada: ${fixture.timeMandante} x ${fixture.timeVisitante} → ${[...fromRodada.canal, ...fromRodada.streaming].join(', ')}`);
       continue;
     }
 
