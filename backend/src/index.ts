@@ -11,6 +11,8 @@ app.use(cors({
   origin: [
     'http://localhost:4200',
     'https://onde-assistir-five.vercel.app',
+    'http://ondeassistir.space',
+    'https://ondeassistir.space',
   ],
 }));
 app.use(express.json());
@@ -266,7 +268,7 @@ app.get('/api/odds', async (_req, res) => {
   }
 });
 
-const FRONTEND_URL = 'https://onde-assistir-five.vercel.app';
+const FRONTEND_URL = process.env['FRONTEND_URL'] ?? 'https://ondeassistir.space';
 
 app.get('/og', async (req, res) => {
   const slug = String(req.query['time'] ?? '').toLowerCase();
