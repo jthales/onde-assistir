@@ -275,7 +275,7 @@ app.get('/og', async (req, res) => {
 
   let title = 'Onde Assistir — Jogos de futebol da semana no Brasil';
   let description = 'Veja onde assistir os jogos de futebol desta semana no Brasil.';
-  let imageUrl = `${FRONTEND_URL}/icons/icon-512x512.png`;
+  let imageUrl = `${FRONTEND_URL}/favicon/android-icon-192x192.png`;
   let canonicalUrl = FRONTEND_URL;
 
   try {
