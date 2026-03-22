@@ -43,7 +43,8 @@
         <p class="state-text">Nenhum jogo encontrado para esta semana.</p>
       </div>
     } @else {
-      <div class="jogos-grid">
+      <div class="conteudo-wrapper">
+        <div class="jogos-grid">
         @for (jogo of jogosFiltrados(); track jogo.timeMandante + jogo.data) {
           <div class="jogo-card" [class.jogo-card--ao-vivo]="eAoVivo(jogo)" [class.jogo-card--encerrado]="eEncerrado(jogo)">
             @if (eAoVivo(jogo)) {
@@ -201,6 +202,47 @@
             }
           </div>
         }
+        </div>
+
+        @if (classificacao().length > 0) {
+          <aside class="classificacao">
+            <h2 class="classificacao-titulo">Brasileirão Série A</h2>
+            <table class="classificacao-tabela">
+              <thead>
+                <tr>
+                  <th class="col-pos">#</th>
+                  <th class="col-time">Time</th>
+                  <th class="col-num" title="Pontos">Pts</th>
+                  <th class="col-num" title="Jogos">J</th>
+                  <th class="col-num" title="Vitórias">V</th>
+                  <th class="col-num" title="Empates">E</th>
+                  <th class="col-num" title="Derrotas">D</th>
+                  <th class="col-num" title="Saldo de Gols">SG</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (entry of classificacao(); track entry.posicao) {
+                  <tr [class.classificacao-linha--destaque]="timeSelecionado() === entry.nome">
+                    <td class="col-pos">{{ entry.posicao }}</td>
+                    <td class="col-time">
+                      @if (entry.logo) {
+                        <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                      }
+                      <span class="classificacao-nome">{{ entry.nome }}</span>
+                    </td>
+                    <td class="col-num col-pts">{{ entry.pontos }}</td>
+                    <td class="col-num">{{ entry.jogos }}</td>
+                    <td class="col-num">{{ entry.vitorias }}</td>
+                    <td class="col-num">{{ entry.empates }}</td>
+                    <td class="col-num">{{ entry.derrotas }}</td>
+                    <td class="col-num" [class.saldo-positivo]="entry.saldo > 0" [class.saldo-negativo]="entry.saldo < 0">{{ entry.saldo > 0 ? '+' : '' }}{{ entry.saldo }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </aside>
+        }
+
       </div>
     }
 

@@ -41,3 +41,17 @@ export interface Jogo {
   estadio: string;
   campeonato?: string;
 }
+
+export interface ClassificacaoEntry {
+  posicao: number;
+  nome: string;
+  logo: string | null;
+  jogos: number;
+  vitorias: number;
+  empates: number;
+  derrotas: number;
+  gols: number;
+  golsSofridos: number;
+  saldo: number;
+  pontos: number;
+}
