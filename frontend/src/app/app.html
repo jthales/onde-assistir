@@ -204,9 +204,16 @@
         }
         </div>
 
-        @if (classificacao().length > 0) {
+        @if (classificacaoProvisoria().length > 0) {
           <aside class="classificacao">
-            <h2 class="classificacao-titulo">Brasileirão Série A</h2>
+            <div class="classificacao-header">
+              <h2 class="classificacao-titulo">Brasileirão Série A</h2>
+              @if (temClassificacaoProvisoria()) {
+                <span class="classificacao-ao-vivo-badge">
+                  <span class="ao-vivo-dot"></span>Ao vivo
+                </span>
+              }
+            </div>
             <table class="classificacao-tabela">
               <thead>
                 <tr>
@@ -221,8 +228,9 @@
                 </tr>
               </thead>
               <tbody>
-                @for (entry of classificacao(); track entry.posicao) {
-                  <tr [class.classificacao-linha--destaque]="timeSelecionado() === entry.nome">
+                @for (entry of classificacaoProvisoria(); track entry.posicao) {
+                  <tr [class.classificacao-linha--destaque]="timeSelecionado() === entry.nome"
+                      [class.classificacao-linha--ao-vivo]="entry.provisorio">
                     <td class="col-pos">{{ entry.posicao }}</td>
                     <td class="col-time">
                       @if (entry.logo) {

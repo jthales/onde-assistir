@@ -54,4 +54,5 @@ export interface ClassificacaoEntry {
   golsSofridos: number;
   saldo: number;
   pontos: number;
+  provisorio?: boolean;
 }

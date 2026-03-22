@@ -66,6 +66,53 @@ export class App implements OnInit, OnDestroy {
 
   temJogoAoVivo = computed(() => this.jogosFiltrados().some(j => this.eAoVivo(j)));
 
+  classificacaoProvisoria = computed(() => {
+    const base = this.classificacao();
+    if (base.length === 0) return [];
+
+    const jogosAoVivo = this.jogos().filter(j => this.eAoVivo(j));
+    if (jogosAoVivo.length === 0) return base;
+
+    const tabela = base.map(e => ({ ...e }));
+
+    for (const jogo of jogosAoVivo) {
+      const placar = this.getPlacarJogo(jogo);
+      if (!placar || placar.placarMandante === null || placar.placarVisitante === null) continue;
+
+      const mandante = tabela.find(e => e.nome === jogo.timeMandante);
+      const visitante = tabela.find(e => e.nome === jogo.timeVisitante);
+      if (!mandante || !visitante) continue;
+
+      mandante.provisorio = true;
+      visitante.provisorio = true;
+      mandante.jogos += 1;
+      visitante.jogos += 1;
+      mandante.gols += placar.placarMandante;
+      mandante.golsSofridos += placar.placarVisitante;
+      mandante.saldo += placar.placarMandante - placar.placarVisitante;
+      visitante.gols += placar.placarVisitante;
+      visitante.golsSofridos += placar.placarMandante;
+      visitante.saldo += placar.placarVisitante - placar.placarMandante;
+
+      if (placar.placarMandante > placar.placarVisitante) {
+        mandante.vitorias += 1; mandante.pontos += 3;
+        visitante.derrotas += 1;
+      } else if (placar.placarMandante < placar.placarVisitante) {
+        visitante.vitorias += 1; visitante.pontos += 3;
+        mandante.derrotas += 1;
+      } else {
+        mandante.empates += 1; mandante.pontos += 1;
+        visitante.empates += 1; visitante.pontos += 1;
+      }
+    }
+
+    return tabela
+      .sort((a, b) => b.pontos - a.pontos || b.saldo - a.saldo)
+      .map((e, i) => ({ ...e, posicao: i + 1 }));
+  });
+
+  temClassificacaoProvisoria = computed(() => this.classificacaoProvisoria().some(e => e.provisorio));
+
   private podeTerPlacar(jogo: Jogo): boolean {
     if (!jogo.hora || jogo.hora === '00:00') return false;
     const inicio = new Date(`${jogo.data}T${jogo.hora}:00-03:00`);

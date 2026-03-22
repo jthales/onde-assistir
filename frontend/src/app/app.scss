@@ -640,13 +640,26 @@ body {
   top: 1rem;
 }
 
+.classificacao-header {
+  @include flex(0.5rem, center, space-between);
+  margin-bottom: 0.75rem;
+}
+
 .classificacao-titulo {
   font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #6b7280;
-  margin-bottom: 0.75rem;
+}
+
+.classificacao-ao-vivo-badge {
+  @include flex(0.3rem);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #dc2626;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .classificacao-tabela {
@@ -710,6 +723,11 @@ body {
 .classificacao-linha--destaque {
   td { background: #f0fdf4; }
   .col-pts { color: #1d6f42 !important; }
+}
+
+.classificacao-linha--ao-vivo {
+  td { background: #fff7ed; }
+  .col-pts { color: #d97706 !important; font-weight: 800 !important; }
 }
 
 .saldo-positivo { color: #16a34a !important; }
