@@ -616,11 +616,115 @@ body {
   margin-top: auto;
 }
 
+// ── Classificação ─────────────────────────────────────────────────────────────
+
+.conteudo-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+
+  .jogos-grid {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.classificacao {
+  width: 300px;
+  flex-shrink: 0;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  padding: 1.25rem 1rem;
+  position: sticky;
+  top: 1rem;
+}
+
+.classificacao-titulo {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+}
+
+.classificacao-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+
+  th {
+    color: #9ca3af;
+    font-weight: 600;
+    text-align: center;
+    padding: 0 0 0.4rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  td {
+    padding: 0.3rem 0;
+    text-align: center;
+    vertical-align: middle;
+    border-top: 1px solid #f3f4f6;
+    color: #374151;
+  }
+
+  tr:first-child td { border-top: none; }
+}
+
+.col-pos {
+  width: 20px;
+  color: #9ca3af !important;
+  font-size: 0.7rem !important;
+}
+
+.col-time {
+  text-align: left !important;
+  @include flex(0.35rem);
+  padding-left: 0.25rem;
+}
+
+.col-num { width: 28px; }
+
+.col-pts { font-weight: 700; color: #111827 !important; }
+
+.classificacao-logo {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.classificacao-nome {
+  font-weight: 600;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
+}
+
+.classificacao-linha--destaque {
+  td { background: #f0fdf4; }
+  .col-pts { color: #1d6f42 !important; }
+}
+
+.saldo-positivo { color: #16a34a !important; }
+.saldo-negativo { color: #dc2626 !important; }
+
 // ── Responsive ───────────────────────────────────────────────────────────────
 
 @media (max-width: 900px) {
   .jogos-grid { grid-template-columns: repeat(2, 1fr); }
   .times-grid { grid-template-columns: repeat(10, 52px); }
+}
+
+@media (max-width: 1100px) {
+  .conteudo-wrapper { flex-direction: column; }
+  .classificacao { width: 100%; position: static; }
 }
 
 @media (max-width: 480px) {

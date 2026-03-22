@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Meta, Title } from '@angular/platform-browser';
 import { JogosService } from './services/jogos.service';
-import { Jogo, Placar, Odds } from './models/jogo';
+import { Jogo, Placar, Odds, ClassificacaoEntry } from './models/jogo';
 import { teamInitials } from './team-logos';
 
 declare global {
@@ -36,8 +36,10 @@ export class App implements OnInit, OnDestroy {
   showConsentBanner = signal(localStorage.getItem('ga_consent') === null);
   placares = signal<Map<string, Placar>>(new Map());
   odds = signal<Map<string, Odds>>(new Map());
+  classificacao = signal<ClassificacaoEntry[]>([]);
   private pollingInterval?: ReturnType<typeof setInterval>;
   private oddsInterval?: ReturnType<typeof setInterval>;
+  private classificacaoInterval?: ReturnType<typeof setInterval>;
 
   times = computed(() => {
     const map = new Map<string, string>();
@@ -96,6 +98,8 @@ export class App implements OnInit, OnDestroy {
         this.pollingInterval = setInterval(() => this.atualizarPlacar(), 10_000);
         this.atualizarOdds();
         this.oddsInterval = setInterval(() => this.atualizarOdds(), 5 * 60_000);
+        this.atualizarClassificacao();
+        this.classificacaoInterval = setInterval(() => this.atualizarClassificacao(), 5 * 60_000);
       },
       error: (err) => {
         if (err?.status === 429) {
@@ -165,6 +169,7 @@ export class App implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     clearInterval(this.pollingInterval);
     clearInterval(this.oddsInterval);
+    clearInterval(this.classificacaoInterval);
   }
 
   getInitials = teamInitials;
@@ -210,6 +215,12 @@ export class App implements OnInit, OnDestroy {
 
   getPlacarJogo(jogo: Jogo): Placar | undefined {
     return this.placares().get(this.placarKey(jogo.timeMandante, jogo.timeVisitante, jogo.data));
+  }
+
+  private atualizarClassificacao(): void {
+    this.jogosService.getClassificacao().subscribe({
+      next: (lista) => this.classificacao.set(lista),
+    });
   }
 
   private atualizarOdds(): void {

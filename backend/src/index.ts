@@ -268,6 +268,49 @@ app.get('/api/odds', async (_req, res) => {
   }
 });
 
+// Cache de classificação — atualiza a cada 5 minutos
+let classificacaoCache: { dados: any[]; fetchedAt: number } | null = null;
+const CLASSIFICACAO_CACHE_TTL_MS = 5 * 60_000;
+
+app.get('/api/classificacao', async (_req, res) => {
+  const agora = Date.now();
+
+  if (classificacaoCache && agora - classificacaoCache.fetchedAt < CLASSIFICACAO_CACHE_TTL_MS) {
+    res.json(classificacaoCache.dados);
+    return;
+  }
+
+  try {
+    const resp = await fetch('https://site.api.espn.com/apis/v2/sports/soccer/bra.1/standings');
+    const data: any = await resp.json();
+
+    const entries = data.children?.[0]?.standings?.entries ?? [];
+    const getStat = (stats: any[], name: string) =>
+      stats?.find((s: any) => s.name === name)?.value ?? 0;
+
+    const dados = entries.map((entry: any) => ({
+      posicao:      getStat(entry.stats, 'rank'),
+      nome:         TEAM_NAME_MAP[entry.team.displayName] ?? entry.team.displayName,
+      logo:         entry.team.logos?.[0]?.href ?? null,
+      jogos:        getStat(entry.stats, 'gamesPlayed'),
+      vitorias:     getStat(entry.stats, 'wins'),
+      empates:      getStat(entry.stats, 'ties'),
+      derrotas:     getStat(entry.stats, 'losses'),
+      gols:         getStat(entry.stats, 'pointsFor'),
+      golsSofridos: getStat(entry.stats, 'pointsAgainst'),
+      saldo:        getStat(entry.stats, 'pointDifferential'),
+      pontos:       getStat(entry.stats, 'points'),
+    }));
+
+    classificacaoCache = { dados, fetchedAt: agora };
+    res.json(dados);
+  } catch (error) {
+    console.error('Erro ao buscar classificação:', error);
+    if (classificacaoCache) { res.json(classificacaoCache.dados); return; }
+    res.status(500).json({ error: 'Falha ao buscar classificação' });
+  }
+});
+
 const FRONTEND_URL = process.env['FRONTEND_URL'] ?? 'https://ondeassistir.space';
 
 app.get('/og', async (req, res) => {

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Jogo, Placar, Odds } from '../models/jogo';
+import { Jogo, Placar, Odds, ClassificacaoEntry } from '../models/jogo';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -20,5 +20,9 @@ export class JogosService {
 
   getOdds(): Observable<Odds[]> {
     return this.http.get<Odds[]>(`${environment.apiUrl}/api/odds`);
+  }
+
+  getClassificacao(): Observable<ClassificacaoEntry[]> {
+    return this.http.get<ClassificacaoEntry[]>(`${environment.apiUrl}/api/classificacao`);
   }
 }
