@@ -811,10 +811,10 @@ body {
   .hero       { padding: 2.5rem 1rem 3.5rem; }
   .container  { padding: 0 1.25rem 5rem; }
   .jogos-grid { grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
-  .noticias-grid { grid-template-columns: repeat(2, 1fr); }
   .jogo-card  { padding: 1.25rem; }
   .confronto  { padding: 1rem 0.75rem; }
 }
+
 
 @media (min-width: 1100px) {
   .hero       { padding: 3rem 1rem 4rem; }
@@ -822,7 +822,6 @@ body {
   .jogos-grid { grid-template-columns: repeat(3, 1fr); }
   .times-grid { grid-template-columns: repeat(20, 52px); }
   .time-nome  { font-size: 0.9rem; }
-  .noticias-grid { grid-template-columns: repeat(3, 1fr); }
   .conteudo-wrapper { flex-direction: row; }
   .jogos-coluna { flex: 1; width: auto; }
   .classificacao { width: 300px; position: sticky; top: 1rem; }
@@ -841,6 +840,10 @@ body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
+
+  @media (min-width: 900px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .noticia-card {
