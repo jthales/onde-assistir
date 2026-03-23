@@ -1,6 +1,9 @@
 import { Component, OnInit, OnDestroy, signal, computed, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Meta, Title } from '@angular/platform-browser';
+import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
+import { filter } from 'rxjs/operators';
+import { interval } from 'rxjs';
 import { JogosService } from './services/jogos.service';
 import { Jogo, Placar, Odds, ClassificacaoEntry, Noticia } from './models/jogo';
 import { teamInitials } from './team-logos';
@@ -38,6 +41,7 @@ export class App implements OnInit, OnDestroy {
   odds = signal<Map<string, Odds>>(new Map());
   classificacao = signal<ClassificacaoEntry[]>([]);
   noticias = signal<Noticia[]>([]);
+  atualizacaoDisponivel = signal(false);
   pullDistance = signal(0);
   isPulling = signal(false);
   isRefreshing = signal(false);
@@ -151,7 +155,15 @@ export class App implements OnInit, OnDestroy {
     return new Date() >= inicio && new Date() < fim;
   }
 
-  constructor(private jogosService: JogosService, private meta: Meta, private titleService: Title, private el: ElementRef) {}
+  constructor(
+    private jogosService: JogosService,
+    private meta: Meta,
+    private titleService: Title,
+    private el: ElementRef,
+    private swUpdate: SwUpdate,
+  ) {
+    this.setupPwaUpdate();
+  }
 
   ngOnInit(): void {
     document.addEventListener('touchstart', this.onTouchStart, { passive: true });
@@ -272,6 +284,18 @@ export class App implements OnInit, OnDestroy {
     this.meta.updateTag({ property: 'og:title', content: title });
     this.meta.updateTag({ property: 'og:description', content: description });
     this.meta.updateTag({ property: 'og:url', content: `${baseUrl}/${slugify(nome)}` });
+  }
+
+  private setupPwaUpdate(): void {
+    if (!this.swUpdate.isEnabled) return;
+    this.swUpdate.versionUpdates
+      .pipe(filter((evt): evt is VersionReadyEvent => evt.type === 'VERSION_READY'))
+      .subscribe(() => this.atualizacaoDisponivel.set(true));
+    interval(30 * 60_000).subscribe(() => this.swUpdate.checkForUpdate());
+  }
+
+  aplicarAtualizacao(): void {
+    window.location.reload();
   }
 
   private carregarNoticias(slug: string): void {

@@ -961,6 +961,37 @@ body {
   color: #9ca3af;
 }
 
+// ── PWA Update Banner ─────────────────────────────────────────────────────────
+
+.update-banner {
+  position: fixed;
+  bottom: 4.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1d6f42;
+  color: #fff;
+  padding: 0.625rem 1rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2);
+  z-index: 1000;
+  white-space: nowrap;
+
+  button {
+    background: #fff;
+    color: #1d6f42;
+    border: none;
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+}
+
 .consent-btn--accept {
   background: #1d6f42;
   color: #fff;

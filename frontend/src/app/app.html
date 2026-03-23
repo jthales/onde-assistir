@@ -20,6 +20,13 @@
     </div>
   </header>
 
+  @if (atualizacaoDisponivel()) {
+    <div class="update-banner">
+      <span>Nova versão disponível!</span>
+      <button (click)="aplicarAtualizacao()">Atualizar</button>
+    </div>
+  }
+
   <main class="container">
 
     @if (times().length > 0) {
