@@ -5,7 +5,9 @@
       "Bash(npm uninstall:*)",
       "Bash(node node_modules/typescript/bin/tsc --noEmit)",
       "Bash(node -e \"const p = require\\(''puppeteer''\\); console.log\\(''puppeteer ok:'', typeof p.launch\\)\")",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(npx ng:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

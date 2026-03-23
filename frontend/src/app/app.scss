@@ -36,6 +36,38 @@ body {
   min-height: 100vh;
 }
 
+// ── Pull to Refresh ───────────────────────────────────────────────────────────
+
+.pull-indicator {
+  position: fixed;
+  top: -52px;
+  left: 50%;
+  z-index: 999;
+  pointer-events: none;
+  transition: opacity 0.1s;
+  will-change: transform;
+}
+
+.pull-spinner {
+  @include flex($justify: center);
+  width: 40px;
+  height: 40px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  color: #1d6f42;
+
+  &--spin svg {
+    animation: spin 0.75s linear infinite;
+  }
+}
+
+.pull-indicator--ready .pull-spinner {
+  color: #1d6f42;
+  background: #f0fdf4;
+  box-shadow: 0 2px 12px rgba(29,111,66,0.2);
+}
+
 // ── Hero ─────────────────────────────────────────────────────────────────────
 
 .hero {

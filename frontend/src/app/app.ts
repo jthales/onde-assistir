@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Meta, Title } from '@angular/platform-browser';
 import { JogosService } from './services/jogos.service';
@@ -37,9 +37,39 @@ export class App implements OnInit, OnDestroy {
   placares = signal<Map<string, Placar>>(new Map());
   odds = signal<Map<string, Odds>>(new Map());
   classificacao = signal<ClassificacaoEntry[]>([]);
+  pullDistance = signal(0);
+  isPulling = signal(false);
+  isRefreshing = signal(false);
+
   private pollingInterval?: ReturnType<typeof setInterval>;
   private oddsInterval?: ReturnType<typeof setInterval>;
   private classificacaoInterval?: ReturnType<typeof setInterval>;
+
+  private pullStartY = 0;
+  private readonly PULL_THRESHOLD = 72;
+  private onTouchStart = (e: TouchEvent) => {
+    if (window.scrollY > 0 || this.isRefreshing()) return;
+    this.pullStartY = e.touches[0].clientY;
+    this.isPulling.set(true);
+  };
+  private onTouchMove = (e: TouchEvent) => {
+    if (!this.isPulling() || this.isRefreshing()) return;
+    const delta = e.touches[0].clientY - this.pullStartY;
+    if (delta <= 0) { this.pullDistance.set(0); return; }
+    // Resistência progressiva
+    const dist = Math.min(delta * 0.45, this.PULL_THRESHOLD * 1.4);
+    this.pullDistance.set(dist);
+    if (delta > 10) e.preventDefault();
+  };
+  private onTouchEnd = () => {
+    if (!this.isPulling()) return;
+    this.isPulling.set(false);
+    if (this.pullDistance() >= this.PULL_THRESHOLD) {
+      this.recarregar();
+    } else {
+      this.pullDistance.set(0);
+    }
+  };
 
   times = computed(() => {
     const map = new Map<string, string>();
@@ -120,9 +150,17 @@ export class App implements OnInit, OnDestroy {
     return new Date() >= inicio && new Date() < fim;
   }
 
-  constructor(private jogosService: JogosService, private meta: Meta, private titleService: Title) {}
+  constructor(private jogosService: JogosService, private meta: Meta, private titleService: Title, private el: ElementRef) {}
 
   ngOnInit(): void {
+    document.addEventListener('touchstart', this.onTouchStart, { passive: true });
+    document.addEventListener('touchmove', this.onTouchMove, { passive: false });
+    document.addEventListener('touchend', this.onTouchEnd, { passive: true });
+
+    this.carregarDados();
+  }
+
+  private carregarDados(): void {
     this.jogosService.getJogosDaSemana().subscribe({
       next: (data) => {
         const sorted = [...data].sort((a, b) => {
@@ -160,6 +198,36 @@ export class App implements OnInit, OnDestroy {
         }
         this.loading.set(false);
         gaPush('jogos_erro', { status: err?.status });
+      }
+    });
+  }
+
+  recarregar(): void {
+    this.isRefreshing.set(true);
+    clearInterval(this.pollingInterval);
+    clearInterval(this.oddsInterval);
+    clearInterval(this.classificacaoInterval);
+    this.jogosService.getJogosDaSemana().subscribe({
+      next: (data) => {
+        const sorted = [...data].sort((a, b) => {
+          const ta = new Date(`${a.data}T${a.hora || '00:00'}:00-03:00`).getTime();
+          const tb = new Date(`${b.data}T${b.hora || '00:00'}:00-03:00`).getTime();
+          return ta - tb;
+        });
+        this.jogos.set(sorted);
+        this.error.set(null);
+        this.atualizarPlacar();
+        this.pollingInterval = setInterval(() => this.atualizarPlacar(), 10_000);
+        this.atualizarOdds();
+        this.oddsInterval = setInterval(() => this.atualizarOdds(), 5 * 60_000);
+        this.atualizarClassificacao();
+        this.classificacaoInterval = setInterval(() => this.atualizarClassificacao(), 5 * 60_000);
+        gaPush('pull_to_refresh');
+      },
+      error: () => {},
+      complete: () => {
+        this.isRefreshing.set(false);
+        this.pullDistance.set(0);
       }
     });
   }
@@ -217,6 +285,9 @@ export class App implements OnInit, OnDestroy {
     clearInterval(this.pollingInterval);
     clearInterval(this.oddsInterval);
     clearInterval(this.classificacaoInterval);
+    document.removeEventListener('touchstart', this.onTouchStart);
+    document.removeEventListener('touchmove', this.onTouchMove);
+    document.removeEventListener('touchend', this.onTouchEnd);
   }
 
   getInitials = teamInitials;
