@@ -217,6 +217,13 @@ export class App implements OnInit, OnDestroy {
   }
 
   recarregar(): void {
+    if (this.atualizacaoDisponivel()) {
+      window.location.reload();
+      return;
+    }
+    if (this.swUpdate.isEnabled) {
+      this.swUpdate.checkForUpdate();
+    }
     this.isRefreshing.set(true);
     clearInterval(this.pollingInterval);
     clearInterval(this.oddsInterval);
