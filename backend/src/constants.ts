@@ -6,6 +6,31 @@ export function espnScoreboardUrl(): string {
   return `https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/scoreboard?dates=${fmt(brtNow)}-${fmt(in7days)}`;
 }
 
+// Mapa de slug do time → ESPN team ID (para buscar notícias)
+// Slugs derivados dos nomes normalizados em TEAM_NAME_MAP via slugifyFull()
+export const TEAM_ESPN_ID_MAP: Record<string, number> = {
+  'flamengo':              819,
+  'palmeiras':             2029,
+  'sao-paulo':             2026,
+  'fluminense':            3445,
+  'bahia':                 9967,
+  'athletico-paranaense':  3458,
+  'gremio':                6273,
+  'vasco':                 3454,
+  'vitoria':               3457,
+  'corinthians':           874,
+  'internacional':         1936,
+  'atletico-mineiro':      7632,
+  'red-bull-bragantino':   6079,
+  'mirassol':              9169,
+  'santos':                2674,
+  'botafogo':              6086,
+  'cruzeiro':              2022,
+  'fortaleza':             6272,
+  'sport-recife':          7635,
+  'juventude':             6270,
+};
+
 export const TEAM_NAME_MAP: Record<string, string> = {
   'Athletico-PR':        'Athletico Paranaense',
   'Atlético-MG':         'Atlético Mineiro',

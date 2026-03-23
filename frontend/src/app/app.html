@@ -56,6 +56,7 @@
       </div>
     } @else {
       <div class="conteudo-wrapper">
+        <div class="jogos-coluna">
         <div class="jogos-grid">
         @for (jogo of jogosFiltrados(); track jogo.timeMandante + jogo.data) {
           <div class="jogo-card" [class.jogo-card--ao-vivo]="eAoVivo(jogo)" [class.jogo-card--encerrado]="eEncerrado(jogo)">
@@ -213,6 +214,28 @@
               }
             }
           </div>
+        }
+        </div>
+
+        @if (noticias().length > 0) {
+          <section class="noticias-section">
+            <h2 class="noticias-titulo">Notícias sobre {{ timeSelecionado() }}</h2>
+            <div class="noticias-grid">
+              @for (noticia of noticias(); track noticia.link) {
+                <a class="noticia-card" [href]="noticia.link" target="_blank" rel="noopener noreferrer">
+                  <div class="noticia-imagem-wrapper">
+                    <img [src]="noticia.imagem" [alt]="noticia.titulo" class="noticia-imagem"
+                         (error)="$any($event.target).style.display='none'">
+                  </div>
+                  <div class="noticia-corpo">
+                    <p class="noticia-titulo-card">{{ noticia.titulo }}</p>
+                    <p class="noticia-descricao">{{ noticia.descricao }}</p>
+                    <span class="noticia-ler-mais">Ler mais</span>
+                  </div>
+                </a>
+              }
+            </div>
+          </section>
         }
         </div>
 

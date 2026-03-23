@@ -42,6 +42,14 @@ export interface Jogo {
   campeonato?: string;
 }
 
+export interface Noticia {
+  titulo: string;
+  descricao: string;
+  imagem: string;
+  link: string;
+  publicadoEm: string;
+}
+
 export interface ClassificacaoEntry {
   posicao: number;
   nome: string;

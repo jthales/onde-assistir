@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import { Jogo } from './types';
 import { db } from './firebase';
-import { espnScoreboardUrl, TEAM_NAME_MAP } from './constants';
+import { espnScoreboardUrl, TEAM_NAME_MAP, TEAM_ESPN_ID_MAP } from './constants';
 const app = express();
 const PORT = process.env['PORT'] ?? 3000;
 
@@ -399,6 +399,55 @@ app.get('/og', async (req, res) => {
   <p>Redirecionando para <a href="${escapeHtml(canonicalUrl)}">${escapeHtml(canonicalUrl)}</a>...</p>
 </body>
 </html>`);
+});
+
+// Cache de notícias — 10 minutos por time
+interface Noticia {
+  titulo: string;
+  descricao: string;
+  imagem: string;
+  link: string;
+  publicadoEm: string;
+}
+const noticiasCache = new Map<string, { dados: Noticia[]; fetchedAt: number }>();
+const NOTICIAS_CACHE_TTL_MS = 10 * 60_000;
+
+app.get('/api/noticias/:timeSlug', async (req, res) => {
+  const timeSlug = req.params['timeSlug'];
+  const teamId = TEAM_ESPN_ID_MAP[timeSlug];
+
+  if (!teamId) {
+    res.json([]);
+    return;
+  }
+
+  const agora = Date.now();
+  const cached = noticiasCache.get(timeSlug);
+  if (cached && agora - cached.fetchedAt < NOTICIAS_CACHE_TTL_MS) {
+    res.json(cached.dados);
+    return;
+  }
+
+  try {
+    const resp = await fetch(
+      `https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/news?team=${teamId}&limit=5`
+    );
+    const data: any = await resp.json();
+
+    const noticias: Noticia[] = (data.articles ?? []).map((article: any) => ({
+      titulo:      article.headline ?? '',
+      descricao:   article.description ?? '',
+      imagem:      article.images?.[0]?.url ?? '',
+      link:        article.links?.web?.href ?? '',
+      publicadoEm: article.published ?? '',
+    }));
+
+    noticiasCache.set(timeSlug, { dados: noticias, fetchedAt: agora });
+    res.json(noticias);
+  } catch (error) {
+    console.error(`Erro ao buscar notícias para ${timeSlug}:`, error);
+    res.json([]);
+  }
 });
 
 app.get('/sitemap.xml', async (_req, res) => {

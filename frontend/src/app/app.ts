@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, signal, computed, ElementRef } from '@ang
 import { CommonModule } from '@angular/common';
 import { Meta, Title } from '@angular/platform-browser';
 import { JogosService } from './services/jogos.service';
-import { Jogo, Placar, Odds, ClassificacaoEntry } from './models/jogo';
+import { Jogo, Placar, Odds, ClassificacaoEntry, Noticia } from './models/jogo';
 import { teamInitials } from './team-logos';
 
 declare global {
@@ -37,6 +37,7 @@ export class App implements OnInit, OnDestroy {
   placares = signal<Map<string, Placar>>(new Map());
   odds = signal<Map<string, Odds>>(new Map());
   classificacao = signal<ClassificacaoEntry[]>([]);
+  noticias = signal<Noticia[]>([]);
   pullDistance = signal(0);
   isPulling = signal(false);
   isRefreshing = signal(false);
@@ -177,6 +178,7 @@ export class App implements OnInit, OnDestroy {
           if (match) {
             this.timeSelecionado.set(match.nome);
             this.atualizarMeta(match.nome);
+            this.carregarNoticias(slug);
           }
         }
         this.atualizarPlacar();
@@ -237,8 +239,10 @@ export class App implements OnInit, OnDestroy {
     history.replaceState(null, '', nome ? '/' + slugify(nome) : '/');
     this.atualizarMeta(nome);
     if (nome) {
+      this.carregarNoticias(slugify(nome));
       gaPush('filtro_time', { time: nome });
     } else {
+      this.noticias.set([]);
       gaPush('filtro_todos');
     }
   }
@@ -268,6 +272,13 @@ export class App implements OnInit, OnDestroy {
     this.meta.updateTag({ property: 'og:title', content: title });
     this.meta.updateTag({ property: 'og:description', content: description });
     this.meta.updateTag({ property: 'og:url', content: `${baseUrl}/${slugify(nome)}` });
+  }
+
+  private carregarNoticias(slug: string): void {
+    this.jogosService.getNoticias(slug).subscribe({
+      next: (data) => this.noticias.set(data),
+      error: () => this.noticias.set([]),
+    });
   }
 
   aceitarConsentimento(): void {
