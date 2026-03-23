@@ -430,7 +430,7 @@ app.get('/api/noticias/:timeSlug', async (req, res) => {
 
   try {
     const resp = await fetch(
-      `https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/news?team=${teamId}&limit=5&lang=pt&region=br`
+      `https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/news?team=${teamId}&limit=3&lang=pt&region=br`
     );
     const data: any = await resp.json();
 
