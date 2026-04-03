@@ -52,6 +52,7 @@ export interface Noticia {
 
 export interface ClassificacaoEntry {
   posicao: number;
+  posicaoAnterior?: number;
   nome: string;
   logo: string | null;
   jogos: number;

@@ -27,6 +27,10 @@
     </div>
   }
 
+  @if (golToast()) {
+    <div class="gol-toast">{{ golToast() }}</div>
+  }
+
   <main class="container">
 
     @if (times().length > 0) {
@@ -44,6 +48,19 @@
             </button>
           }
         </div>
+      </div>
+    }
+
+    @if (temJogoAoVivo()) {
+      <div class="filtros-bar">
+        <button class="filtro-vivo-btn" [class.ativo]="filtroAoVivo()" (click)="toggleFiltroAoVivo()">
+          <span class="ao-vivo-dot"></span>
+          Ao Vivo
+        </button>
+        <button class="notif-btn" [class.ativo]="notificacoesAtivas()" (click)="ativarNotificacoes()" [title]="notificacoesAtivas() ? 'Desativar notificações de gol' : 'Ativar notificações de gol'">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Gols
+        </button>
       </div>
     }
 
@@ -270,10 +287,23 @@
                 </tr>
               </thead>
               <tbody>
-                @for (entry of classificacaoProvisoria(); track entry.posicao) {
+                @for (entry of classificacaoProvisoria(); track entry.nome) {
                   <tr [class.classificacao-linha--destaque]="timeSelecionado() === entry.nome"
                       [class.classificacao-linha--ao-vivo]="entry.provisorio">
-                    <td class="col-pos">{{ entry.posicao }}</td>
+                    <td class="col-pos">
+                      <span class="pos-col-inner">
+                        <span class="pos-delta-slot">
+                          @if (entry.provisorio && entry.posicaoAnterior && entry.posicaoAnterior !== entry.posicao) {
+                            @if (entry.posicaoAnterior > entry.posicao) {
+                              <span class="pos-delta pos-delta--up">▲{{ entry.posicaoAnterior - entry.posicao }}</span>
+                            } @else {
+                              <span class="pos-delta pos-delta--down">▼{{ entry.posicao - entry.posicaoAnterior }}</span>
+                            }
+                          }
+                        </span>
+                        {{ entry.posicao }}
+                      </span>
+                    </td>
                     <td class="col-time">
                       @if (entry.logo) {
                         <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">

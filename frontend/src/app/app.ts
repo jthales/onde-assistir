@@ -36,12 +36,15 @@ export class App implements OnInit, OnDestroy {
   loading = signal(true);
   error = signal<string | null>(null);
   timeSelecionado = signal<string>('');
+  filtroAoVivo = signal(false);
   showConsentBanner = signal(localStorage.getItem('ga_consent') === null);
   placares = signal<Map<string, Placar>>(new Map());
   odds = signal<Map<string, Odds>>(new Map());
   classificacao = signal<ClassificacaoEntry[]>([]);
   noticias = signal<Noticia[]>([]);
   atualizacaoDisponivel = signal(false);
+  notificacoesAtivas = signal(false);
+  golToast = signal<string | null>(null);
   pullDistance = signal(0);
   isPulling = signal(false);
   isRefreshing = signal(false);
@@ -49,6 +52,8 @@ export class App implements OnInit, OnDestroy {
   private pollingInterval?: ReturnType<typeof setInterval>;
   private oddsInterval?: ReturnType<typeof setInterval>;
   private classificacaoInterval?: ReturnType<typeof setInterval>;
+  private golToastTimer?: ReturnType<typeof setTimeout>;
+  private prevGoalCounts = new Map<string, number>();
 
   private pullStartY = 0;
   private readonly PULL_THRESHOLD = 72;
@@ -89,9 +94,13 @@ export class App implements OnInit, OnDestroy {
 
   jogosFiltrados = computed(() => {
     const time = this.timeSelecionado();
-    const jogos = time
+    const aoVivo = this.filtroAoVivo();
+    let jogos = time
       ? this.jogos().filter(j => j.timeMandante === time || j.timeVisitante === time)
       : this.jogos();
+    if (aoVivo) {
+      jogos = jogos.filter(j => this.eAoVivo(j));
+    }
     return [...jogos].sort((a, b) => {
       const ordemA = this.eEncerrado(a) ? 2 : this.eAoVivo(a) ? 0 : 1;
       const ordemB = this.eEncerrado(b) ? 2 : this.eAoVivo(b) ? 0 : 1;
@@ -99,7 +108,7 @@ export class App implements OnInit, OnDestroy {
     });
   });
 
-  temJogoAoVivo = computed(() => this.jogosFiltrados().some(j => this.eAoVivo(j)));
+  temJogoAoVivo = computed(() => this.filtroAoVivo() || this.jogos().some(j => this.eAoVivo(j)));
 
   classificacaoProvisoria = computed(() => {
     const base = this.classificacao();
@@ -141,9 +150,15 @@ export class App implements OnInit, OnDestroy {
       }
     }
 
+    const posicaoOriginal = new Map(base.map(e => [e.nome, e.posicao]));
+
     return tabela
       .sort((a, b) => b.pontos - a.pontos || b.saldo - a.saldo)
-      .map((e, i) => ({ ...e, posicao: i + 1 }));
+      .map((e, i) => ({
+        ...e,
+        posicao: i + 1,
+        posicaoAnterior: posicaoOriginal.get(e.nome),
+      }));
   });
 
   temClassificacaoProvisoria = computed(() => this.classificacaoProvisoria().some(e => e.provisorio));
@@ -185,7 +200,12 @@ export class App implements OnInit, OnDestroy {
         this.loading.set(false);
         gaPush('jogos_carregados', { total_jogos: sorted.length });
         const slug = window.location.pathname.replace(/^\//, '').toLowerCase();
-        if (slug) {
+        if (slug === 'ao-vivo') {
+          this.filtroAoVivo.set(true);
+          this.titleService.setTitle('Ao Vivo — Onde Assistir');
+          this.meta.updateTag({ property: 'og:title', content: 'Jogos Ao Vivo — Onde Assistir' });
+          this.meta.updateTag({ property: 'og:description', content: 'Acompanhe os jogos ao vivo agora.' });
+        } else if (slug) {
           const match = this.times().find(t => slugify(t.nome) === slug);
           if (match) {
             this.timeSelecionado.set(match.nome);
@@ -254,6 +274,7 @@ export class App implements OnInit, OnDestroy {
   }
 
   selecionarTime(nome: string): void {
+    if (this.filtroAoVivo()) this.filtroAoVivo.set(false);
     this.timeSelecionado.set(nome);
     history.replaceState(null, '', nome ? '/' + slugify(nome) : '/');
     this.atualizarMeta(nome);
@@ -327,6 +348,7 @@ export class App implements OnInit, OnDestroy {
     clearInterval(this.pollingInterval);
     clearInterval(this.oddsInterval);
     clearInterval(this.classificacaoInterval);
+    clearTimeout(this.golToastTimer);
     document.removeEventListener('touchstart', this.onTouchStart);
     document.removeEventListener('touchmove', this.onTouchMove);
     document.removeEventListener('touchend', this.onTouchEnd);
@@ -353,6 +375,8 @@ export class App implements OnInit, OnDestroy {
     'DAZN':               'https://www.dazn.com/pt-BR',
     'TNT Sports':         'https://tntbrasil.com.br',
     'ESPN':               'https://www.espn.com.br',
+    'Record':             'https://www.r7.com/ao-vivo',
+    'Record TV':          'https://www.r7.com/ao-vivo',
   };
 
   getStreamingUrl(plataforma: string): string | null {
@@ -368,9 +392,63 @@ export class App implements OnInit, OnDestroy {
         for (const p of lista) {
           map.set(this.placarKey(p.timeMandante, p.timeVisitante, p.data), p);
         }
+        this.verificarGols(map);
         this.placares.set(map);
       }
     });
+  }
+
+  private verificarGols(novosPlacar: Map<string, Placar>): void {
+    const primeiraVez = this.prevGoalCounts.size === 0;
+    for (const [key, placar] of novosPlacar.entries()) {
+      const total = (placar.placarMandante ?? 0) + (placar.placarVisitante ?? 0);
+      if (!primeiraVez && placar.status === 'em-andamento') {
+        const prevTotal = this.prevGoalCounts.get(key) ?? 0;
+        if (total > prevTotal) {
+          this.dispararNotificacaoGol(placar);
+        }
+      }
+      this.prevGoalCounts.set(key, total);
+    }
+  }
+
+  private dispararNotificacaoGol(placar: Placar): void {
+    const texto = `⚽ GOL! ${placar.timeMandante} ${placar.placarMandante} x ${placar.placarVisitante} ${placar.timeVisitante}`;
+    clearTimeout(this.golToastTimer);
+    this.golToast.set(texto);
+    this.golToastTimer = setTimeout(() => this.golToast.set(null), 5000);
+
+    if (this.notificacoesAtivas() && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification('⚽ GOL!', {
+        body: `${placar.timeMandante} ${placar.placarMandante} x ${placar.placarVisitante} ${placar.timeVisitante}`,
+        icon: '/favicon/icon-512x512.svg',
+        tag: `gol-${placar.timeMandante}-${placar.timeVisitante}`,
+      });
+    }
+  }
+
+  toggleFiltroAoVivo(): void {
+    const next = !this.filtroAoVivo();
+    this.filtroAoVivo.set(next);
+    if (next) {
+      this.timeSelecionado.set('');
+      this.noticias.set([]);
+      history.replaceState(null, '', '/ao-vivo');
+      this.atualizarMeta('');
+    } else {
+      history.replaceState(null, '', '/');
+      this.atualizarMeta('');
+    }
+  }
+
+  async ativarNotificacoes(): Promise<void> {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'granted') {
+      this.notificacoesAtivas.update(v => !v);
+      return;
+    }
+    const permissao = await Notification.requestPermission();
+    this.notificacoesAtivas.set(permissao === 'granted');
   }
 
   getPlacarJogo(jogo: Jogo): Placar | undefined {
