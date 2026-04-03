@@ -400,10 +400,9 @@ export class App implements OnInit, OnDestroy {
     const existing = this.document.querySelector<HTMLScriptElement>('script[data-seo="sports-events"]');
     if (existing) existing.remove();
     if (jogos.length === 0) return;
-    const events = jogos.map(jogo => {
+    const graph = jogos.map(jogo => {
       const hora = jogo.hora && jogo.hora !== '00:00' ? jogo.hora : '00:00';
       const event: Record<string, unknown> = {
-        '@context': 'https://schema.org',
         '@type': 'SportsEvent',
         'name': `${jogo.timeMandante} x ${jogo.timeVisitante}`,
         'startDate': `${jogo.data}T${hora}:00-03:00`,
@@ -413,6 +412,10 @@ export class App implements OnInit, OnDestroy {
         ],
         'sport': 'Futebol',
         'organizer': { '@type': 'Organization', 'name': this.getOrganizer(jogo.campeonato) },
+        'broadcaster': [
+          ...jogo.canal.map(c => ({ '@type': 'Organization', 'name': c })),
+          ...jogo.streaming.map(s => ({ '@type': 'Organization', 'name': s })),
+        ].filter(b => b.name),
       };
       if (jogo.estadio) event['location'] = { '@type': 'Place', 'name': jogo.estadio };
       return event;
@@ -420,7 +423,7 @@ export class App implements OnInit, OnDestroy {
     const script = this.document.createElement('script');
     script.type = 'application/ld+json';
     script.setAttribute('data-seo', 'sports-events');
-    script.textContent = JSON.stringify(events);
+    script.textContent = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
     this.document.head.appendChild(script);
   }
 
