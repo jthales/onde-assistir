@@ -15,8 +15,15 @@
   <header class="hero">
     <div class="hero-inner">
       <div class="hero-badge">2026</div>
-      <h1 class="hero-title">Onde <span class="hero-title-accent">Assistir</span></h1>
+      @if (timeSelecionado()) {
+        <h1 class="hero-title">{{ timeSelecionado() }} — Próximos Jogos e Onde Assistir</h1>
+      } @else {
+        <h1 class="hero-title">Onde <span class="hero-title-accent">Assistir</span> Futebol Ao Vivo — TV e Streaming no Brasil</h1>
+      }
       <p class="hero-subtitle">Brasileirão, Libertadores e mais — TV e Streaming</p>
+      @if (descricaoSeo()) {
+        <p class="descricao-seo">{{ descricaoSeo() }}</p>
+      }
     </div>
   </header>
 
@@ -110,6 +117,7 @@
               </div>
             </div>
 
+            <h3 class="h3-seo">{{ h3TextoJogo(jogo) }}</h3>
             <div class="confronto">
               <div class="time-col">
                 <div class="time-logo">

@@ -1,5 +1,5 @@
-import { Component, OnInit, OnDestroy, signal, computed, ElementRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, signal, computed, ElementRef, Inject } from '@angular/core';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { Meta, Title } from '@angular/platform-browser';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs/operators';
@@ -54,6 +54,72 @@ export class App implements OnInit, OnDestroy {
   private classificacaoInterval?: ReturnType<typeof setInterval>;
   private golToastTimer?: ReturnType<typeof setTimeout>;
   private prevGoalCounts = new Map<string, number>();
+
+  readonly h1Title = computed(() => {
+    const nome = this.timeSelecionado();
+    return nome
+      ? `${nome} — Próximos Jogos e Onde Assistir`
+      : 'Onde Assistir Futebol Ao Vivo — TV e Streaming no Brasil';
+  });
+
+  private readonly CAMP_DISPLAY: Record<string, string> = {
+    'BRASILEIRAO':           'Brasileirão Série A',
+    'BRASILEIRAO SERIE A':   'Brasileirão Série A',
+    'BRASILEIRAO SERIE B':   'Brasileirão Série B',
+    'COPA DO BRASIL':        'Copa do Brasil',
+    'LIBERTADORES':          'Copa Libertadores',
+    'COPA LIBERTADORES':     'Copa Libertadores',
+    'CONMEBOL LIBERTADORES': 'Copa Libertadores',
+    'SUL-AMERICANA':         'Copa Sul-Americana',
+    'COPA SUL-AMERICANA':    'Copa Sul-Americana',
+  };
+
+  readonly descricaoSeo = computed(() => {
+    const jogos = this.jogosFiltrados();
+    const time = this.timeSelecionado();
+    if (jogos.length === 0) return '';
+
+    if (time) {
+      const n = jogos.length;
+      const plural = n > 1 ? 'jogos' : 'jogo';
+      const proximo = jogos.find(j => new Date() < new Date(`${j.data}T${j.hora || '23:59'}:00-03:00`));
+      if (!proximo) return `O ${time} tem ${n} ${plural} nesta semana.`;
+      const tv = proximo.canal.join(', ');
+      const stream = proximo.streaming.join(', ');
+      const canais = [tv, stream].filter(Boolean).join(' e ') || 'a confirmar';
+      const dataFmt = this.formatarData(proximo.data);
+      const horaFmt = proximo.hora && proximo.hora !== '00:00' ? `, às ${proximo.hora}` : '';
+      return `O ${time} tem ${n} ${plural} nos próximos dias. O próximo é ${proximo.timeMandante} x ${proximo.timeVisitante} no dia ${dataFmt}${horaFmt}, transmitido por ${canais}.`;
+    }
+
+    // Homepage
+    const datas = [...new Set(jogos.map(j => j.data))].sort();
+    let intervalo: string;
+    if (datas.length === 1) {
+      const [, m, d] = datas[0].split('-');
+      intervalo = `${d}/${m}`;
+    } else {
+      const [, m1, d1] = datas[0].split('-');
+      const [, m2, d2] = datas[datas.length - 1].split('-');
+      intervalo = m1 === m2 ? `${d1}–${d2}/${m1}` : `${d1}/${m1}–${d2}/${m2}`;
+    }
+    const isWeekend = datas.some(d => {
+      const day = new Date(`${d}T12:00:00-03:00`).getDay();
+      return day === 0 || day === 6;
+    });
+    const periodo = isWeekend ? 'Neste fim de semana' : 'Nesta semana';
+    const contCamp = new Map<string, number>();
+    for (const j of jogos) {
+      if (j.campeonato) contCamp.set(j.campeonato, (contCamp.get(j.campeonato) ?? 0) + 1);
+    }
+    const campRaw = [...contCamp.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+    const campKey = campRaw?.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') ?? '';
+    const campDisplay = this.CAMP_DISPLAY[campKey] ?? campRaw ?? 'futebol brasileiro';
+    const destaque = jogos.find(j => j.canal.includes('Globo')) ?? jogos[0];
+    const canaisDestaque = [...destaque.canal, ...destaque.streaming].join(', ') || 'a confirmar';
+    const estadioDestaque = destaque.estadio ? ` no ${destaque.estadio}` : '';
+    return `${periodo} (${intervalo}), ${campDisplay} tem ${jogos.length} jogos, com destaque para ${destaque.timeMandante} x ${destaque.timeVisitante}${estadioDestaque}, transmitido pela ${canaisDestaque}. Veja abaixo todos os horários, canais de TV e plataformas de streaming.`;
+  });
 
   private pullStartY = 0;
   private readonly PULL_THRESHOLD = 72;
@@ -176,6 +242,7 @@ export class App implements OnInit, OnDestroy {
     private titleService: Title,
     private el: ElementRef,
     private swUpdate: SwUpdate,
+    @Inject(DOCUMENT) private document: Document,
   ) {
     this.setupPwaUpdate();
   }
@@ -202,9 +269,12 @@ export class App implements OnInit, OnDestroy {
         const slug = window.location.pathname.replace(/^\//, '').toLowerCase();
         if (slug === 'ao-vivo') {
           this.filtroAoVivo.set(true);
+          const aoVivoDesc = 'Acompanhe os jogos de futebol ao vivo agora no Brasil — TV e streaming em tempo real.';
           this.titleService.setTitle('Ao Vivo — Onde Assistir');
           this.meta.updateTag({ property: 'og:title', content: 'Jogos Ao Vivo — Onde Assistir' });
-          this.meta.updateTag({ property: 'og:description', content: 'Acompanhe os jogos ao vivo agora.' });
+          this.meta.updateTag({ property: 'og:description', content: aoVivoDesc });
+          this.meta.updateTag({ name: 'description', content: aoVivoDesc });
+          this.setCanonical('https://ondeassistir.space/ao-vivo');
         } else if (slug) {
           const match = this.times().find(t => slugify(t.nome) === slug);
           if (match) {
@@ -213,6 +283,7 @@ export class App implements OnInit, OnDestroy {
             this.carregarNoticias(slug);
           }
         }
+        this.atualizarSportsEvents(this.jogosFiltrados());
         this.atualizarPlacar();
         this.pollingInterval = setInterval(() => this.atualizarPlacar(), 10_000);
         this.atualizarOdds();
@@ -278,6 +349,7 @@ export class App implements OnInit, OnDestroy {
     this.timeSelecionado.set(nome);
     history.replaceState(null, '', nome ? '/' + slugify(nome) : '/');
     this.atualizarMeta(nome);
+    this.atualizarSportsEvents(this.jogosFiltrados());
     if (nome) {
       this.carregarNoticias(slugify(nome));
       gaPush('filtro_time', { time: nome });
@@ -287,31 +359,96 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
+  private readonly BASE_URL = 'https://ondeassistir.space';
+
   private atualizarMeta(nome: string): void {
-    const baseUrl = 'https://onde-assistir-five.vercel.app';
     if (!nome) {
-      this.titleService.setTitle('Onde Assistir — Futebol ao Vivo: TV e Streaming no Brasil');
-      this.meta.updateTag({ property: 'og:title', content: 'Onde Assistir — Futebol ao Vivo: TV e Streaming no Brasil' });
-      this.meta.updateTag({ property: 'og:description', content: 'Veja onde assistir os jogos de futebol desta semana no Brasil.' });
-      this.meta.updateTag({ property: 'og:url', content: baseUrl });
+      const defaultTitle = 'Onde Assistir — Futebol ao Vivo: TV e Streaming no Brasil';
+      const defaultDesc = 'Descubra onde assistir os jogos de futebol da semana no Brasil: Brasileirão Série A, canais de TV e plataformas de streaming.';
+      this.titleService.setTitle(defaultTitle);
+      this.meta.updateTag({ property: 'og:title', content: defaultTitle });
+      this.meta.updateTag({ property: 'og:description', content: defaultDesc });
+      this.meta.updateTag({ property: 'og:url', content: this.BASE_URL + '/' });
+      this.meta.updateTag({ name: 'description', content: defaultDesc });
+      this.setCanonical(this.BASE_URL + '/');
       return;
     }
     const proximo = this.jogosFiltrados().find(j => {
       const inicio = new Date(`${j.data}T${j.hora || '23:59'}:00-03:00`);
       return new Date() < inicio;
     });
-    const title = `${nome} — Onde Assistir`;
-    let description = `Veja todos os jogos do ${nome} desta semana e onde assistir.`;
+    const pageTitle = `${nome} — Onde Assistir`;
+    let description = `Veja onde assistir os próximos jogos do ${nome} ao vivo no Brasil.`;
     if (proximo) {
       const adversario = proximo.timeMandante === nome ? proximo.timeVisitante : proximo.timeMandante;
       const canais = [...proximo.canal, ...proximo.streaming].join(', ') || 'A confirmar';
       const [, m, d] = proximo.data.split('-');
-      description = `${nome} x ${adversario} em ${d}/${m}. Assista em: ${canais}.`;
+      const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+      const diaSemana = diasSemana[new Date(`${proximo.data}T12:00:00-03:00`).getDay()];
+      description = `Veja onde assistir os próximos jogos do ${nome} ao vivo. ${diaSemana}, ${d}/${m} — ${nome} x ${adversario} — ${canais}.`;
     }
-    this.titleService.setTitle(title);
-    this.meta.updateTag({ property: 'og:title', content: title });
+    const url = `${this.BASE_URL}/${slugify(nome)}`;
+    this.titleService.setTitle(pageTitle);
+    this.meta.updateTag({ property: 'og:title', content: pageTitle });
     this.meta.updateTag({ property: 'og:description', content: description });
-    this.meta.updateTag({ property: 'og:url', content: `${baseUrl}/${slugify(nome)}` });
+    this.meta.updateTag({ property: 'og:url', content: url });
+    this.meta.updateTag({ name: 'description', content: description });
+    this.setCanonical(url);
+  }
+
+  private atualizarSportsEvents(jogos: Jogo[]): void {
+    const existing = this.document.querySelector<HTMLScriptElement>('script[data-seo="sports-events"]');
+    if (existing) existing.remove();
+    if (jogos.length === 0) return;
+    const events = jogos.map(jogo => {
+      const hora = jogo.hora && jogo.hora !== '00:00' ? jogo.hora : '00:00';
+      const event: Record<string, unknown> = {
+        '@context': 'https://schema.org',
+        '@type': 'SportsEvent',
+        'name': `${jogo.timeMandante} x ${jogo.timeVisitante}`,
+        'startDate': `${jogo.data}T${hora}:00-03:00`,
+        'competitor': [
+          { '@type': 'SportsTeam', 'name': jogo.timeMandante },
+          { '@type': 'SportsTeam', 'name': jogo.timeVisitante },
+        ],
+        'sport': 'Futebol',
+        'organizer': { '@type': 'Organization', 'name': this.getOrganizer(jogo.campeonato) },
+      };
+      if (jogo.estadio) event['location'] = { '@type': 'Place', 'name': jogo.estadio };
+      return event;
+    });
+    const script = this.document.createElement('script');
+    script.type = 'application/ld+json';
+    script.setAttribute('data-seo', 'sports-events');
+    script.textContent = JSON.stringify(events);
+    this.document.head.appendChild(script);
+  }
+
+  private getOrganizer(campeonato?: string): string {
+    if (!campeonato) return 'CBF';
+    const key = campeonato.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const map: Record<string, string> = {
+      'BRASILEIRAO':           'CBF',
+      'BRASILEIRAO SERIE A':   'CBF',
+      'BRASILEIRAO SERIE B':   'CBF',
+      'COPA DO BRASIL':        'CBF',
+      'LIBERTADORES':          'CONMEBOL',
+      'COPA LIBERTADORES':     'CONMEBOL',
+      'CONMEBOL LIBERTADORES': 'CONMEBOL',
+      'SUL-AMERICANA':         'CONMEBOL',
+      'COPA SUL-AMERICANA':    'CONMEBOL',
+    };
+    return map[key] ?? 'CBF';
+  }
+
+  private setCanonical(url: string): void {
+    let link = this.document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!link) {
+      link = this.document.createElement('link');
+      link.setAttribute('rel', 'canonical');
+      this.document.head.appendChild(link);
+    }
+    link.setAttribute('href', url);
   }
 
   private setupPwaUpdate(): void {
@@ -355,6 +492,12 @@ export class App implements OnInit, OnDestroy {
   }
 
   getInitials = teamInitials;
+
+  h3TextoJogo(jogo: Jogo): string {
+    const data = this.formatarData(jogo.data);
+    const hora = jogo.hora && jogo.hora !== '00:00' ? ` às ${jogo.hora}` : '';
+    return `${jogo.timeMandante} x ${jogo.timeVisitante} — ${data}${hora}`;
+  }
 
   private placarKey(mandante: string, visitante: string, data: string): string {
     return `${data}_${mandante}_${visitante}`;
@@ -439,6 +582,7 @@ export class App implements OnInit, OnDestroy {
       history.replaceState(null, '', '/');
       this.atualizarMeta('');
     }
+    this.atualizarSportsEvents(this.jogosFiltrados());
   }
 
   async ativarNotificacoes(): Promise<void> {
