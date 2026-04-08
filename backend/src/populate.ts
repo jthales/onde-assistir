@@ -132,22 +132,32 @@ Retorne um array JSON, um objeto por jogo, na mesma ordem:
 ]
 Retorne apenas o JSON.`;
 
-  const response = await ai.models.generateContent({
-    model: GEMINI_MODEL_ID,
-    contents: prompt,
-    config: { responseMimeType: 'application/json' },
-  });
+  const MAX_RETRIES = 50;
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await ai.models.generateContent({
+        model: GEMINI_MODEL_ID,
+        contents: prompt,
+        config: { responseMimeType: 'application/json' },
+      });
 
-  const text = response?.text ?? '';
-  console.log('Gemini broadcast response:\n', text.substring(0, 600));
+      const text = response?.text ?? '';
+      console.log('Gemini broadcast response:\n', text.substring(0, 600));
 
-  try {
-    const match = text.match(/\[[\s\S]*\]/);
-    if (!match) return [];
-    return JSON.parse(match[0]) as GeminiBroadcast[];
-  } catch {
-    return [];
+      const match = text.match(/\[[\s\S]*\]/);
+      if (!match) return [];
+      return JSON.parse(match[0]) as GeminiBroadcast[];
+    } catch (err: any) {
+      lastError = err;
+      const is503 = err?.status === 503 || String(err?.message ?? '').includes('503');
+      if (!is503 || attempt === MAX_RETRIES) throw err;
+      const delay = Math.min(2000 * Math.pow(2, attempt - 1), 4 * 60 * 1000); // 2s, 4s, 8s... máx 4min
+      console.warn(`Gemini 503, tentativa ${attempt}/${MAX_RETRIES}. Aguardando ${delay / 1000}s...`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
   }
+  throw lastError;
 }
 
 function jogoId(date: string, mandante: string, visitante: string): string {
