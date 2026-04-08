@@ -98,10 +98,10 @@ async function fetchScoreboardForLeague(leagueId: string, janelaDias?: number): 
 }
 
 async function fetchFixturesFromEspn(): Promise<EspnFixture[]> {
-  const ligas: { id: string; filtrarBR: boolean; janelaDias?: number }[] = [
-    { id: ESPN_LEAGUES.brasileirao,  filtrarBR: false              },
-    { id: ESPN_LEAGUES.libertadores, filtrarBR: true,  janelaDias: 6 },
-    { id: ESPN_LEAGUES.sudamericana, filtrarBR: true,  janelaDias: 6 },
+  const ligas: { id: string; filtrarBR: boolean; janelaDias: number }[] = [
+    { id: ESPN_LEAGUES.brasileirao,  filtrarBR: false, janelaDias: 5 },
+    { id: ESPN_LEAGUES.libertadores, filtrarBR: true,  janelaDias: 5 },
+    { id: ESPN_LEAGUES.sudamericana, filtrarBR: true,  janelaDias: 5 },
   ];
 
   const todas: EspnFixture[] = [];

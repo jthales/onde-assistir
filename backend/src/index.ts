@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import { Jogo } from './types';
 import { db } from './firebase';
-import { espnScoreboardUrl, espnScoreboardUrlForLeague, ESPN_LEAGUES, TEAM_NAME_MAP, TEAM_ESPN_ID_MAP } from './constants';
+import { espnScoreboardUrlForLeague, ESPN_LEAGUES, TEAM_NAME_MAP, TEAM_ESPN_ID_MAP } from './constants';
 const app = express();
 const PORT = process.env['PORT'] ?? 3000;
 
@@ -116,7 +116,7 @@ app.get('/api/placar', async (_req, res) => {
 
   try {
     const [dataBra, dataLib, dataSul] = await Promise.all([
-      fetch(espnScoreboardUrl()).then(r => r.json()),
+      fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.brasileirao, 1)).then(r => r.json()),
       fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.libertadores, 1)).then(r => r.json()),
       fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.sudamericana, 1)).then(r => r.json()),
     ]);
@@ -207,7 +207,7 @@ app.get('/api/odds', async (_req, res) => {
   }
 
   try {
-    const resp = await fetch(espnScoreboardUrl());
+    const resp = await fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.brasileirao, 1));
     const data: any = await resp.json();
     const events: any[] = data.events ?? [];
 
