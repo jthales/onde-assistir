@@ -9,7 +9,7 @@ import * as admin from 'firebase-admin';
 import { GoogleGenAI } from '@google/genai';
 import { Jogo } from './types';
 import { db } from './firebase';
-import { espnScoreboardUrl, TEAM_NAME_MAP } from './constants';
+import { espnScoreboardUrlForLeague, ESPN_LEAGUES, TEAM_NAME_MAP } from './constants';
 import { buscarDadosRodada, buscarOndeAssistir } from './scraper';
 const ai = new GoogleGenAI({ apiKey: process.env['GEMINI_API_KEY'] ?? '' });
 const GEMINI_MODEL_ID = 'gemini-3.1-flash-lite-preview';
@@ -59,9 +59,11 @@ interface GeminiBroadcast {
   streaming: string[];
 }
 
-async function fetchFixturesFromEspn(): Promise<EspnFixture[]> {
-  const res = await fetch(espnScoreboardUrl());
-  if (!res.ok) throw new Error(`ESPN API error: ${res.status}`);
+const TIMES_BRASILEIROS = new Set(Object.values(TEAM_NAME_MAP));
+
+async function fetchScoreboardForLeague(leagueId: string, janelaDias?: number): Promise<EspnFixture[]> {
+  const res = await fetch(espnScoreboardUrlForLeague(leagueId, janelaDias));
+  if (!res.ok) throw new Error(`ESPN API error (${leagueId}): ${res.status}`);
   const data: any = await res.json();
 
   const fixtures: EspnFixture[] = [];
@@ -77,7 +79,7 @@ async function fetchFixturesFromEspn(): Promise<EspnFixture[]> {
     const dateObj = new Date(event.date);
     // Converte UTC para horário de Brasília (UTC-3)
     const brt = new Date(dateObj.getTime() - 3 * 60 * 60 * 1000);
-    const data_jogo = brt.toISOString().slice(0, 10); // data BRT (não UTC)
+    const data_jogo = brt.toISOString().slice(0, 10);
     const hora = brt.toISOString().slice(11, 16);
 
     fixtures.push({
@@ -88,11 +90,30 @@ async function fetchFixturesFromEspn(): Promise<EspnFixture[]> {
       data: data_jogo,
       hora,
       estadio: comp.venue?.fullName ?? '',
-      campeonato: normalizeLeagueName(data.leagues?.[0]?.season?.type?.name ?? data.leagues?.[0]?.name ?? ''),
+      campeonato: normalizeLeagueName(data.leagues?.[0]?.name ?? data.leagues?.[0]?.season?.type?.name ?? ''),
     });
   }
 
   return fixtures;
+}
+
+async function fetchFixturesFromEspn(): Promise<EspnFixture[]> {
+  const ligas: { id: string; filtrarBR: boolean; janelaDias?: number }[] = [
+    { id: ESPN_LEAGUES.brasileirao,  filtrarBR: false              },
+    { id: ESPN_LEAGUES.libertadores, filtrarBR: true,  janelaDias: 6 },
+    { id: ESPN_LEAGUES.sudamericana, filtrarBR: true,  janelaDias: 6 },
+  ];
+
+  const todas: EspnFixture[] = [];
+  for (const liga of ligas) {
+    const fixtures = await fetchScoreboardForLeague(liga.id, liga.janelaDias);
+    const filtradas = liga.filtrarBR
+      ? fixtures.filter(f => TIMES_BRASILEIROS.has(f.timeMandante) || TIMES_BRASILEIROS.has(f.timeVisitante))
+      : fixtures;
+    console.log(`ESPN ${liga.id}: ${fixtures.length} jogos → ${filtradas.length} após filtro`);
+    todas.push(...filtradas);
+  }
+  return todas;
 }
 
 
