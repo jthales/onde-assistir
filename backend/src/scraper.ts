@@ -45,10 +45,12 @@ const CANAIS_STREAMING: Array<{ match: string; display: string }> = [
   { match: 'cazetv',       display: 'Cazé TV'             },
   { match: 'ge tv',        display: 'Ge TV'               },
   { match: 'disney+',      display: 'Disney+'             },
+  { match: 'disney +',     display: 'Disney+'             },
   { match: 'dazn',         display: 'DAZN'                },
   { match: 'tnt sports',   display: 'TNT Sports'          },
   { match: 'hbo max',      display: 'HBO Max'             },
   { match: 'star+',        display: 'Star+'               },
+  { match: 'star +',       display: 'Star+'               },
 ];
 
 // Mapa de estado (normalizado, sem acento) → sigla UF
@@ -99,8 +101,9 @@ function classifyChannels(transmissaoText: string): { canal: string[]; streaming
   }
 
   for (const { match, display } of CANAIS_TV) {
-    // Pula 'globo' genérico se já foi adicionado com sigla regional
-    if (match === 'globo' && canal.some(c => c.startsWith('Globo'))) continue;
+    // Pula qualquer variante de Globo se já existe alguma (regional, TV Globo, ou genérica)
+    const jaTemGlobo = canal.some(c => c.startsWith('Globo') || c === 'TV Globo');
+    if ((match === 'globo' || match === 'tv globo') && jaTemGlobo) continue;
     if (text.includes(match) && !canal.includes(display)) canal.push(display);
   }
   for (const { match, display } of CANAIS_STREAMING) {
@@ -296,17 +299,39 @@ export async function buscarOndeAssistir(
   mandante: string,
   visitante: string,
 ): Promise<{ canal: string[]; streaming: string[] }> {
+  const label = `${mandante} x ${visitante}`;
   try {
-    const query = `onde assistir ${normalizeForSearch(mandante)} x ${normalizeForSearch(visitante)}`;
-    const hits = await buscarNaApi(query);
+    const mand = normalizeForSearch(mandante);
+    const visit = normalizeForSearch(visitante);
 
-    // Prioriza matéria individual, depois rodada
+    // Tenta ordem direta e invertida para cobrir artigos como "Santos x Deportivo Cuenca"
+    const queries = [
+      `onde assistir ${mand} x ${visit}`,
+      `onde assistir ${visit} x ${mand}`,
+    ];
+
+    let hits: SearchHit[] = [];
+    for (const query of queries) {
+      hits = await buscarNaApi(query);
+      console.log(`🔍 Scrape [${label}] query="${query}" → ${hits.length} hits`);
+      if (hits.length > 0) {
+        hits.forEach(h => console.log(`   hit: "${h.title}" | ${h.url}`));
+        break;
+      }
+    }
+
+    // Filtra matérias individuais: precisa de "onde assistir" + pelo menos um dos times
     const individuais = hits.filter(h => {
       const t = removeAccents(h.title).toLowerCase();
-      const mand = normalizeForSearch(mandante);
-      const visit = normalizeForSearch(visitante);
-      return t.includes('onde assistir') && t.includes(mand) && t.includes(visit);
+      const temOndeAssistir = t.includes('onde assistir');
+      const temMandante = t.includes(mand);
+      const temVisitante = t.includes(visit);
+      const ok = temOndeAssistir && (temMandante || temVisitante);
+      if (!ok) console.log(`   ↳ rejeitado: ondeAssistir=${temOndeAssistir} mand=${temMandante} visit=${temVisitante} — "${h.title}"`);
+      return ok;
     });
+
+    console.log(`   → ${individuais.length} matéria(s) individual(is) aceita(s)`);
 
     for (const hit of individuais) {
       try {
@@ -314,19 +339,22 @@ export async function buscarOndeAssistir(
         const result = extrairDeMateria(bodyText);
         if (result) {
           const channels = [...result.canal, ...result.streaming].join(', ');
-          console.log(`✅ Scrape OK: ${mandante} x ${visitante} → ${channels}\n   📎 ${hit.url}`);
+          console.log(`✅ Scrape OK: ${label} → ${channels}\n   📎 ${hit.url}`);
           return result;
         }
-      } catch { /* tenta próximo */ }
+        console.log(`   ↳ artigo sem "Transmissão:" — ${hit.url}`);
+      } catch (e) {
+        console.log(`   ↳ erro ao ler artigo: ${String(e)}`);
+      }
     }
 
-    console.log(`⚠️ Scrape falhou: ${mandante} x ${visitante} — matéria individual não encontrada`);
+    console.log(`⚠️ Scrape falhou: ${label} — nenhuma matéria com transmissão encontrada`);
     return { canal: [], streaming: [] };
   } catch (err: unknown) {
     if (err instanceof Error && err.name === 'AbortError') {
-      console.log(`❌ Erro: timeout — ${mandante} x ${visitante}`);
+      console.log(`❌ Timeout: ${label}`);
     } else {
-      console.log(`❌ Erro: ${mandante} x ${visitante} — ${String(err)}`);
+      console.log(`❌ Erro: ${label} — ${String(err)}`);
     }
     return { canal: [], streaming: [] };
   }

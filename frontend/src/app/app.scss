@@ -218,6 +218,11 @@ body {
   transform: scale(1.12);
 }
 
+.time-chip.sem-jogo {
+  opacity: 0.35;
+  filter: grayscale(0.5);
+}
+
 .time-chip--todos {
   width: auto;
   height: 44px;

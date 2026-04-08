@@ -147,16 +147,28 @@ export class App implements OnInit, OnDestroy {
     }
   };
 
-  times = computed(() => {
-    const map = new Map<string, string>();
+  logosMap = computed(() => {
+    const m = new Map<string, string>();
+    // Jogos (ESPN scoreboard) — cobre times de Libertadores/Sul-Americana também
     for (const j of this.jogos()) {
-      if (!map.has(j.timeMandante)) map.set(j.timeMandante, j.logoMandante ?? '');
-      if (!map.has(j.timeVisitante)) map.set(j.timeVisitante, j.logoVisitante ?? '');
+      if (j.logoMandante)  m.set(j.timeMandante,  j.logoMandante);
+      if (j.logoVisitante) m.set(j.timeVisitante, j.logoVisitante);
     }
-    return Array.from(map.entries())
-      .map(([nome, logo]) => ({ nome, logo }))
-      .sort((a, b) => a.nome.localeCompare(b.nome));
+    // Classificação (ESPN standings) — cobre todos os 20 da Série A, sobrescreve se tiver logo melhor
+    for (const e of this.classificacao()) {
+      if (e.logo) m.set(e.nome, e.logo);
+    }
+    return m;
   });
+
+  getLogo(nome: string): string {
+    return this.logosMap().get(nome) ?? '';
+  }
+
+  temJogo(nome: string): boolean {
+    const jogos = this.jogos();
+    return jogos.some(j => j.timeMandante === nome || j.timeVisitante === nome);
+  }
 
   jogosFiltrados = computed(() => {
     const time = this.timeSelecionado();
@@ -276,7 +288,7 @@ export class App implements OnInit, OnDestroy {
           this.meta.updateTag({ name: 'description', content: aoVivoDesc });
           this.setCanonical('https://ondeassistir.space/ao-vivo');
         } else if (slug) {
-          const match = this.times().find(t => slugify(t.nome) === slug);
+          const match = this.classificacao().find(t => slugify(t.nome) === slug);
           if (match) {
             this.timeSelecionado.set(match.nome);
             this.atualizarMeta(match.nome);

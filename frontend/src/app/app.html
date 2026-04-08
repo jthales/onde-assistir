@@ -40,23 +40,25 @@
 
   <main class="container">
 
-    @if (times().length > 0) {
-      <div class="times-picker">
-        <button class="time-chip time-chip--todos" [class.ativo]="timeSelecionado() === ''" (click)="selecionarTime('')">
-          Todos os times
-        </button>
-        <div class="times-grid">
-          @for (time of times(); track time.nome) {
-            <button class="time-chip" [class.ativo]="timeSelecionado() === time.nome" (click)="selecionarTime(time.nome)" [title]="time.nome">
-              @if (time.logo) {
-                <img [src]="time.logo" [alt]="time.nome" class="chip-logo" (error)="$any($event.target).style.display='none'">
-              }
-              <span class="chip-initials">{{ getInitials(time.nome) }}</span>
-            </button>
-          }
-        </div>
+    <div class="times-picker">
+      <button class="time-chip time-chip--todos" [class.ativo]="timeSelecionado() === ''" (click)="selecionarTime('')">
+        Todos os times
+      </button>
+      <div class="times-grid">
+        @for (time of classificacao(); track time.nome) {
+          <button class="time-chip"
+                  [class.ativo]="timeSelecionado() === time.nome"
+                  [class.sem-jogo]="!temJogo(time.nome)"
+                  (click)="selecionarTime(time.nome)"
+                  [title]="time.nome">
+            @if (time.logo) {
+              <img [src]="time.logo" [alt]="time.nome" class="chip-logo" (error)="$any($event.target).style.display='none'">
+            }
+            <span class="chip-initials">{{ getInitials(time.nome) }}</span>
+          </button>
+        }
       </div>
-    }
+    </div>
 
     @if (temJogoAoVivo()) {
       <div class="filtros-bar">

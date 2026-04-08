@@ -1,9 +1,19 @@
+export const ESPN_LEAGUES = {
+  brasileirao:  'bra.1',
+  libertadores: 'conmebol.libertadores',
+  sudamericana: 'conmebol.sudamericana',
+} as const;
+
 export function espnScoreboardUrl(): string {
+  return espnScoreboardUrlForLeague(ESPN_LEAGUES.brasileirao, 7);
+}
+
+export function espnScoreboardUrlForLeague(leagueId: string, janelaDias = 14): string {
   const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '');
   // Usar data BRT (UTC-3) para não perder jogos do dia após as 21h (quando UTC vira dia seguinte)
   const brtNow = new Date(Date.now() - 3 * 60 * 60 * 1000);
-  const in7days = new Date(brtNow.getTime() + 7 * 24 * 60 * 60 * 1000);
-  return `https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/scoreboard?dates=${fmt(brtNow)}-${fmt(in7days)}`;
+  const fim = new Date(brtNow.getTime() + janelaDias * 24 * 60 * 60 * 1000);
+  return `https://site.api.espn.com/apis/site/v2/sports/soccer/${leagueId}/scoreboard?dates=${fmt(brtNow)}-${fmt(fim)}`;
 }
 
 // Mapa de slug do time → ESPN team ID (para buscar notícias)
