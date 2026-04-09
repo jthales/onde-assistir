@@ -334,19 +334,25 @@ export async function buscarOndeAssistir(
       if (hits.length > 0) break;
     }
 
-    // Filtra matérias individuais: precisa de "onde assistir" + pelo menos um dos times
+    // Filtra matérias individuais: precisa de "onde assistir" + os dois times no título
+    // Usa teamVariants para cobrir aliases (ex: "Bragantino" → "Red Bull Bragantino")
+    const mandVariants = teamVariants(mandante);
+    const visitVariants = teamVariants(visitante);
+
     const individuais = hits.filter(h => {
       const t = removeAccents(h.title).toLowerCase();
       const temOndeAssistir = t.includes('onde assistir');
-      const temMandante = t.includes(mand);
-      const temVisitante = t.includes(visit);
-      const aceito = temOndeAssistir && (temMandante || temVisitante);
+      const temMandante = mandVariants.some(v => t.includes(v));
+      const temVisitante = visitVariants.some(v => t.includes(v));
+      const aceito = temOndeAssistir && temMandante && temVisitante;
 
       const motivo = !temOndeAssistir
         ? 'sem "onde assistir"'
         : !temMandante && !temVisitante
           ? 'sem nenhum dos times'
-          : '';
+          : !temMandante
+            ? `sem mandante (${mandante})`
+            : `sem visitante (${visitante})`;
       const icone = aceito ? '  ✓' : '  ✗';
       console.log(`${icone} "${h.title}"`);
       if (!aceito) console.log(`       motivo: ${motivo}`);
