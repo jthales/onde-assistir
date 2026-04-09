@@ -14,6 +14,12 @@ import { buscarDadosRodada, buscarOndeAssistir } from './scraper';
 const ai = new GoogleGenAI({ apiKey: process.env['GEMINI_API_KEY'] ?? '' });
 const GEMINI_MODEL_ID = 'gemini-3.1-flash-lite-preview';
 
+const ESPN_LEAGUE_LABELS: Record<string, string> = {
+  'bra.1':                  'Brasileirão',
+  'conmebol.libertadores':  'Libertadores',
+  'conmebol.sudamericana':  'Sul-Americana',
+};
+
 const LEAGUE_NAME_MAP: Record<string, string> = {
   'Brasileiro Serie A':       'Brasileirão',
   'Brazilian Serie A':        'Brasileirão',
@@ -110,7 +116,9 @@ async function fetchFixturesFromEspn(): Promise<EspnFixture[]> {
     const filtradas = liga.filtrarBR
       ? fixtures.filter(f => TIMES_BRASILEIROS.has(f.timeMandante) || TIMES_BRASILEIROS.has(f.timeVisitante))
       : fixtures;
-    console.log(`ESPN ${liga.id}: ${fixtures.length} jogos → ${filtradas.length} após filtro`);
+    const label = ESPN_LEAGUE_LABELS[liga.id] ?? liga.id;
+    const filtroInfo = liga.filtrarBR ? ` (${fixtures.length} total → ${filtradas.length} com times BR)` : '';
+    console.log(`  ${label}: ${filtradas.length} jogos${filtroInfo}`);
     todas.push(...filtradas);
   }
   return todas;
@@ -164,11 +172,12 @@ Retorne apenas o JSON.`;
       });
 
       const text = response?.text ?? '';
-      console.log('Gemini broadcast response:\n', text.substring(0, 600));
 
       const match = text.match(/\[[\s\S]*\]/);
-      if (!match) return [];
-      return JSON.parse(match[0]) as GeminiBroadcast[];
+      if (!match) { console.warn('Gemini: resposta sem array JSON'); return []; }
+      const parsed = JSON.parse(match[0]) as GeminiBroadcast[];
+      console.log(`Gemini: ${parsed.filter(b => b.canal.length + b.streaming.length > 0).length}/${parsed.length} jogos com transmissão`);
+      return parsed;
     } catch (err: any) {
       lastError = err;
       const is503 = err?.status === 503 || String(err?.message ?? '').includes('503');
@@ -199,9 +208,14 @@ async function runPopulate(): Promise<void> {
   console.log('Limpando coleção jogos...');
   await clearCollection(db.collection('jogos'));
 
-  console.log('Buscando fixtures na ESPN...');
+  console.log('\n── ESPN ──');
   const fixtures = await fetchFixturesFromEspn();
-  console.log(`ESPN retornou ${fixtures.length} jogos:`, fixtures.map(f => `${f.timeMandante} x ${f.timeVisitante}`));
+  const porCampeonato = fixtures.reduce<Record<string, number>>((acc, f) => {
+    acc[f.campeonato] = (acc[f.campeonato] ?? 0) + 1;
+    return acc;
+  }, {});
+  const resumoCamp = Object.entries(porCampeonato).map(([c, n]) => `${n} ${c}`).join(' | ');
+  console.log(`Total: ${fixtures.length} jogos — ${resumoCamp}`);
 
   if (fixtures.length === 0) throw new Error('Nenhum jogo encontrado na ESPN');
 
@@ -212,8 +226,10 @@ async function runPopulate(): Promise<void> {
 
   // Passo 2: para cada jogo, tenta rodada primeiro; fallback busca individual; fallback Gemini
   const broadcastMap = new Map<string, GeminiBroadcast>();
+  const sourceMap = new Map<string, 'rodada' | 'scrape' | 'gemini' | 'nenhum'>();
   const failedFixtures: EspnFixture[] = [];
 
+  console.log('\n── Transmissões ──');
   for (const fixture of fixtures) {
     const key = `${fixture.timeMandante}|${fixture.timeVisitante}`;
 
@@ -221,7 +237,8 @@ async function runPopulate(): Promise<void> {
     const fromRodada = dadosRodada?.buscarTransmissao(fixture.timeMandante, fixture.timeVisitante);
     if (fromRodada && (fromRodada.canal.length > 0 || fromRodada.streaming.length > 0)) {
       broadcastMap.set(key, { timeMandante: fixture.timeMandante, timeVisitante: fixture.timeVisitante, ...fromRodada });
-      console.log(`✅ Rodada: ${fixture.timeMandante} x ${fixture.timeVisitante} → ${[...fromRodada.canal, ...fromRodada.streaming].join(', ')}`);
+      sourceMap.set(key, 'rodada');
+      console.log(`✅ [rodada]  ${fixture.timeMandante} x ${fixture.timeVisitante} → ${[...fromRodada.canal, ...fromRodada.streaming].join(', ')}`);
       continue;
     }
 
@@ -229,6 +246,7 @@ async function runPopulate(): Promise<void> {
     const { canal, streaming } = await buscarOndeAssistir(fixture.timeMandante, fixture.timeVisitante);
     if (canal.length > 0 || streaming.length > 0) {
       broadcastMap.set(key, { timeMandante: fixture.timeMandante, timeVisitante: fixture.timeVisitante, canal, streaming });
+      sourceMap.set(key, 'scrape');
     } else {
       failedFixtures.push(fixture);
     }
@@ -236,11 +254,20 @@ async function runPopulate(): Promise<void> {
 
   // Passo 3: fallback Gemini para jogos onde o scrape falhou
   if (failedFixtures.length > 0) {
-    console.log(`\nFallback Gemini para ${failedFixtures.length} jogo(s) sem scrape...`);
+    console.log(`\n── Gemini (fallback para ${failedFixtures.length} jogo(s)) ──`);
     const geminiResults = await fetchBroadcastFromGemini(failedFixtures);
     for (const b of geminiResults) {
       const key = `${b.timeMandante}|${b.timeVisitante}`;
-      if (!broadcastMap.has(key)) broadcastMap.set(key, b);
+      if (!broadcastMap.has(key)) {
+        broadcastMap.set(key, b);
+        sourceMap.set(key, b.canal.length + b.streaming.length > 0 ? 'gemini' : 'nenhum');
+        const channels = [...b.canal, ...b.streaming].join(', ');
+        if (channels) {
+          console.log(`✅ [gemini]  ${b.timeMandante} x ${b.timeVisitante} → ${channels}`);
+        } else {
+          console.log(`⚠️  [gemini]  ${b.timeMandante} x ${b.timeVisitante} → sem transmissão`);
+        }
+      }
     }
   }
 
@@ -269,7 +296,6 @@ async function runPopulate(): Promise<void> {
 
     batch.set(db.collection('jogos').doc(jogo.id), jogo, { merge: true });
     total++;
-    console.log(`  ✓ ${jogo.timeMandante} x ${jogo.timeVisitante} | Rodada ${jogo.rodada} | ${jogo.canal.join(', ') || 'sem canal'}`);
   }
 
   batch.set(db.collection('meta').doc('lastUpdated'), {
@@ -278,12 +304,24 @@ async function runPopulate(): Promise<void> {
   });
 
   await batch.commit();
-  console.log(`\nPopulate concluído: ${total} jogos salvos.`);
+
+  // Resumo final
+  const bySource = { rodada: 0, scrape: 0, gemini: 0, nenhum: 0 };
+  for (const fixture of fixtures) {
+    const key = `${fixture.timeMandante}|${fixture.timeVisitante}`;
+    const src = sourceMap.get(key) ?? 'nenhum';
+    bySource[src]++;
+  }
+  console.log('\n── Resultado ──');
+  console.log(`  ${total} jogos salvos`);
+  console.log(`  Fontes: ${bySource.rodada} rodada · ${bySource.scrape} scrape · ${bySource.gemini} Gemini · ${bySource.nenhum} sem transmissão`);
 }
 
 runPopulate()
-  .then(() => process.exit(0))
+  .then(() => {
+    process.exitCode = 0;
+  })
   .catch((err) => {
     console.error('Erro no populate:', err);
-    process.exit(1);
+    process.exitCode = 1;
   });

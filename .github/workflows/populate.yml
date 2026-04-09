@@ -36,13 +36,21 @@ jobs:
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
         run: |
           echo "Iniciando populate de jogos — $(date '+%d/%m/%Y %H:%M:%S UTC')"
-          npm run populate
-          echo "✅ Populate concluído com sucesso!"
+          npm run populate 2>&1 | tee ../populate.log
+          exit ${PIPESTATUS[0]}
 
-      - name: ✅ Resumo da execução
-        if: success()
-        run: echo "🎉 Jogos da semana atualizados com sucesso no Firestore!"
+      - name: 📄 Salvar log completo como artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: populate-log-${{ github.run_number }}
+          path: populate.log
+          retention-days: 14
 
-      - name: ❌ Falha na execução
-        if: failure()
-        run: echo "💥 O populate falhou. Verifique os logs acima para identificar o erro."
+      - name: 📋 Step Summary
+        if: always()
+        run: |
+          echo "## Populate — $(date '+%d/%m/%Y %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E "(──|Total:|Fontes:|✅|⚠️|❌|Erro)" populate.log || echo "(sem linhas de resumo)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY

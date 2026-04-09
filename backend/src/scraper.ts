@@ -310,14 +310,15 @@ export async function buscarOndeAssistir(
       `onde assistir ${visit} x ${mand}`,
     ];
 
+    console.log(`\n🔍 [scrape] ${label}`);
+
     let hits: SearchHit[] = [];
+    let queryUsada = '';
     for (const query of queries) {
       hits = await buscarNaApi(query);
-      console.log(`🔍 Scrape [${label}] query="${query}" → ${hits.length} hits`);
-      if (hits.length > 0) {
-        hits.forEach(h => console.log(`   hit: "${h.title}" | ${h.url}`));
-        break;
-      }
+      queryUsada = query;
+      console.log(`   query: "${query}" → ${hits.length} hit(s)`);
+      if (hits.length > 0) break;
     }
 
     // Filtra matérias individuais: precisa de "onde assistir" + pelo menos um dos times
@@ -326,36 +327,47 @@ export async function buscarOndeAssistir(
       const temOndeAssistir = t.includes('onde assistir');
       const temMandante = t.includes(mand);
       const temVisitante = t.includes(visit);
-      const ok = temOndeAssistir && (temMandante || temVisitante);
-      if (!ok) console.log(`   ↳ rejeitado: ondeAssistir=${temOndeAssistir} mand=${temMandante} visit=${temVisitante} — "${h.title}"`);
-      return ok;
+      const aceito = temOndeAssistir && (temMandante || temVisitante);
+
+      const motivo = !temOndeAssistir
+        ? 'sem "onde assistir"'
+        : !temMandante && !temVisitante
+          ? 'sem nenhum dos times'
+          : '';
+      const icone = aceito ? '  ✓' : '  ✗';
+      console.log(`${icone} "${h.title}"`);
+      if (!aceito) console.log(`       motivo: ${motivo}`);
+      console.log(`       ${h.url}`);
+
+      return aceito;
     });
 
-    console.log(`   → ${individuais.length} matéria(s) individual(is) aceita(s)`);
+    if (individuais.length === 0) {
+      console.log(`   → nenhuma matéria aceita`);
+    }
 
     for (const hit of individuais) {
       try {
+        console.log(`   lendo: ${hit.url}`);
         const bodyText = await fetchBodyText(hit.url);
         const result = extrairDeMateria(bodyText);
         if (result) {
           const channels = [...result.canal, ...result.streaming].join(', ');
-          console.log(`✅ Scrape OK: ${label} → ${channels}\n   📎 ${hit.url}`);
+          console.log(`   → extraiu: ${channels}`);
+          console.log(`✅ [scrape]  ${label} → ${channels}`);
           return result;
         }
-        console.log(`   ↳ artigo sem "Transmissão:" — ${hit.url}`);
+        console.log(`   → sem padrão "Transmissão:" no artigo`);
       } catch (e) {
-        console.log(`   ↳ erro ao ler artigo: ${String(e)}`);
+        console.log(`   → erro ao ler: ${String(e)}`);
       }
     }
 
-    console.log(`⚠️ Scrape falhou: ${label} — nenhuma matéria com transmissão encontrada`);
+    console.log(`⚠️  [scrape]  ${label} — sem transmissão encontrada`);
     return { canal: [], streaming: [] };
   } catch (err: unknown) {
-    if (err instanceof Error && err.name === 'AbortError') {
-      console.log(`❌ Timeout: ${label}`);
-    } else {
-      console.log(`❌ Erro: ${label} — ${String(err)}`);
-    }
+    const reason = err instanceof Error && err.name === 'AbortError' ? 'timeout' : String(err);
+    console.log(`❌ [scrape]  ${label} — ${reason}`);
     return { canal: [], streaming: [] };
   }
 }
