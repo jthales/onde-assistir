@@ -191,12 +191,25 @@ async function buscarNaApi(query: string): Promise<SearchHit[]> {
 
 // ─── Extração de transmissão ─────────────────────────────────────────────────
 
-/** Extrai transmissão de matéria individual ("Transmissão: SporTV e Premiere"). */
+/** Extrai transmissão de matéria individual. */
 function extrairDeMateria(bodyText: string): { canal: string[]; streaming: string[] } | null {
-  const match = bodyText.match(/Transmiss[aã]o[:\s]+([^.;]{5,300})/i);
-  if (!match) return null;
-  const result = classifyChannels(match[1]);
-  return (result.canal.length > 0 || result.streaming.length > 0) ? result : null;
+  // Padrão 1: "Transmissão: SporTV e Premiere"
+  const matchLabel = bodyText.match(/Transmiss[aã]o[:\s]+([^.;]{5,300})/i);
+  if (matchLabel) {
+    const result = classifyChannels(matchLabel[1]);
+    if (result.canal.length > 0 || result.streaming.length > 0) return result;
+  }
+
+  // Padrão 2: frases livres — "A ESPN e o Disney+ também transmitem a partida ao vivo."
+  for (const sentence of bodyText.split(/[.!?]\s+/)) {
+    const lower = sentence.toLowerCase();
+    if (lower.includes('transmi') && lower.includes('ao vivo')) {
+      const result = classifyChannels(sentence);
+      if (result.canal.length > 0 || result.streaming.length > 0) return result;
+    }
+  }
+
+  return null;
 }
 
 /**
