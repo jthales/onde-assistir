@@ -1,5 +1,5 @@
 /**
- * Populate: ESPN API (fixtures reais) + Gemini (rodada + transmissão).
+ * Populate: ESPN API (fixtures reais) + scrape ge.globo (transmissões).
  * Limpa a coleção antes de gravar.
  *
  * Uso: npm run populate
@@ -11,8 +11,10 @@ import { Jogo } from './types';
 import { db } from './firebase';
 import { espnScoreboardUrlForLeague, ESPN_LEAGUES, TEAM_NAME_MAP } from './constants';
 import { buscarDadosRodada, buscarOndeAssistir } from './scraper';
+
 const ai = new GoogleGenAI({ apiKey: process.env['GEMINI_API_KEY'] ?? '' });
-const GEMINI_MODEL_ID = 'gemini-3.1-flash-lite-preview';
+const GEMINI_MODEL_ID = 'gemini-2.0-flash-lite';
+const GEMINI_JANELA_DIAS = 4; // só usa Gemini para jogos nos próximos N dias
 
 const ESPN_LEAGUE_LABELS: Record<string, string> = {
   'bra.1':                  'Brasileirão',
@@ -58,9 +60,7 @@ interface EspnFixture {
   campeonato: string;
 }
 
-interface GeminiBroadcast {
-  timeMandante: string;
-  timeVisitante: string;
+interface Broadcast {
   canal: string[];
   streaming: string[];
 }
@@ -125,8 +125,10 @@ async function fetchFixturesFromEspn(): Promise<EspnFixture[]> {
 }
 
 
-async function fetchBroadcastFromGemini(fixtures: EspnFixture[]): Promise<GeminiBroadcast[]> {
-  if (fixtures.length === 0) return [];
+
+async function fetchBroadcastFromGemini(fixtures: EspnFixture[]): Promise<Map<string, Broadcast>> {
+  const result = new Map<string, Broadcast>();
+  if (fixtures.length === 0) return result;
 
   const jogosList = fixtures
     .map((f, i) => `${i + 1}. ${f.timeMandante} x ${f.timeVisitante} — ${f.campeonato} (${f.data}${f.hora ? ' ' + f.hora : ''})`)
@@ -142,7 +144,7 @@ Direitos de transmissão atuais:
 - Pay-per-view: "Premiere" transmite Brasileirão Série A (exceto jogos da Globo).
 - Streaming:
   - "Globoplay": transmite todos os jogos do Brasileirão, Copa do Brasil e seleção brasileira.
-  - "Cazé TV": transmite ao vivo no YouTube jogos do Brasileirão Série A (jogos de grande audiência), Copa do Brasil, Libertadores e Sul-Americana. Jogos como Corinthians, Flamengo, Palmeiras, São Paulo costumam estar na Cazé TV.
+  - "Cazé TV": transmite ao vivo no YouTube jogos do Brasileirão Série A (jogos de grande audiência), Copa do Brasil, Libertadores e Sul-Americana.
   - "Ge TV": canal do YouTube do Ge/Globo Esporte que transmite alguns jogos ao vivo gratuitamente.
   - "Amazon Prime Video": transmite alguns jogos do Brasileirão Série A.
 - Se não tiver certeza sobre um canal ou plataforma específica, use [].
@@ -172,17 +174,21 @@ Retorne apenas o JSON.`;
       });
 
       const text = response?.text ?? '';
-
       const match = text.match(/\[[\s\S]*\]/);
-      if (!match) { console.warn('Gemini: resposta sem array JSON'); return []; }
-      const parsed = JSON.parse(match[0]) as GeminiBroadcast[];
+      if (!match) { console.warn('Gemini: resposta sem array JSON'); return result; }
+
+      const parsed: Array<{ timeMandante: string; timeVisitante: string; canal: string[]; streaming: string[] }> = JSON.parse(match[0]);
       console.log(`Gemini: ${parsed.filter(b => b.canal.length + b.streaming.length > 0).length}/${parsed.length} jogos com transmissão`);
-      return parsed;
+
+      for (const b of parsed) {
+        result.set(`${b.timeMandante}|${b.timeVisitante}`, { canal: b.canal, streaming: b.streaming });
+      }
+      return result;
     } catch (err: any) {
       lastError = err;
       const is503 = err?.status === 503 || String(err?.message ?? '').includes('503');
       if (!is503 || attempt === MAX_RETRIES) throw err;
-      const delay = Math.min(2000 * Math.pow(2, attempt - 1), 4 * 60 * 1000); // 2s, 4s, 8s... máx 4min
+      const delay = Math.min(2000 * Math.pow(2, attempt - 1), 4 * 60 * 1000);
       console.warn(`Gemini 503, tentativa ${attempt}/${MAX_RETRIES}. Aguardando ${delay / 1000}s...`);
       await new Promise((r) => setTimeout(r, delay));
     }
@@ -225,7 +231,7 @@ async function runPopulate(): Promise<void> {
   const rodadaNum = dadosRodada?.rodada ?? 0;
 
   // Passo 2: para cada jogo, tenta rodada primeiro; fallback busca individual; fallback Gemini
-  const broadcastMap = new Map<string, GeminiBroadcast>();
+  const broadcastMap = new Map<string, Broadcast>();
   const sourceMap = new Map<string, 'rodada' | 'scrape' | 'gemini' | 'nenhum'>();
   const failedFixtures: EspnFixture[] = [];
 
@@ -236,7 +242,7 @@ async function runPopulate(): Promise<void> {
     // Tenta artigo de rodada (sem request adicional)
     const fromRodada = dadosRodada?.buscarTransmissao(fixture.timeMandante, fixture.timeVisitante);
     if (fromRodada && (fromRodada.canal.length > 0 || fromRodada.streaming.length > 0)) {
-      broadcastMap.set(key, { timeMandante: fixture.timeMandante, timeVisitante: fixture.timeVisitante, ...fromRodada });
+      broadcastMap.set(key, fromRodada);
       sourceMap.set(key, 'rodada');
       console.log(`✅ [rodada]  ${fixture.timeMandante} x ${fixture.timeVisitante} → ${[...fromRodada.canal, ...fromRodada.streaming].join(', ')}`);
       continue;
@@ -245,27 +251,44 @@ async function runPopulate(): Promise<void> {
     // Fallback: matéria individual
     const { canal, streaming } = await buscarOndeAssistir(fixture.timeMandante, fixture.timeVisitante);
     if (canal.length > 0 || streaming.length > 0) {
-      broadcastMap.set(key, { timeMandante: fixture.timeMandante, timeVisitante: fixture.timeVisitante, canal, streaming });
+      broadcastMap.set(key, { canal, streaming });
       sourceMap.set(key, 'scrape');
     } else {
       failedFixtures.push(fixture);
     }
   }
 
-  // Passo 3: fallback Gemini para jogos onde o scrape falhou
+  // Passo 3: divide failedFixtures por janela
+  // - Jogos nos próximos GEMINI_JANELA_DIAS dias → Gemini (transmissão já deve estar definida)
+  // - Jogos mais distantes → vazio (transmissão ainda não anunciada)
   if (failedFixtures.length > 0) {
-    console.log(`\n── Gemini (fallback para ${failedFixtures.length} jogo(s)) ──`);
-    const geminiResults = await fetchBroadcastFromGemini(failedFixtures);
-    for (const b of geminiResults) {
-      const key = `${b.timeMandante}|${b.timeVisitante}`;
-      if (!broadcastMap.has(key)) {
-        broadcastMap.set(key, b);
-        sourceMap.set(key, b.canal.length + b.streaming.length > 0 ? 'gemini' : 'nenhum');
-        const channels = [...b.canal, ...b.streaming].join(', ');
+    const hoje = new Date(Date.now() - 3 * 60 * 60 * 1000); // BRT
+    const limite = new Date(hoje.getTime() + GEMINI_JANELA_DIAS * 24 * 60 * 60 * 1000);
+
+    const paraGemini = failedFixtures.filter(f => new Date(f.data) <= limite);
+    const semDefinicao = failedFixtures.filter(f => new Date(f.data) > limite);
+
+    if (semDefinicao.length > 0) {
+      console.log(`\n⏳ ${semDefinicao.length} jogo(s) sem transmissão definida ainda (> ${GEMINI_JANELA_DIAS} dias):`);
+      for (const f of semDefinicao) {
+        sourceMap.set(`${f.timeMandante}|${f.timeVisitante}`, 'nenhum');
+        console.log(`   ${f.timeMandante} x ${f.timeVisitante} (${f.data})`);
+      }
+    }
+
+    if (paraGemini.length > 0) {
+      console.log(`\n── Gemini (fallback para ${paraGemini.length} jogo(s) em até ${GEMINI_JANELA_DIAS} dias) ──`);
+      const geminiResults = await fetchBroadcastFromGemini(paraGemini);
+      for (const [key, broadcast] of geminiResults) {
+        broadcastMap.set(key, broadcast);
+        const channels = [...broadcast.canal, ...broadcast.streaming].join(', ');
+        sourceMap.set(key, channels ? 'gemini' : 'nenhum');
         if (channels) {
-          console.log(`✅ [gemini]  ${b.timeMandante} x ${b.timeVisitante} → ${channels}`);
+          const [m, v] = key.split('|');
+          console.log(`✅ [gemini]  ${m} x ${v} → ${channels}`);
         } else {
-          console.log(`⚠️  [gemini]  ${b.timeMandante} x ${b.timeVisitante} → sem transmissão`);
+          const [m, v] = key.split('|');
+          console.log(`⚠️  [gemini]  ${m} x ${v} → sem transmissão`);
         }
       }
     }

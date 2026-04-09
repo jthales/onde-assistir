@@ -170,7 +170,7 @@ async function buscarNaApi(query: string): Promise<SearchHit[]> {
 
   const json: any = await res.json();
   const hits: any[] = json[0]?.result?.hits?.hits ?? [];
-  const sevenDaysAgo = Date.now() - 4 * 24 * 60 * 60 * 1000;
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
   return hits.flatMap((hit: any) => {
     const source = hit._source ?? {};
