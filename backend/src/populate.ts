@@ -341,6 +341,17 @@ async function runPopulate(): Promise<void> {
 
   await batch.commit();
 
+  // Resumo dos jogos encontrados via scrape
+  const scrapeGames = fixtures.filter(f => sourceMap.get(`${f.timeMandante}|${f.timeVisitante}`) === 'scrape');
+  if (scrapeGames.length > 0) {
+    console.log(`\n── Scrape (${scrapeGames.length} jogo(s)) ──`);
+    for (const f of scrapeGames) {
+      const b = broadcastMap.get(`${f.timeMandante}|${f.timeVisitante}`);
+      const channels = [...(b?.canal ?? []), ...(b?.streaming ?? [])].join(', ');
+      console.log(`✅ [scrape]  ${f.timeMandante} x ${f.timeVisitante} → ${channels}`);
+    }
+  }
+
   // Resumo final
   const bySource = { rodada: 0, scrape: 0, gemini: 0, caze: 0, nenhum: 0 };
   for (const fixture of fixtures) {
