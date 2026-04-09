@@ -286,16 +286,28 @@ export async function buscarDadosRodada(
   const { timeMandante, timeVisitante } = fixtures[0];
   const query = `onde assistir ${normalizeForSearch(timeMandante)} x ${normalizeForSearch(timeVisitante)}`;
 
+  console.log(`\n── Artigo de rodada ──`);
+  console.log(`   âncora: "${timeMandante} x ${timeVisitante}"`);
+  console.log(`   query: "${query}"`);
+
   const hits = await buscarNaApi(query);
+  console.log(`   ${hits.length} hit(s) encontrado(s):`);
+  for (const h of hits) {
+    const icone = h.isRodada ? '  ✓ [rodada]' : '  ✗ [individual]';
+    console.log(`${icone} "${h.title}"`);
+    console.log(`         ${h.url}`);
+  }
+
   const rodadaHit = hits.find(h => h.isRodada);
   if (!rodadaHit) {
-    console.log('⚠️ Artigo de rodada não encontrado — usando busca individual por jogo');
+    console.log('   → nenhum artigo de rodada — usando busca individual por jogo');
     return null;
   }
 
+  console.log(`   lendo: ${rodadaHit.url}`);
   const bodyText = await fetchBodyText(rodadaHit.url);
   const rodada = extrairNumeroRodada(rodadaHit.url, bodyText);
-  console.log(`📋 Rodada ${rodada || '?'} encontrada: ${rodadaHit.title}`);
+  console.log(`   → Rodada ${rodada || '?'} extraída`);
 
   return {
     rodada,
