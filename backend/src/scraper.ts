@@ -72,6 +72,12 @@ const TEAM_ALIASES: Record<string, string[]> = {
   'Sport Recife':         ['Sport'],
 };
 
+// Sufixos de clube que o ge.globo costuma omitir (ex: "Caracas FC" → "Caracas")
+const CLUB_SUFFIXES = new Set(['fc', 'cf', 'sc', 'ac', 'sd', 'cd', 'rc', 'fk', 'sk', 'ec', 'ca']);
+
+// Prefixos de clube que o ge.globo costuma omitir (ex: "CA Nacional" → "Nacional")
+const CLUB_PREFIXES = ['fc ', 'cf ', 'sc ', 'ac ', 'sd ', 'cd ', 'rc ', 'ca ', 'ec '];
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function removeAccents(s: string): string {
@@ -82,9 +88,24 @@ function normalizeForSearch(name: string): string {
   return removeAccents(name).toLowerCase().trim();
 }
 
-/** Retorna o nome do time e todos os aliases em forma normalizada. */
+/** Retorna o nome do time e todos os aliases em forma normalizada.
+ *  Inclui versões sem prefixo/sufixo de clube (ex: "Caracas FC"→"Caracas", "CA Nacional"→"Nacional"). */
 function teamVariants(name: string): string[] {
-  return [name, ...(TEAM_ALIASES[name] ?? [])].map(normalizeForSearch);
+  const base = [name, ...(TEAM_ALIASES[name] ?? [])].map(normalizeForSearch);
+  const stripped: string[] = [];
+  for (const variant of base) {
+    const parts = variant.split(/\s+/);
+    if (parts.length > 1 && CLUB_SUFFIXES.has(parts[parts.length - 1])) {
+      stripped.push(parts.slice(0, -1).join(' '));
+    }
+    for (const prefix of CLUB_PREFIXES) {
+      if (variant.startsWith(prefix)) {
+        stripped.push(variant.slice(prefix.length));
+        break;
+      }
+    }
+  }
+  return [...new Set([...base, ...stripped])];
 }
 
 function classifyChannels(transmissaoText: string): { canal: string[]; streaming: string[] } {
