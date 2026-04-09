@@ -499,9 +499,7 @@ export async function buscarOndeAssistir(
         const bodyText = await fetchBodyText(hit.url);
         const result = extrairDeMateria(bodyText);
         if (result) {
-          const channels = [...result.canal, ...result.streaming].join(', ');
-          console.log(`   → extraiu: ${channels}`);
-          console.log(`✅ [scrape]  ${label} → ${channels}`);
+          console.log(`   → extraiu: ${[...result.canal, ...result.streaming].join(', ')}`);
           return result;
         }
         console.log(`   → sem padrão "Transmissão:" no artigo`);

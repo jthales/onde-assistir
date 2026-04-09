@@ -255,6 +255,7 @@ async function runPopulate(): Promise<void> {
     if (canal.length > 0 || streaming.length > 0) {
       broadcastMap.set(key, { canal, streaming });
       sourceMap.set(key, 'scrape');
+      console.log(`✅ [scrape]  ${fixture.timeMandante} x ${fixture.timeVisitante} → ${[...canal, ...streaming].join(', ')}`);
     } else {
       failedFixtures.push(fixture);
     }
