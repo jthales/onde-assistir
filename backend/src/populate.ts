@@ -13,7 +13,7 @@ import { espnScoreboardUrlForLeague, ESPN_LEAGUES, TEAM_NAME_MAP } from './const
 import { buscarDadosRodada, buscarOndeAssistir } from './scraper';
 
 const ai = new GoogleGenAI({ apiKey: process.env['GEMINI_API_KEY'] ?? '' });
-const GEMINI_MODEL_ID = 'gemini-2.0-flash-lite';
+const GEMINI_MODEL_ID = 'gemini-3.1-flash-lite-preview';
 const GEMINI_JANELA_DIAS = 4; // só usa Gemini para jogos nos próximos N dias
 
 const ESPN_LEAGUE_LABELS: Record<string, string> = {
