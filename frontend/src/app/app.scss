@@ -28,6 +28,32 @@
   --radius-pill:999px;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg:           #0f172a;
+    --color-surface:      #1e293b;
+    --color-primary:      #22c55e;
+    --color-primary-dark: #15803d;
+    --color-primary-light:#4ade80;
+    --color-primary-muted:rgba(34,197,94,0.15);
+    --color-text:         #f1f5f9;
+    --color-text-2:       #cbd5e1;
+    --color-text-3:       #94a3b8;
+    --color-text-4:       #64748b;
+    --color-border:       #334155;
+    --color-border-light: #253347;
+    --color-live:         #ef4444;
+    --color-tv:           #60a5fa;
+    --color-tv-bg:        #1e3a5f;
+    --color-stream:       #a78bfa;
+    --color-stream-bg:    #2e1065;
+    --shadow-sm:  0 1px 4px rgba(0,0,0,.35);
+    --shadow-md:  0 2px 12px rgba(0,0,0,.45);
+    --shadow-lg:  0 6px 20px rgba(0,0,0,.55);
+    --shadow-xl:  0 4px 16px rgba(0,0,0,.55);
+  }
+}
+
 // ── Mixins ──────────────────────────────────────────────────────────────────
 
 @mixin flex($gap: 0, $align: center, $justify: flex-start, $wrap: nowrap) {
@@ -56,8 +82,6 @@
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #f0f2f5;
-  color: #111827;
   min-height: 100vh;
 }
 
@@ -1153,4 +1177,187 @@ body {
 .consent-btn--accept {
   background: #1d6f42;
   color: #fff;
+}
+
+// ── Dark Mode Overrides ───────────────────────────────────────────────────────
+
+@media (prefers-color-scheme: dark) {
+  // Pull to refresh
+  .pull-spinner {
+    background: #1e293b;
+    color: #22c55e;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  .pull-indicator--ready .pull-spinner {
+    background: #0a2e1a;
+    box-shadow: 0 2px 12px rgba(34,197,94,0.25);
+  }
+
+  // Times picker
+  .time-chip {
+    background: #1e293b;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+  }
+  .time-chip--todos {
+    color: #cbd5e1;
+    background: #334155;
+  }
+  .time-chip--todos.ativo {
+    background: #22c55e;
+    color: #0f172a;
+    border-color: transparent;
+  }
+  .chip-initials { color: #64748b; }
+
+  // Spinner
+  .spinner {
+    border-color: #334155;
+    border-top-color: #22c55e;
+  }
+
+  // Cards de jogo
+  .jogo-card {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.45);
+  }
+  .confronto { background: #0f172a; }
+  .logo-initials {
+    background: #334155;
+    color: #94a3b8;
+  }
+  .vs {
+    background: #334155;
+    color: #94a3b8;
+  }
+  .time-nome { color: #f1f5f9; }
+  .time-label { color: #64748b; }
+
+  // Data / hora / badges de status
+  .data { color: #cbd5e1; }
+  .data--hoje { color: #22c55e; }
+  .hora { background: #15803d; }
+  .encerrado-badge {
+    background: #334155;
+    color: #94a3b8;
+  }
+  .campeonato-badge {
+    background: #2e1065;
+    color: #a78bfa;
+  }
+
+  // Placar
+  .placar-numeros { color: #f1f5f9; }
+  .placar-encerrado .placar-numeros { color: #cbd5e1; }
+  .placar-tempo { color: #94a3b8; }
+
+  // Gols
+  .gol-item { color: #cbd5e1; }
+
+  // Onde assistir
+  .onde-assistir { border-top-color: #334155; }
+  .onde-tipo { color: #94a3b8; }
+  .onde-label { color: #64748b; }
+  .badge-tv {
+    background: #1e3a5f;
+    color: #60a5fa;
+  }
+  .badge-confirmar {
+    background: #334155;
+    color: #64748b;
+  }
+  .badge-streaming {
+    background: #2e1065;
+    color: #a78bfa;
+  }
+
+  // Calendário
+  .calendario-row { border-top-color: #334155; }
+  .btn-calendario {
+    color: #a78bfa;
+    border-color: #2e1065;
+    background: #1a0a2e;
+    &:hover { background: #2e1065; }
+  }
+
+  // Odds
+  .odds-row { border-top-color: #334155; }
+  .odds-label { color: #64748b; }
+  .odds-item {
+    background: #0a2e1a;
+    color: #22c55e;
+  }
+  .odds-sep { color: #475569; }
+
+  // Estados (loading, erro)
+  .state-wrapper { color: #94a3b8; }
+  .state-error {
+    background: #2d0a0a;
+    border-color: #7f1d1d;
+    color: #f87171;
+  }
+
+  // Classificação
+  .classificacao {
+    background: #1e293b;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.45);
+  }
+  .classificacao-titulo { color: #94a3b8; }
+  .classificacao-tabela {
+    th { color: #64748b; }
+    td {
+      border-top-color: #334155;
+      color: #cbd5e1;
+    }
+  }
+  .col-pts { color: #f1f5f9 !important; }
+  .classificacao-linha--destaque {
+    td { background: #0a2e1a; }
+    .col-pts { color: #22c55e !important; }
+  }
+  .classificacao-linha--ao-vivo {
+    td { background: #1a1000; }
+    .col-pts { color: #fbbf24 !important; }
+  }
+
+  // Notícias
+  .noticias-titulo { color: #f1f5f9; }
+  .noticia-card {
+    background: #1e293b;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+  }
+  .noticia-imagem-wrapper { background: #334155; }
+  .noticia-titulo-card { color: #f1f5f9; }
+  .noticia-descricao { color: #94a3b8; }
+  .noticia-ler-mais { color: #22c55e; }
+
+  // Toast de gol
+  .gol-toast {
+    background: #f1f5f9;
+    color: #0f172a;
+  }
+
+  // AI disclaimer footer
+  .ai-disclaimer {
+    background: #1a1000;
+    border-top-color: #6b4f00;
+    color: #fbbf24;
+    &-link { color: #fbbf24; }
+  }
+
+  // PWA Update banner
+  .update-banner button {
+    background: #f1f5f9;
+    color: #15803d;
+  }
+
+  // Filtros
+  .filtro-vivo-btn {
+    border-color: #ef4444;
+    color: #ef4444;
+    &.ativo {
+      background: #ef4444;
+      color: #fff;
+    }
+  }
 }
