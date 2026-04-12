@@ -79,8 +79,8 @@
                           <th class="col-num" title="Vitórias">V</th>
                           <th class="col-num" title="Empates">E</th>
                           <th class="col-num" title="Derrotas">D</th>
-                          <th class="col-num" title="Gols Marcados">GP</th>
-                          <th class="col-num" title="Gols Sofridos">GC</th>
+                          <th class="col-num col-gp-gc" title="Gols Marcados">GP</th>
+                          <th class="col-num col-gp-gc" title="Gols Sofridos">GC</th>
                           <th class="col-num" title="Saldo de Gols">SG</th>
                           <th class="col-num col-pct" title="Aproveitamento">%</th>
                         </tr>
@@ -100,8 +100,8 @@
                             <td class="col-num">{{ entry.vitorias }}</td>
                             <td class="col-num">{{ entry.empates }}</td>
                             <td class="col-num">{{ entry.derrotas }}</td>
-                            <td class="col-num">{{ entry.gols }}</td>
-                            <td class="col-num">{{ entry.golsSofridos }}</td>
+                            <td class="col-num col-gp-gc">{{ entry.gols }}</td>
+                            <td class="col-num col-gp-gc">{{ entry.golsSofridos }}</td>
                             <td class="col-num" [class.saldo-positivo]="entry.saldo > 0" [class.saldo-negativo]="entry.saldo < 0">{{ entry.saldo > 0 ? '+' : '' }}{{ entry.saldo }}</td>
                             <td class="col-num col-pct">{{ entry.jogos > 0 ? ((entry.pontos / (entry.jogos * 3)) * 100 | number:'1.0-0') : 0 }}%</td>
                           </tr>
@@ -150,12 +150,32 @@
                 }
               }
 
+              @if (noticiasCampeonato().length > 0) {
+                <section class="camp-noticias-section">
+                  <h2 class="camp-section-titulo">Notícias</h2>
+                  <div class="noticias-grid">
+                    @for (noticia of noticiasCampeonato(); track noticia.link) {
+                      <a class="noticia-card" [href]="noticia.link" target="_blank" rel="noopener noreferrer">
+                        <div class="noticia-imagem-wrapper">
+                          <img [src]="noticia.imagem" [alt]="noticia.titulo" class="noticia-imagem"
+                               (error)="$any($event.target).style.display='none'">
+                        </div>
+                        <div class="noticia-corpo">
+                          <p class="noticia-titulo-card">{{ noticia.titulo }}</p>
+                          <p class="noticia-descricao">{{ noticia.descricao }}</p>
+                          <span class="noticia-ler-mais">Ler mais</span>
+                        </div>
+                      </a>
+                    }
+                  </div>
+                </section>
+              }
+
             </div>
 
             <!-- Sidebar: próximos jogos por rodada (max 10) -->
-            <aside class="campeonato-sidebar">
-
-              @if (jogosCampeonatoAgrupados().length > 0) {
+            @if (jogosCampeonatoAgrupados().length > 0) {
+              <aside class="campeonato-sidebar">
                 <section>
                   <h2 class="camp-sidebar-titulo">Próximos Jogos</h2>
                   <div class="jogos-camp-lista">
@@ -205,30 +225,7 @@
                     }
                   </div>
                 </section>
-              }
-
-            </aside>
-
-            <!-- Notícias: abaixo de tudo (mobile: após jogos; desktop: largura total) -->
-            @if (noticiasCampeonato().length > 0) {
-              <section class="camp-noticias-section">
-                <h2 class="camp-section-titulo">Notícias</h2>
-                <div class="noticias-grid">
-                  @for (noticia of noticiasCampeonato(); track noticia.link) {
-                    <a class="noticia-card" [href]="noticia.link" target="_blank" rel="noopener noreferrer">
-                      <div class="noticia-imagem-wrapper">
-                        <img [src]="noticia.imagem" [alt]="noticia.titulo" class="noticia-imagem"
-                             (error)="$any($event.target).style.display='none'">
-                      </div>
-                      <div class="noticia-corpo">
-                        <p class="noticia-titulo-card">{{ noticia.titulo }}</p>
-                        <p class="noticia-descricao">{{ noticia.descricao }}</p>
-                        <span class="noticia-ler-mais">Ler mais</span>
-                      </div>
-                    </a>
-                  }
-                </div>
-              </section>
+              </aside>
             }
 
           </div>
@@ -258,18 +255,16 @@
       </div>
     </div>
 
-    @if (temJogoAoVivo()) {
-      <div class="filtros-bar">
-        <button class="filtro-vivo-btn" [class.ativo]="filtroAoVivo()" (click)="toggleFiltroAoVivo()">
-          <span class="ao-vivo-dot"></span>
-          Ao Vivo
-        </button>
-        <button class="notif-btn" [class.ativo]="notificacoesAtivas()" (click)="ativarNotificacoes()" [title]="notificacoesAtivas() ? 'Desativar notificações de gol' : 'Ativar notificações de gol'">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          Gols
-        </button>
-      </div>
-    }
+    <div class="filtros-bar">
+      <button class="filtro-vivo-btn" [class.ativo]="filtroAoVivo()" (click)="toggleFiltroAoVivo()">
+        <span class="ao-vivo-dot" [class.ao-vivo-dot--pulsando]="temJogoAoVivo()"></span>
+        Ao Vivo
+      </button>
+      <button class="notif-btn" [class.ativo]="notificacoesAtivas()" (click)="ativarNotificacoes()" [title]="notificacoesAtivas() ? 'Desativar notificações de gol' : 'Ativar notificações de gol'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Gols
+      </button>
+    </div>
 
     @if (loading()) {
       <div class="state-wrapper">
@@ -283,7 +278,11 @@
       </div>
     } @else if (jogosFiltrados().length === 0) {
       <div class="state-wrapper">
-        <p class="state-text">Nenhum jogo encontrado para esta semana.</p>
+        @if (filtroAoVivo()) {
+          <p class="state-text">Nenhum jogo ao vivo no momento.</p>
+        } @else {
+          <p class="state-text">Nenhum jogo encontrado para esta semana.</p>
+        }
       </div>
     } @else {
       <div class="conteudo-wrapper">

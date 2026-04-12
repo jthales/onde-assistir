@@ -774,9 +774,9 @@ body {
   .ao-vivo-dot {
     background: #dc2626;
     animation: none;
-  }
 
-  &.ativo .ao-vivo-dot { animation: pulsar 1.2s ease-in-out infinite; }
+    &.ao-vivo-dot--pulsando { animation: pulsar 1.2s ease-in-out infinite; }
+  }
 }
 
 .notif-btn {
@@ -966,6 +966,11 @@ body {
 .saldo-positivo { color: #16a34a !important; }
 .saldo-negativo { color: #dc2626 !important; }
 
+// Colunas GP/GC ocultas no mobile, visíveis a partir de 600px
+@media (max-width: 599px) {
+  .col-gp-gc { display: none; }
+}
+
 // ── Responsive (mobile-first) ─────────────────────────────────────────────────
 
 @media (min-width: 480px) {
@@ -986,7 +991,7 @@ body {
   .hero       { padding: 3rem 1rem 4rem; }
   .container  { padding: 0 1.5rem 6rem; }
   .times-grid { grid-template-columns: repeat(20, 52px); }
-  .time-nome  { font-size: 0.9rem; }
+  .time-nome  { font-size: 0.85rem; }
 
   .conteudo-wrapper {
     display: grid;
@@ -1190,20 +1195,20 @@ body {
 
 .btn-voltar {
   @include flex(0.35rem);
-  padding: 0.4rem 0.9rem;
+  padding: 0.45rem 1.1rem;
   border-radius: var(--radius-pill);
-  border: 1.5px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-2);
-  font-size: 0.78rem;
-  font-weight: 600;
+  border: 1.5px solid var(--color-primary);
+  background: var(--color-primary-muted);
+  color: var(--color-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
   cursor: pointer;
   margin-bottom: 1.25rem;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
 
   &:hover {
-    border-color: var(--color-primary);
-    color: var(--color-primary);
+    background: var(--color-primary);
+    color: #fff;
   }
 }
 
