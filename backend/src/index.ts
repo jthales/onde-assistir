@@ -354,7 +354,7 @@ app.get('/api/classificacao/:liga', async (req, res) => {
         golsSofridos: getStat(entry.stats, 'pointsAgainst'),
         saldo:        getStat(entry.stats, 'pointDifferential'),
         pontos:       getStat(entry.stats, 'points'),
-      })),
+      })).sort((a: any, b: any) => a.posicao - b.posicao),
     }));
 
     const resultado = { tipo: children.length === 1 ? 'tabela-unica' : 'grupos', grupos };
