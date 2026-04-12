@@ -41,6 +41,18 @@ export const TEAM_ESPN_ID_MAP: Record<string, number> = {
   'juventude':             6270,
 };
 
+export const LIGA_SLUG_TO_ESPN: Record<string, string> = {
+  'brasileirao':   ESPN_LEAGUES.brasileirao,
+  'libertadores':  ESPN_LEAGUES.libertadores,
+  'sul-americana': ESPN_LEAGUES.sudamericana,
+};
+
+export const LIGA_SLUG_LABEL: Record<string, string> = {
+  'brasileirao':   'Brasileirão Série A',
+  'libertadores':  'Copa Libertadores',
+  'sul-americana': 'Copa Sul-Americana',
+};
+
 export const TEAM_NAME_MAP: Record<string, string> = {
   'Athletico-PR':        'Athletico Paranaense',
   'Atlético-MG':         'Atlético Mineiro',

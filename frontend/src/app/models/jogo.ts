@@ -65,3 +65,27 @@ export interface ClassificacaoEntry {
   pontos: number;
   provisorio?: boolean;
 }
+
+export interface JogoCampeonato {
+  timeMandante: string;
+  timeVisitante: string;
+  logoMandante: string | null;
+  logoVisitante: string | null;
+  data: string;
+  hora: string;
+  status: 'agendado' | 'em-andamento' | 'encerrado';
+  placarMandante: number | null;
+  placarVisitante: number | null;
+  estadio: string;
+  campeonato: string;
+}
+
+export interface GrupoClassificacao {
+  nome: string;
+  times: ClassificacaoEntry[];
+}
+
+export interface ClassificacaoResponse {
+  tipo: 'tabela-unica' | 'grupos';
+  grupos: GrupoClassificacao[];
+}

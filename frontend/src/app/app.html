@@ -15,12 +15,16 @@
   <header class="hero">
     <div class="hero-inner">
       <div class="hero-badge">2026</div>
-      @if (timeSelecionado()) {
+      @if (campeonatoSelecionado()) {
+        <h1 class="hero-title">{{ getLabelCampeonato(campeonatoSelecionado()) }}</h1>
+        <p class="hero-subtitle">Tabela de Classificação · Próximos Jogos · Notícias</p>
+      } @else if (timeSelecionado()) {
         <h1 class="hero-title">{{ timeSelecionado() }} — Próximos Jogos e Onde Assistir</h1>
+        <p class="hero-subtitle">Brasileirão, Libertadores e mais — TV e Streaming</p>
       } @else {
         <h1 class="hero-title">Onde <span class="hero-title-accent">Assistir</span> Futebol Ao Vivo — TV e Streaming no Brasil</h1>
+        <p class="hero-subtitle">Brasileirão, Libertadores e mais — TV e Streaming</p>
       }
-      <p class="hero-subtitle">Brasileirão, Libertadores e mais — TV e Streaming</p>
       <!-- @if (descricaoSeo()) {
         <p class="descricao-seo">{{ descricaoSeo() }}</p>
       } -->
@@ -40,6 +44,193 @@
 
   <main class="container">
 
+    @if (campeonatoSelecionado()) {
+
+      <!-- ── Página de Campeonato ────────────────────────────────────────────── -->
+      <div class="campeonato-page">
+        <button class="btn-voltar" (click)="voltarParaHome()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          Voltar
+        </button>
+
+        @if (loadingCampeonato()) {
+          <div class="state-wrapper">
+            <div class="spinner"></div>
+            <p class="state-text">Carregando classificação...</p>
+          </div>
+        } @else {
+          <div class="campeonato-layout">
+
+            <!-- Coluna principal: classificação -->
+            <div class="campeonato-main">
+              @if (classificacaoCampeonato(); as classif) {
+                @if (classif.tipo === 'tabela-unica') {
+                  <aside class="classificacao classificacao--destaque">
+                    <div class="classificacao-header">
+                      <h2 class="classificacao-titulo">{{ getLabelCampeonato(campeonatoSelecionado()) }}</h2>
+                    </div>
+                    <table class="classificacao-tabela">
+                      <thead>
+                        <tr>
+                          <th class="col-pos">#</th>
+                          <th class="col-time">Time</th>
+                          <th class="col-num" title="Pontos">Pts</th>
+                          <th class="col-num" title="Jogos">J</th>
+                          <th class="col-num" title="Vitórias">V</th>
+                          <th class="col-num" title="Empates">E</th>
+                          <th class="col-num" title="Derrotas">D</th>
+                          <th class="col-num" title="Saldo de Gols">SG</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (entry of classif.grupos[0].times; track entry.nome) {
+                          <tr>
+                            <td class="col-pos">{{ entry.posicao }}</td>
+                            <td class="col-time">
+                              @if (entry.logo) {
+                                <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                              }
+                              <span class="classificacao-nome">{{ entry.nome }}</span>
+                            </td>
+                            <td class="col-num col-pts">{{ entry.pontos }}</td>
+                            <td class="col-num">{{ entry.jogos }}</td>
+                            <td class="col-num">{{ entry.vitorias }}</td>
+                            <td class="col-num">{{ entry.empates }}</td>
+                            <td class="col-num">{{ entry.derrotas }}</td>
+                            <td class="col-num" [class.saldo-positivo]="entry.saldo > 0" [class.saldo-negativo]="entry.saldo < 0">{{ entry.saldo > 0 ? '+' : '' }}{{ entry.saldo }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </aside>
+                } @else {
+                  <!-- Grupos (Libertadores / Sul-Americana) -->
+                  <div class="grupos-grid">
+                    @for (grupo of classif.grupos; track grupo.nome) {
+                      <aside class="classificacao classificacao--grupo">
+                        <div class="classificacao-header">
+                          <h2 class="classificacao-titulo">{{ grupo.nome }}</h2>
+                        </div>
+                        <table class="classificacao-tabela">
+                          <thead>
+                            <tr>
+                              <th class="col-pos">#</th>
+                              <th class="col-time">Time</th>
+                              <th class="col-num" title="Pontos">Pts</th>
+                              <th class="col-num" title="Jogos">J</th>
+                              <th class="col-num" title="Vitórias">V</th>
+                              <th class="col-num" title="Empates">E</th>
+                              <th class="col-num" title="Derrotas">D</th>
+                              <th class="col-num" title="SG">SG</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (entry of grupo.times; track entry.nome) {
+                              <tr>
+                                <td class="col-pos">{{ entry.posicao }}</td>
+                                <td class="col-time">
+                                  @if (entry.logo) {
+                                    <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                                  }
+                                  <span class="classificacao-nome">{{ entry.nome }}</span>
+                                </td>
+                                <td class="col-num col-pts">{{ entry.pontos }}</td>
+                                <td class="col-num">{{ entry.jogos }}</td>
+                                <td class="col-num">{{ entry.vitorias }}</td>
+                                <td class="col-num">{{ entry.empates }}</td>
+                                <td class="col-num">{{ entry.derrotas }}</td>
+                                <td class="col-num" [class.saldo-positivo]="entry.saldo > 0" [class.saldo-negativo]="entry.saldo < 0">{{ entry.saldo > 0 ? '+' : '' }}{{ entry.saldo }}</td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      </aside>
+                    }
+                  </div>
+                }
+              }
+            </div>
+
+            <!-- Sidebar: próximos jogos + notícias -->
+            <aside class="campeonato-sidebar">
+
+              @if (jogosCampeonato().length > 0) {
+                <section>
+                  <h2 class="camp-sidebar-titulo">Próximos Jogos</h2>
+                  <div class="jogos-camp-lista">
+                    @for (jogo of jogosCampeonato(); track jogo.timeMandante + jogo.data) {
+                      <div class="jogo-camp-card">
+                        <div class="jogo-camp-times">
+                          <div class="jogo-camp-time">
+                            @if (jogo.logoMandante) {
+                              <img [src]="jogo.logoMandante" [alt]="jogo.timeMandante" class="jogo-camp-logo" (error)="$any($event.target).style.display='none'">
+                            }
+                            <span>{{ jogo.timeMandante }}</span>
+                          </div>
+                          <div class="jogo-camp-meio">
+                            @if (jogo.status === 'em-andamento' || jogo.status === 'encerrado') {
+                              <span class="placar-numeros" style="font-size:1rem">{{ jogo.placarMandante ?? '-' }} – {{ jogo.placarVisitante ?? '-' }}</span>
+                              @if (jogo.status === 'em-andamento') {
+                                <span class="ao-vivo-badge" style="font-size:0.6rem">AO VIVO</span>
+                              } @else {
+                                <span class="encerrado-badge">FIM</span>
+                              }
+                            } @else {
+                              <span class="jogo-camp-meta">{{ formatarData(jogo.data) }}</span>
+                              @if (jogo.hora && jogo.hora !== '00:00') {
+                                <span class="hora" style="font-size:0.72rem">{{ jogo.hora }}</span>
+                              }
+                            }
+                          </div>
+                          <div class="jogo-camp-time">
+                            @if (jogo.logoVisitante) {
+                              <img [src]="jogo.logoVisitante" [alt]="jogo.timeVisitante" class="jogo-camp-logo" (error)="$any($event.target).style.display='none'">
+                            }
+                            <span>{{ jogo.timeVisitante }}</span>
+                          </div>
+                        </div>
+                        @if (jogo.estadio) {
+                          <div class="estadio" style="font-size:0.68rem">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                            {{ jogo.estadio }}
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </section>
+              }
+
+              @if (noticiasCampeonato().length > 0) {
+                <section>
+                  <h2 class="camp-sidebar-titulo">Notícias</h2>
+                  <div class="noticias-grid noticias-grid--sidebar">
+                    @for (noticia of noticiasCampeonato(); track noticia.link) {
+                      <a class="noticia-card" [href]="noticia.link" target="_blank" rel="noopener noreferrer">
+                        <div class="noticia-imagem-wrapper">
+                          <img [src]="noticia.imagem" [alt]="noticia.titulo" class="noticia-imagem"
+                               (error)="$any($event.target).style.display='none'">
+                        </div>
+                        <div class="noticia-corpo">
+                          <p class="noticia-titulo-card">{{ noticia.titulo }}</p>
+                          <p class="noticia-descricao">{{ noticia.descricao }}</p>
+                          <span class="noticia-ler-mais">Ler mais</span>
+                        </div>
+                      </a>
+                    }
+                  </div>
+                </section>
+              }
+
+            </aside>
+
+          </div>
+        }
+      </div>
+
+    } @else {
+
+    <!-- ── Homepage ─────────────────────────────────────────────────────────── -->
     <div class="times-picker">
       <button class="time-chip time-chip--todos" [class.ativo]="timeSelecionado() === ''" (click)="selecionarTime('')">
         Todos os times
@@ -99,7 +290,10 @@
             <div class="card-top">
               <div class="card-top-left">
                 @if (jogo.campeonato) {
-                  <span class="campeonato-badge">{{ jogo.campeonato }}</span>
+                  <button class="campeonato-badge campeonato-badge--btn"
+                          (click)="navegarParaCampeonato(jogo.campeonato); $event.stopPropagation()">
+                    {{ jogo.campeonato }}
+                  </button>
                 }
               </div>
               <div class="data-hora">
@@ -336,6 +530,7 @@
       </div>
     }
 
+    } <!-- fim @else homepage -->
 
   </main>
 

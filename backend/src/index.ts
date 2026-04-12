@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import { Jogo } from './types';
 import { db } from './firebase';
-import { espnScoreboardUrlForLeague, ESPN_LEAGUES, TEAM_NAME_MAP, TEAM_ESPN_ID_MAP } from './constants';
+import { espnScoreboardUrlForLeague, ESPN_LEAGUES, TEAM_NAME_MAP, TEAM_ESPN_ID_MAP, LIGA_SLUG_TO_ESPN, LIGA_SLUG_LABEL } from './constants';
 const app = express();
 const PORT = process.env['PORT'] ?? 3000;
 
@@ -319,6 +319,140 @@ app.get('/api/classificacao', async (_req, res) => {
   }
 });
 
+// ── Endpoints de campeonato (ESPN direto, sem Firestore) ─────────────────────
+
+const classificacaoCampeonatoCache = new Map<string, { dados: any; fetchedAt: number }>();
+
+app.get('/api/classificacao/:liga', async (req, res) => {
+  const liga = req.params['liga'];
+  const espnLeague = LIGA_SLUG_TO_ESPN[liga];
+  if (!espnLeague) { res.status(400).json({ error: 'Liga inválida' }); return; }
+
+  const agora = Date.now();
+  const cached = classificacaoCampeonatoCache.get(liga);
+  if (cached && agora - cached.fetchedAt < CLASSIFICACAO_CACHE_TTL_MS) {
+    res.json(cached.dados); return;
+  }
+
+  try {
+    const resp = await fetch(`https://site.api.espn.com/apis/v2/sports/soccer/${espnLeague}/standings`);
+    const data: any = await resp.json();
+    const children: any[] = data.children ?? [];
+    const getStat = (stats: any[], name: string) => stats?.find((s: any) => s.name === name)?.value ?? 0;
+
+    const grupos = children.map((child: any) => ({
+      nome: child.name ?? child.abbreviation ?? 'Grupo',
+      times: (child.standings?.entries ?? []).map((entry: any) => ({
+        posicao:      getStat(entry.stats, 'rank'),
+        nome:         TEAM_NAME_MAP[entry.team.displayName] ?? entry.team.displayName,
+        logo:         entry.team.logos?.[0]?.href ?? null,
+        jogos:        getStat(entry.stats, 'gamesPlayed'),
+        vitorias:     getStat(entry.stats, 'wins'),
+        empates:      getStat(entry.stats, 'ties'),
+        derrotas:     getStat(entry.stats, 'losses'),
+        gols:         getStat(entry.stats, 'pointsFor'),
+        golsSofridos: getStat(entry.stats, 'pointsAgainst'),
+        saldo:        getStat(entry.stats, 'pointDifferential'),
+        pontos:       getStat(entry.stats, 'points'),
+      })),
+    }));
+
+    const resultado = { tipo: children.length === 1 ? 'tabela-unica' : 'grupos', grupos };
+    classificacaoCampeonatoCache.set(liga, { dados: resultado, fetchedAt: agora });
+    res.json(resultado);
+  } catch (error) {
+    console.error(`Erro ao buscar classificação de ${liga}:`, error);
+    const cached = classificacaoCampeonatoCache.get(liga);
+    if (cached) { res.json(cached.dados); return; }
+    res.status(500).json({ error: 'Falha ao buscar classificação' });
+  }
+});
+
+const jogosCampeonatoCache = new Map<string, { dados: any[]; fetchedAt: number }>();
+const JOGOS_CAMP_CACHE_TTL_MS = 15 * 60_000;
+
+app.get('/api/jogos-campeonato/:liga', async (req, res) => {
+  const liga = req.params['liga'];
+  const espnLeague = LIGA_SLUG_TO_ESPN[liga];
+  if (!espnLeague) { res.status(400).json({ error: 'Liga inválida' }); return; }
+
+  const agora = Date.now();
+  const cached = jogosCampeonatoCache.get(liga);
+  if (cached && agora - cached.fetchedAt < JOGOS_CAMP_CACHE_TTL_MS) {
+    res.json(cached.dados); return;
+  }
+
+  try {
+    const resp = await fetch(espnScoreboardUrlForLeague(espnLeague, 14));
+    const data: any = await resp.json();
+    const events: any[] = data.events ?? [];
+
+    const jogos = events.map((event: any) => {
+      const comp = event.competitions?.[0];
+      const home = comp?.competitors?.find((c: any) => c.homeAway === 'home');
+      const away = comp?.competitors?.find((c: any) => c.homeAway === 'away');
+      const statusState: string = event.status?.type?.state ?? 'pre';
+      const statusCompleted: boolean = event.status?.type?.completed === true;
+      const status = (statusCompleted || statusState === 'post') ? 'encerrado'
+                   : statusState === 'in' ? 'em-andamento' : 'agendado';
+      const brtDate = new Date(new Date(event.date).getTime() - 3 * 60 * 60 * 1000);
+      return {
+        timeMandante:    TEAM_NAME_MAP[home?.team?.displayName] ?? home?.team?.displayName ?? '',
+        timeVisitante:   TEAM_NAME_MAP[away?.team?.displayName] ?? away?.team?.displayName ?? '',
+        logoMandante:    home?.team?.logos?.[0]?.href ?? null,
+        logoVisitante:   away?.team?.logos?.[0]?.href ?? null,
+        data:            brtDate.toISOString().slice(0, 10),
+        hora:            brtDate.toISOString().slice(11, 16),
+        status,
+        placarMandante:  home?.score != null ? Number(home.score) : null,
+        placarVisitante: away?.score != null ? Number(away.score) : null,
+        estadio:         comp?.venue?.fullName ?? '',
+        campeonato:      LIGA_SLUG_LABEL[liga] ?? liga,
+      };
+    });
+
+    jogosCampeonatoCache.set(liga, { dados: jogos, fetchedAt: agora });
+    res.json(jogos);
+  } catch (error) {
+    console.error(`Erro ao buscar jogos de ${liga}:`, error);
+    const cached = jogosCampeonatoCache.get(liga);
+    if (cached) { res.json(cached.dados); return; }
+    res.status(500).json({ error: 'Falha ao buscar jogos' });
+  }
+});
+
+app.get('/api/noticias-campeonato/:liga', async (req, res) => {
+  const liga = req.params['liga'];
+  const espnLeague = LIGA_SLUG_TO_ESPN[liga];
+  if (!espnLeague) { res.json([]); return; }
+
+  const cacheKey = `camp:${liga}`;
+  const agora = Date.now();
+  const cached = noticiasCache.get(cacheKey);
+  if (cached && agora - cached.fetchedAt < NOTICIAS_CACHE_TTL_MS) {
+    res.json(cached.dados); return;
+  }
+
+  try {
+    const resp = await fetch(
+      `https://site.api.espn.com/apis/site/v2/sports/soccer/${espnLeague}/news?limit=3&lang=pt&region=br`
+    );
+    const data: any = await resp.json();
+    const noticias: Noticia[] = (data.articles ?? []).map((article: any) => ({
+      titulo:      article.headline ?? '',
+      descricao:   article.description ?? '',
+      imagem:      article.images?.[0]?.url ?? '',
+      link:        article.links?.web?.href ?? '',
+      publicadoEm: article.published ?? '',
+    }));
+    noticiasCache.set(cacheKey, { dados: noticias, fetchedAt: agora });
+    res.json(noticias);
+  } catch (error) {
+    console.error(`Erro ao buscar notícias de ${liga}:`, error);
+    res.json([]);
+  }
+});
+
 const FRONTEND_URL = process.env['FRONTEND_URL'] ?? 'https://ondeassistir.space';
 
 app.get('/og', async (req, res) => {
@@ -471,6 +605,9 @@ app.get('/sitemap.xml', async (_req, res) => {
     const today = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const urls = [
       `  <url><loc>${FRONTEND_URL}/</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>`,
+      ...['brasileirao', 'libertadores', 'sul-americana'].map(slug =>
+        `  <url><loc>${FRONTEND_URL}/campeonato/${slug}</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>0.9</priority></url>`
+      ),
       ...[...times].sort().map(slug =>
         `  <url><loc>${FRONTEND_URL}/${slug}</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>`
       ),

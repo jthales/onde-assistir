@@ -1179,6 +1179,148 @@ body {
   color: #fff;
 }
 
+// ── Página de Campeonato ──────────────────────────────────────────────────────
+
+.campeonato-page {
+  padding-top: 0.25rem;
+}
+
+.btn-voltar {
+  @include flex(0.35rem);
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-2);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 1.25rem;
+  transition: border-color 0.15s, color 0.15s;
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+}
+
+.campeonato-badge--btn {
+  border: none;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.1s;
+
+  &:hover  { filter: brightness(0.88); transform: scale(1.05); }
+  &:active { transform: scale(0.97); }
+}
+
+.campeonato-layout {
+  @include flex-col(1.5rem);
+}
+
+.campeonato-main { flex: 1; min-width: 0; }
+
+.campeonato-sidebar {
+  @include flex-col(1.5rem);
+}
+
+.camp-sidebar-titulo {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-2);
+  margin-bottom: 0.75rem;
+}
+
+.classificacao--destaque {
+  .classificacao-titulo { font-size: 0.9rem; color: var(--color-text); }
+}
+
+.classificacao--grupo .classificacao-nome { max-width: 80px; }
+
+// Grid de grupos (Libertadores / Sul-Americana)
+.grupos-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+
+  @media (min-width: 600px)  { grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 1100px) { grid-template-columns: repeat(4, 1fr); }
+}
+
+// Cards leves de jogos na sidebar do campeonato
+.jogos-camp-lista {
+  @include flex-col(0.6rem);
+}
+
+.jogo-camp-card {
+  @include flex-col(0.5rem);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.jogo-camp-times {
+  @include flex(0.5rem, center, space-between);
+}
+
+.jogo-camp-time {
+  @include flex-col(0.2rem, center);
+  flex: 1;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text);
+  text-align: center;
+  min-width: 0;
+  overflow: hidden;
+
+  span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80px;
+  }
+}
+
+.jogo-camp-logo {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.jogo-camp-meio {
+  @include flex-col(0.15rem, center);
+  flex-shrink: 0;
+  min-width: 60px;
+}
+
+.jogo-camp-meta {
+  font-size: 0.68rem;
+  color: var(--color-text-3);
+  text-align: center;
+}
+
+// Notícias na sidebar: 1 coluna sempre
+.noticias-grid--sidebar {
+  grid-template-columns: 1fr !important;
+}
+
+// Desktop: layout 2 colunas
+@media (min-width: 1100px) {
+  .campeonato-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    align-items: start;
+    gap: 1.5rem;
+  }
+
+  .campeonato-sidebar {
+    position: sticky;
+    top: 1rem;
+    z-index: 1;
+  }
+}
+
 // ── Dark Mode Overrides ───────────────────────────────────────────────────────
 
 @media (prefers-color-scheme: dark) {

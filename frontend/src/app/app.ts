@@ -3,9 +3,9 @@ import { CommonModule, DOCUMENT } from '@angular/common';
 import { Meta, Title } from '@angular/platform-browser';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs/operators';
-import { interval } from 'rxjs';
+import { interval, forkJoin } from 'rxjs';
 import { JogosService } from './services/jogos.service';
-import { Jogo, Placar, Odds, ClassificacaoEntry, Noticia } from './models/jogo';
+import { Jogo, Placar, Odds, ClassificacaoEntry, Noticia, ClassificacaoResponse, JogoCampeonato } from './models/jogo';
 import { teamInitials } from './team-logos';
 
 declare global {
@@ -49,6 +49,12 @@ export class App implements OnInit, OnDestroy {
   isPulling = signal(false);
   isRefreshing = signal(false);
 
+  campeonatoSelecionado = signal<string>('');
+  classificacaoCampeonato = signal<ClassificacaoResponse | null>(null);
+  jogosCampeonato = signal<JogoCampeonato[]>([]);
+  noticiasCampeonato = signal<Noticia[]>([]);
+  loadingCampeonato = signal(false);
+
   private pollingInterval?: ReturnType<typeof setInterval>;
   private oddsInterval?: ReturnType<typeof setInterval>;
   private classificacaoInterval?: ReturnType<typeof setInterval>;
@@ -56,6 +62,8 @@ export class App implements OnInit, OnDestroy {
   private prevGoalCounts = new Map<string, number>();
 
   readonly h1Title = computed(() => {
+    const camp = this.campeonatoSelecionado();
+    if (camp) return this.getLabelCampeonato(camp);
     const nome = this.timeSelecionado();
     return nome
       ? `${nome} — Próximos Jogos e Onde Assistir`
@@ -73,6 +81,96 @@ export class App implements OnInit, OnDestroy {
     'SUL-AMERICANA':         'Copa Sul-Americana',
     'COPA SUL-AMERICANA':    'Copa Sul-Americana',
   };
+
+  private readonly CAMP_SLUG_MAP: Record<string, string> = {
+    'BRASILEIRAO':           'brasileirao',
+    'BRASILEIRAO SERIE A':   'brasileirao',
+    'LIBERTADORES':          'libertadores',
+    'COPA LIBERTADORES':     'libertadores',
+    'CONMEBOL LIBERTADORES': 'libertadores',
+    'SUL-AMERICANA':         'sul-americana',
+    'COPA SUL-AMERICANA':    'sul-americana',
+    'CONMEBOL SULAMERICANA': 'sul-americana',
+  };
+
+  private readonly CAMP_SLUG_LABEL: Record<string, string> = {
+    'brasileirao':   'Brasileirão Série A',
+    'libertadores':  'Copa Libertadores',
+    'sul-americana': 'Copa Sul-Americana',
+  };
+
+  slugifyCampeonato(nome: string): string {
+    const key = nome.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return this.CAMP_SLUG_MAP[key] ?? '';
+  }
+
+  getLabelCampeonato(slug: string): string {
+    return this.CAMP_SLUG_LABEL[slug] ?? slug;
+  }
+
+  navegarParaCampeonato(nomeCampeonato: string): void {
+    const slug = this.slugifyCampeonato(nomeCampeonato);
+    if (!slug) return;
+    this.timeSelecionado.set('');
+    this.filtroAoVivo.set(false);
+    this.noticias.set([]);
+    this.campeonatoSelecionado.set(slug);
+    history.replaceState(null, '', `/campeonato/${slug}`);
+    this.atualizarMetaCampeonato(slug);
+    this.carregarDadosCampeonato(slug);
+    gaPush('ver_campeonato', { campeonato: slug });
+  }
+
+  voltarParaHome(): void {
+    this.campeonatoSelecionado.set('');
+    this.classificacaoCampeonato.set(null);
+    this.jogosCampeonato.set([]);
+    this.noticiasCampeonato.set([]);
+    history.replaceState(null, '', '/');
+    this.atualizarMeta('');
+  }
+
+  private carregarDadosCampeonato(liga: string): void {
+    this.loadingCampeonato.set(true);
+    this.classificacaoCampeonato.set(null);
+    this.jogosCampeonato.set([]);
+    this.noticiasCampeonato.set([]);
+
+    forkJoin({
+      classif:  this.jogosService.getClassificacaoCampeonato(liga),
+      jogos:    this.jogosService.getJogosCampeonato(liga),
+      noticias: this.jogosService.getNoticiasCampeonato(liga),
+    }).subscribe({
+      next: ({ classif, jogos, noticias }) => {
+        this.classificacaoCampeonato.set(classif);
+        this.jogosCampeonato.set(jogos);
+        this.noticiasCampeonato.set(noticias);
+        this.loadingCampeonato.set(false);
+      },
+      error: () => this.loadingCampeonato.set(false),
+    });
+  }
+
+  private atualizarMetaCampeonato(slug: string): void {
+    const label = this.getLabelCampeonato(slug);
+    const title = `${label} — Tabela e Jogos | Onde Assistir`;
+    const desc = `Tabela de classificação, próximos jogos e notícias da ${label}.`;
+    const url = `${this.BASE_URL}/campeonato/${slug}`;
+    this.titleService.setTitle(title);
+    this.meta.updateTag({ property: 'og:title', content: title });
+    this.meta.updateTag({ property: 'og:description', content: desc });
+    this.meta.updateTag({ property: 'og:url', content: url });
+    this.meta.updateTag({ name: 'description', content: desc });
+    this.setCanonical(url);
+  }
+
+  eJogoCampeonatoHoje(jogo: JogoCampeonato): boolean {
+    return this.eHoje(jogo.data);
+  }
+
+  formatarDataCampeonato(jogo: JogoCampeonato): string {
+    return this.formatarData(jogo.data);
+  }
 
   readonly descricaoSeo = computed(() => {
     const jogos = this.jogosFiltrados();
@@ -287,6 +385,13 @@ export class App implements OnInit, OnDestroy {
           this.meta.updateTag({ property: 'og:description', content: aoVivoDesc });
           this.meta.updateTag({ name: 'description', content: aoVivoDesc });
           this.setCanonical('https://ondeassistir.space/ao-vivo');
+        } else if (slug.startsWith('campeonato/')) {
+          const ligaSlug = slug.replace('campeonato/', '');
+          if (this.CAMP_SLUG_LABEL[ligaSlug]) {
+            this.campeonatoSelecionado.set(ligaSlug);
+            this.atualizarMetaCampeonato(ligaSlug);
+            this.carregarDadosCampeonato(ligaSlug);
+          }
         } else if (slug) {
           const match = this.classificacao().find(t => slugify(t.nome) === slug);
           if (match) {
