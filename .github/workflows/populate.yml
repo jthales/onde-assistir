@@ -2,7 +2,7 @@ name: 🎯 Populate Jogos Diário
 
 on:
   schedule:
-    - cron: '0 10 * * *' # Roda todo dia às 10:00 UTC (07:00 BRT)
+    - cron: '0 1,8,13,16,19,22 * * *' # Roda 6x ao dia: 01, 08, 13, 16, 19, 22 UTC (22, 05, 10, 13, 16, 19 BRT)
   workflow_dispatch:     # Permite rodar manualmente pelo GitHub
 
 jobs:
