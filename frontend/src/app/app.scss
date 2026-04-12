@@ -1194,21 +1194,28 @@ body {
 }
 
 .btn-voltar {
-  @include flex(0.35rem);
-  padding: 0.45rem 1.1rem;
+  @include flex(0.45rem);
+  padding: 0.6rem 1.4rem;
   border-radius: var(--radius-pill);
-  border: 1.5px solid var(--color-primary);
-  background: var(--color-primary-muted);
-  color: var(--color-primary);
-  font-size: 0.82rem;
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
-  margin-bottom: 1.25rem;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+
+  svg { stroke: #fff; }
 
   &:hover {
-    background: var(--color-primary);
-    color: #fff;
+    background: var(--color-primary-dark, color-mix(in srgb, var(--color-primary) 80%, #000));
+    box-shadow: 0 4px 14px rgba(0,0,0,0.22);
+  }
+
+  &:active {
+    transform: scale(0.97);
   }
 }
 
