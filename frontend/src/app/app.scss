@@ -1225,7 +1225,7 @@ body {
   @include flex-col(1.5rem);
 }
 
-.campeonato-main { flex: 1; min-width: 0; }
+.campeonato-main { flex: 1; min-width: 0; width: 100%; }
 
 .campeonato-sidebar {
   @include flex-col(1.5rem);
@@ -1242,14 +1242,16 @@ body {
   .classificacao-titulo { font-size: 0.9rem; color: var(--color-text); }
 }
 
-.classificacao--grupo .classificacao-nome { max-width: 75px; }
+.classificacao--grupo .classificacao-nome { max-width: none; }
 
-// Tabela de grupo: fonte menor para caber no grid estreito
+// Tabela de grupo: colunas numéricas compactas, nome ocupa o restante
 .classificacao-tabela--grupo {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
+  table-layout: fixed;
 
-  .col-pos { width: 24px; }
-  .col-num  { width: 24px; }
+  .col-pos  { width: 28px; }
+  .col-time { width: auto; }
+  .col-num  { width: 38px; }
 }
 
 // Tabela completa (Brasileirão — página de campeonato)
@@ -1275,6 +1277,7 @@ body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
+  width: 100%;
 
   @media (min-width: 600px) { grid-template-columns: repeat(2, 1fr); }
   @media (min-width: 900px) { grid-template-columns: repeat(3, 1fr); }
