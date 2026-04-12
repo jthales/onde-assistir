@@ -69,17 +69,20 @@
                     <div class="classificacao-header">
                       <h2 class="classificacao-titulo">{{ getLabelCampeonato(campeonatoSelecionado()) }}</h2>
                     </div>
-                    <table class="classificacao-tabela">
+                    <table class="classificacao-tabela classificacao-tabela--full">
                       <thead>
                         <tr>
                           <th class="col-pos">#</th>
                           <th class="col-time">Time</th>
-                          <th class="col-num" title="Pontos">Pts</th>
+                          <th class="col-num col-pts-h" title="Pontos">Pts</th>
                           <th class="col-num" title="Jogos">J</th>
                           <th class="col-num" title="Vitórias">V</th>
                           <th class="col-num" title="Empates">E</th>
                           <th class="col-num" title="Derrotas">D</th>
+                          <th class="col-num" title="Gols Marcados">GP</th>
+                          <th class="col-num" title="Gols Sofridos">GC</th>
                           <th class="col-num" title="Saldo de Gols">SG</th>
+                          <th class="col-num col-pct" title="Aproveitamento">%</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -90,14 +93,17 @@
                               @if (entry.logo) {
                                 <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
                               }
-                              <span class="classificacao-nome">{{ entry.nome }}</span>
+                              <span class="classificacao-nome classificacao-nome--full">{{ entry.nome }}</span>
                             </td>
                             <td class="col-num col-pts">{{ entry.pontos }}</td>
                             <td class="col-num">{{ entry.jogos }}</td>
                             <td class="col-num">{{ entry.vitorias }}</td>
                             <td class="col-num">{{ entry.empates }}</td>
                             <td class="col-num">{{ entry.derrotas }}</td>
+                            <td class="col-num">{{ entry.gols }}</td>
+                            <td class="col-num">{{ entry.golsSofridos }}</td>
                             <td class="col-num" [class.saldo-positivo]="entry.saldo > 0" [class.saldo-negativo]="entry.saldo < 0">{{ entry.saldo > 0 ? '+' : '' }}{{ entry.saldo }}</td>
+                            <td class="col-num col-pct">{{ entry.jogos > 0 ? ((entry.pontos / (entry.jogos * 3)) * 100 | number:'1.0-0') : 0 }}%</td>
                           </tr>
                         }
                       </tbody>

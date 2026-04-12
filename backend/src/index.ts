@@ -399,8 +399,8 @@ app.get('/api/jogos-campeonato/:liga', async (req, res) => {
       return {
         timeMandante:    TEAM_NAME_MAP[home?.team?.displayName] ?? home?.team?.displayName ?? '',
         timeVisitante:   TEAM_NAME_MAP[away?.team?.displayName] ?? away?.team?.displayName ?? '',
-        logoMandante:    home?.team?.logos?.[0]?.href ?? null,
-        logoVisitante:   away?.team?.logos?.[0]?.href ?? null,
+        logoMandante:    home?.team?.logo ?? home?.team?.logos?.[0]?.href ?? null,
+        logoVisitante:   away?.team?.logo ?? away?.team?.logos?.[0]?.href ?? null,
         data:            brtDate.toISOString().slice(0, 10),
         hora:            brtDate.toISOString().slice(11, 16),
         status,
