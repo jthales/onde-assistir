@@ -280,10 +280,32 @@
       <div class="state-wrapper">
         @if (filtroAoVivo()) {
           <p class="state-text">Nenhum jogo ao vivo no momento.</p>
+        } @else if (timeSelecionado()) {
+          <p class="state-text">Nenhum jogo encontrado para os próximos dias.</p>
         } @else {
           <p class="state-text">Nenhum jogo encontrado para esta semana.</p>
         }
       </div>
+      @if (timeSelecionado() && noticias().length > 0) {
+        <section class="noticias-section">
+          <h2 class="noticias-titulo">Notícias sobre {{ timeSelecionado() }}</h2>
+          <div class="noticias-grid">
+            @for (noticia of noticias(); track noticia.link) {
+              <a class="noticia-card" [href]="noticia.link" target="_blank" rel="noopener noreferrer">
+                <div class="noticia-imagem-wrapper">
+                  <img [src]="noticia.imagem" [alt]="noticia.titulo" class="noticia-imagem"
+                       (error)="$any($event.target).style.display='none'">
+                </div>
+                <div class="noticia-corpo">
+                  <p class="noticia-titulo-card">{{ noticia.titulo }}</p>
+                  <p class="noticia-descricao">{{ noticia.descricao }}</p>
+                  <span class="noticia-ler-mais">Ler mais</span>
+                </div>
+              </a>
+            }
+          </div>
+        </section>
+      }
     } @else {
       <div class="conteudo-wrapper">
         <div class="jogos-coluna">
