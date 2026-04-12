@@ -1237,7 +1237,15 @@ body {
   .classificacao-titulo { font-size: 0.9rem; color: var(--color-text); }
 }
 
-.classificacao--grupo .classificacao-nome { max-width: 80px; }
+.classificacao--grupo .classificacao-nome { max-width: 75px; }
+
+// Tabela de grupo: fonte menor para caber no grid estreito
+.classificacao-tabela--grupo {
+  font-size: 0.72rem;
+
+  .col-pos { width: 24px; }
+  .col-num  { width: 24px; }
+}
 
 // Tabela completa (Brasileirão — página de campeonato)
 .classificacao-tabela--full {

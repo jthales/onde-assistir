@@ -117,17 +117,14 @@
                         <div class="classificacao-header">
                           <h2 class="classificacao-titulo">{{ grupo.nome }}</h2>
                         </div>
-                        <table class="classificacao-tabela">
+                        <table class="classificacao-tabela classificacao-tabela--grupo">
                           <thead>
                             <tr>
                               <th class="col-pos">#</th>
                               <th class="col-time">Time</th>
-                              <th class="col-num" title="Pontos">Pts</th>
+                              <th class="col-num col-pts-h" title="Pontos">Pts</th>
                               <th class="col-num" title="Jogos">J</th>
-                              <th class="col-num" title="Vitórias">V</th>
-                              <th class="col-num" title="Empates">E</th>
-                              <th class="col-num" title="Derrotas">D</th>
-                              <th class="col-num" title="SG">SG</th>
+                              <th class="col-num" title="Saldo de Gols">SG</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -142,9 +139,6 @@
                                 </td>
                                 <td class="col-num col-pts">{{ entry.pontos }}</td>
                                 <td class="col-num">{{ entry.jogos }}</td>
-                                <td class="col-num">{{ entry.vitorias }}</td>
-                                <td class="col-num">{{ entry.empates }}</td>
-                                <td class="col-num">{{ entry.derrotas }}</td>
                                 <td class="col-num" [class.saldo-positivo]="entry.saldo > 0" [class.saldo-negativo]="entry.saldo < 0">{{ entry.saldo > 0 ? '+' : '' }}{{ entry.saldo }}</td>
                               </tr>
                             }
@@ -156,26 +150,6 @@
                 }
               }
 
-              @if (noticiasCampeonato().length > 0) {
-                <section class="camp-noticias-section">
-                  <h2 class="camp-section-titulo">Notícias</h2>
-                  <div class="noticias-grid">
-                    @for (noticia of noticiasCampeonato(); track noticia.link) {
-                      <a class="noticia-card" [href]="noticia.link" target="_blank" rel="noopener noreferrer">
-                        <div class="noticia-imagem-wrapper">
-                          <img [src]="noticia.imagem" [alt]="noticia.titulo" class="noticia-imagem"
-                               (error)="$any($event.target).style.display='none'">
-                        </div>
-                        <div class="noticia-corpo">
-                          <p class="noticia-titulo-card">{{ noticia.titulo }}</p>
-                          <p class="noticia-descricao">{{ noticia.descricao }}</p>
-                          <span class="noticia-ler-mais">Ler mais</span>
-                        </div>
-                      </a>
-                    }
-                  </div>
-                </section>
-              }
             </div>
 
             <!-- Sidebar: próximos jogos por rodada (max 10) -->
@@ -234,6 +208,28 @@
               }
 
             </aside>
+
+            <!-- Notícias: abaixo de tudo (mobile: após jogos; desktop: largura total) -->
+            @if (noticiasCampeonato().length > 0) {
+              <section class="camp-noticias-section">
+                <h2 class="camp-section-titulo">Notícias</h2>
+                <div class="noticias-grid">
+                  @for (noticia of noticiasCampeonato(); track noticia.link) {
+                    <a class="noticia-card" [href]="noticia.link" target="_blank" rel="noopener noreferrer">
+                      <div class="noticia-imagem-wrapper">
+                        <img [src]="noticia.imagem" [alt]="noticia.titulo" class="noticia-imagem"
+                             (error)="$any($event.target).style.display='none'">
+                      </div>
+                      <div class="noticia-corpo">
+                        <p class="noticia-titulo-card">{{ noticia.titulo }}</p>
+                        <p class="noticia-descricao">{{ noticia.descricao }}</p>
+                        <span class="noticia-ler-mais">Ler mais</span>
+                      </div>
+                    </a>
+                  }
+                </div>
+              </section>
+            }
 
           </div>
         }
