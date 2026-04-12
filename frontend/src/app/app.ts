@@ -792,6 +792,13 @@ export class App implements OnInit, OnDestroy {
     return new Date() < inicio;
   }
 
+  mostrarOndeAssistir(jogo: Jogo): boolean {
+    const brtHoje = new Date(new Date().getTime() - 3 * 60 * 60 * 1000);
+    const limite = new Date(brtHoje);
+    limite.setDate(limite.getDate() + 3);
+    return jogo.data <= limite.toISOString().slice(0, 10);
+  }
+
   buildCalendarUrl(jogo: Jogo): string {
     const titulo = `${jogo.timeMandante} x ${jogo.timeVisitante}`;
     const camp = jogo.campeonato ? ` — ${jogo.campeonato}` : '';

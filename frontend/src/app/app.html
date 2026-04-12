@@ -385,7 +385,9 @@
 
             <div class="onde-assistir">
               <span class="onde-label">Onde assistir</span>
-              @if (jogo.canal.length === 0 && jogo.streaming.length === 0) {
+              @if (!mostrarOndeAssistir(jogo)) {
+                <span class="badge badge-confirmar">A definir</span>
+              } @else if (jogo.canal.length === 0 && jogo.streaming.length === 0) {
                 <span class="badge badge-confirmar">A confirmar</span>
               } @else {
                 @if (jogo.canal.length > 0) {
