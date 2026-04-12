@@ -1190,32 +1190,25 @@ body {
 // ── Página de Campeonato ──────────────────────────────────────────────────────
 
 .campeonato-page {
-  padding-top: 2rem;
+  padding-top: 0.5rem;
 }
 
 .btn-voltar {
-  @include flex(0.45rem);
-  padding: 0.6rem 1.4rem;
-  border-radius: var(--radius-pill);
+  @include flex(0.3rem);
+  padding: 0;
   border: none;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 0.88rem;
-  font-weight: 700;
+  background: none;
+  color: rgba(255,255,255,0.75);
+  font-size: 0.82rem;
+  font-weight: 600;
   cursor: pointer;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+  margin-bottom: 0.75rem;
+  transition: color 0.15s;
 
-  svg { stroke: #fff; }
+  svg { stroke: currentColor; }
 
   &:hover {
-    background: var(--color-primary-dark, color-mix(in srgb, var(--color-primary) 80%, #000));
-    box-shadow: 0 4px 14px rgba(0,0,0,0.22);
-  }
-
-  &:active {
-    transform: scale(0.97);
+    color: #fff;
   }
 }
 

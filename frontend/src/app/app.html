@@ -16,6 +16,10 @@
     <div class="hero-inner">
       <div class="hero-badge">2026</div>
       @if (campeonatoSelecionado()) {
+        <button class="btn-voltar" (click)="voltarParaHome()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          Voltar
+        </button>
         <h1 class="hero-title">{{ getLabelCampeonato(campeonatoSelecionado()) }}</h1>
         <p class="hero-subtitle">Tabela de Classificação · Próximos Jogos · Notícias</p>
       } @else if (timeSelecionado()) {
@@ -48,10 +52,6 @@
 
       <!-- ── Página de Campeonato ────────────────────────────────────────────── -->
       <div class="campeonato-page">
-        <button class="btn-voltar" (click)="voltarParaHome()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-          Voltar
-        </button>
 
         @if (loadingCampeonato()) {
           <div class="state-wrapper">
