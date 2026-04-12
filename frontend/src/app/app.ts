@@ -61,6 +61,20 @@ export class App implements OnInit, OnDestroy {
   private golToastTimer?: ReturnType<typeof setTimeout>;
   private prevGoalCounts = new Map<string, number>();
 
+  readonly jogosCampeonatoAgrupados = computed(() => {
+    const jogos = this.jogosCampeonato().slice(0, 10);
+    const map = new Map<number | string, JogoCampeonato[]>();
+    for (const jogo of jogos) {
+      const key = jogo.rodada ?? 'sem-rodada';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(jogo);
+    }
+    return Array.from(map.entries()).map(([key, list]) => ({
+      rodada: key === 'sem-rodada' ? null : key as number,
+      jogos: list,
+    }));
+  });
+
   readonly h1Title = computed(() => {
     const camp = this.campeonatoSelecionado();
     if (camp) return this.getLabelCampeonato(camp);

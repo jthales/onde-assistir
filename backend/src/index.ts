@@ -404,6 +404,7 @@ app.get('/api/jogos-campeonato/:liga', async (req, res) => {
         data:            brtDate.toISOString().slice(0, 10),
         hora:            brtDate.toISOString().slice(11, 16),
         status,
+        rodada:          event.week?.number ?? null,
         placarMandante:  home?.score != null ? Number(home.score) : null,
         placarVisitante: away?.score != null ? Number(away.score) : null,
         estadio:         comp?.venue?.fullName ?? '',

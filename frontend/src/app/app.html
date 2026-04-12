@@ -61,7 +61,7 @@
         } @else {
           <div class="campeonato-layout">
 
-            <!-- Coluna principal: classificação -->
+            <!-- Coluna principal: classificação + notícias -->
             <div class="campeonato-main">
               @if (classificacaoCampeonato(); as classif) {
                 @if (classif.tipo === 'tabela-unica') {
@@ -155,62 +155,11 @@
                   </div>
                 }
               }
-            </div>
-
-            <!-- Sidebar: próximos jogos + notícias -->
-            <aside class="campeonato-sidebar">
-
-              @if (jogosCampeonato().length > 0) {
-                <section>
-                  <h2 class="camp-sidebar-titulo">Próximos Jogos</h2>
-                  <div class="jogos-camp-lista">
-                    @for (jogo of jogosCampeonato(); track jogo.timeMandante + jogo.data) {
-                      <div class="jogo-camp-card">
-                        <div class="jogo-camp-times">
-                          <div class="jogo-camp-time">
-                            @if (jogo.logoMandante) {
-                              <img [src]="jogo.logoMandante" [alt]="jogo.timeMandante" class="jogo-camp-logo" (error)="$any($event.target).style.display='none'">
-                            }
-                            <span>{{ jogo.timeMandante }}</span>
-                          </div>
-                          <div class="jogo-camp-meio">
-                            @if (jogo.status === 'em-andamento' || jogo.status === 'encerrado') {
-                              <span class="placar-numeros" style="font-size:1rem">{{ jogo.placarMandante ?? '-' }} – {{ jogo.placarVisitante ?? '-' }}</span>
-                              @if (jogo.status === 'em-andamento') {
-                                <span class="ao-vivo-badge" style="font-size:0.6rem">AO VIVO</span>
-                              } @else {
-                                <span class="encerrado-badge">FIM</span>
-                              }
-                            } @else {
-                              <span class="jogo-camp-meta">{{ formatarData(jogo.data) }}</span>
-                              @if (jogo.hora && jogo.hora !== '00:00') {
-                                <span class="hora" style="font-size:0.72rem">{{ jogo.hora }}</span>
-                              }
-                            }
-                          </div>
-                          <div class="jogo-camp-time">
-                            @if (jogo.logoVisitante) {
-                              <img [src]="jogo.logoVisitante" [alt]="jogo.timeVisitante" class="jogo-camp-logo" (error)="$any($event.target).style.display='none'">
-                            }
-                            <span>{{ jogo.timeVisitante }}</span>
-                          </div>
-                        </div>
-                        @if (jogo.estadio) {
-                          <div class="estadio" style="font-size:0.68rem">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                            {{ jogo.estadio }}
-                          </div>
-                        }
-                      </div>
-                    }
-                  </div>
-                </section>
-              }
 
               @if (noticiasCampeonato().length > 0) {
-                <section>
-                  <h2 class="camp-sidebar-titulo">Notícias</h2>
-                  <div class="noticias-grid noticias-grid--sidebar">
+                <section class="camp-noticias-section">
+                  <h2 class="camp-section-titulo">Notícias</h2>
+                  <div class="noticias-grid">
                     @for (noticia of noticiasCampeonato(); track noticia.link) {
                       <a class="noticia-card" [href]="noticia.link" target="_blank" rel="noopener noreferrer">
                         <div class="noticia-imagem-wrapper">
@@ -223,6 +172,62 @@
                           <span class="noticia-ler-mais">Ler mais</span>
                         </div>
                       </a>
+                    }
+                  </div>
+                </section>
+              }
+            </div>
+
+            <!-- Sidebar: próximos jogos por rodada (max 10) -->
+            <aside class="campeonato-sidebar">
+
+              @if (jogosCampeonatoAgrupados().length > 0) {
+                <section>
+                  <h2 class="camp-sidebar-titulo">Próximos Jogos</h2>
+                  <div class="jogos-camp-lista">
+                    @for (grupo of jogosCampeonatoAgrupados(); track grupo.rodada) {
+                      @if (grupo.rodada) {
+                        <div class="jogo-camp-rodada">{{ grupo.rodada }}ª Rodada</div>
+                      }
+                      @for (jogo of grupo.jogos; track jogo.timeMandante + jogo.data) {
+                        <div class="jogo-camp-card">
+                          <div class="jogo-camp-times">
+                            <div class="jogo-camp-time">
+                              @if (jogo.logoMandante) {
+                                <img [src]="jogo.logoMandante" [alt]="jogo.timeMandante" class="jogo-camp-logo" (error)="$any($event.target).style.display='none'">
+                              }
+                              <span>{{ jogo.timeMandante }}</span>
+                            </div>
+                            <div class="jogo-camp-meio">
+                              @if (jogo.status === 'em-andamento' || jogo.status === 'encerrado') {
+                                <span class="placar-numeros" style="font-size:1rem">{{ jogo.placarMandante ?? '-' }} – {{ jogo.placarVisitante ?? '-' }}</span>
+                                @if (jogo.status === 'em-andamento') {
+                                  <span class="ao-vivo-badge" style="font-size:0.6rem">AO VIVO</span>
+                                } @else {
+                                  <span class="encerrado-badge">FIM</span>
+                                }
+                              } @else {
+                                <span class="jogo-camp-meta">{{ formatarData(jogo.data) }}</span>
+                                @if (jogo.hora && jogo.hora !== '00:00') {
+                                  <span class="hora" style="font-size:0.72rem">{{ jogo.hora }}</span>
+                                }
+                              }
+                            </div>
+                            <div class="jogo-camp-time">
+                              @if (jogo.logoVisitante) {
+                                <img [src]="jogo.logoVisitante" [alt]="jogo.timeVisitante" class="jogo-camp-logo" (error)="$any($event.target).style.display='none'">
+                              }
+                              <span>{{ jogo.timeVisitante }}</span>
+                            </div>
+                          </div>
+                          @if (jogo.estadio) {
+                            <div class="estadio" style="font-size:0.68rem">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                              {{ jogo.estadio }}
+                            </div>
+                          }
+                        </div>
+                      }
                     }
                   </div>
                 </section>

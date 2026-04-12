@@ -74,6 +74,7 @@ export interface JogoCampeonato {
   data: string;
   hora: string;
   status: 'agendado' | 'em-andamento' | 'encerrado';
+  rodada: number | null;
   placarMandante: number | null;
   placarVisitante: number | null;
   estadio: string;
