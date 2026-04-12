@@ -1393,6 +1393,7 @@ body {
   // A tabela do campeonato NÃO é sticky (evita sobrepor as notícias abaixo)
   .campeonato-main .classificacao {
     position: static;
+    width: 100%;
   }
 
   .classificacao-nome--full {
