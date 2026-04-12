@@ -1349,6 +1349,11 @@ body {
 // Notícias abaixo da tabela (página de campeonato)
 .camp-noticias-section {
   margin-top: 1.5rem;
+  display: none;
+
+  @media (min-width: 768px) {
+    display: block;
+  }
 }
 
 .camp-section-titulo {
