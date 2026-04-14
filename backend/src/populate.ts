@@ -163,8 +163,7 @@ Retorne um array JSON, um objeto por jogo, na mesma ordem:
 ]
 Retorne apenas o JSON.`;
 
-  const MAX_RETRIES = 50;
-  let lastError: unknown;
+  const MAX_RETRIES = 10;
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const response = await ai.models.generateContent({
@@ -185,15 +184,16 @@ Retorne apenas o JSON.`;
       }
       return result;
     } catch (err: any) {
-      lastError = err;
-      const is503 = err?.status === 503 || String(err?.message ?? '').includes('503');
-      if (!is503 || attempt === MAX_RETRIES) throw err;
+      if (attempt === MAX_RETRIES) {
+        console.warn(`Gemini falhou após ${MAX_RETRIES} tentativas (${err?.message ?? err}). Jogos serão salvos sem transmissão.`);
+        return result;
+      }
       const delay = Math.min(2000 * Math.pow(2, attempt - 1), 4 * 60 * 1000);
-      console.warn(`Gemini 503, tentativa ${attempt}/${MAX_RETRIES}. Aguardando ${delay / 1000}s...`);
+      console.warn(`Gemini erro (tentativa ${attempt}/${MAX_RETRIES}): ${err?.message ?? err}. Aguardando ${delay / 1000}s...`);
       await new Promise((r) => setTimeout(r, delay));
     }
   }
-  throw lastError;
+  return result;
 }
 
 function jogoId(date: string, mandante: string, visitante: string): string {
