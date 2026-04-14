@@ -70,6 +70,9 @@ const TEAM_ALIASES: Record<string, string[]> = {
   'Athletico Paranaense': ['Athletico', 'Athletico-PR'],
   'Red Bull Bragantino':  ['Bragantino', 'RB Bragantino'],
   'Sport Recife':         ['Sport'],
+  // Times internacionais com nome diferente no GE vs ESPN
+  'Liga de Quito':        ['LDU', 'LDU Quito'],
+  'Deportivo Recoleta':   ['Recoleta', 'Recoleta-PAR'],
 };
 
 // Sufixos de clube que o ge.globo costuma omitir (ex: "Caracas FC" → "Caracas")
@@ -447,11 +450,21 @@ export async function buscarOndeAssistir(
     const mand = normalizeForSearch(mandante);
     const visit = normalizeForSearch(visitante);
 
+    // Calcula variantes antes das queries para reutilizar no filtro de títulos
+    const mandVariants = teamVariants(mandante);
+    const visitVariants = teamVariants(visitante);
+
     // Tenta ordem direta e invertida para cobrir artigos como "Santos x Deportivo Cuenca"
     const queries = [
       `onde assistir ${mand} x ${visit}`,
       `onde assistir ${visit} x ${mand}`,
     ];
+
+    // Adiciona variantes com alias (ex: "LDU" para "Liga de Quito", "Recoleta-PAR" para "Deportivo Recoleta")
+    const mandAlias = mandVariants.find(v => v !== mand);
+    const visitAlias = visitVariants.find(v => v !== visit);
+    if (mandAlias) queries.push(`onde assistir ${mandAlias} x ${visit}`);
+    if (visitAlias) queries.push(`onde assistir ${mand} x ${visitAlias}`);
 
     console.log(`\n🔍 [scrape] ${label}`);
 
@@ -464,8 +477,6 @@ export async function buscarOndeAssistir(
 
     // Filtra matérias individuais: precisa de "onde assistir" + os dois times no título
     // Usa teamVariants para cobrir aliases (ex: "Bragantino" → "Red Bull Bragantino")
-    const mandVariants = teamVariants(mandante);
-    const visitVariants = teamVariants(visitante);
 
     const individuais = hits.filter(h => {
       const t = removeAccents(h.title).toLowerCase();
