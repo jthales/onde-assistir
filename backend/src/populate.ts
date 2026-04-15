@@ -226,12 +226,24 @@ async function runPopulate(): Promise<void> {
 
   if (fixtures.length === 0) throw new Error('Nenhum jogo encontrado na ESPN');
 
-  // Passo 1: buscar artigo de rodada uma vez (1 request) para extrair rodada + transmissões em lote
+  // Data de hoje em BRT (UTC-3) — usada para priorizar FutebolExpert
+  const hoje = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  const hojeStr = hoje.toISOString().slice(0, 10);
+
+  // Passo 1: FutebolExpert — fonte primária para jogos de HOJE
+  const fixturesHoje = fixtures.filter(f => f.data === hojeStr);
+  const feMap = fixturesHoje.length > 0
+    ? await buscarFutebolExpert(fixturesHoje)
+    : new Map<string, Broadcast>();
+
+  // Passo 2: buscar artigo de rodada uma vez (1 request) para extrair rodada + transmissões em lote
   console.log('\nBuscando artigo de rodada no ge.globo...');
   const dadosRodada = await buscarDadosRodada(fixtures);
   const rodadaNum = dadosRodada?.rodada ?? 0;
 
-  // Passo 2: para cada jogo, tenta rodada primeiro; fallback busca individual; fallback Gemini
+  // Passo 3: para cada jogo, em ordem de prioridade:
+  //   Hoje  → FutebolExpert → rodada GE → scrape individual
+  //   Futuro → rodada GE → scrape individual
   const broadcastMap = new Map<string, Broadcast>();
   const sourceMap = new Map<string, 'rodada' | 'scrape' | 'futebolexpert' | 'gemini' | 'nenhum'>();
   const failedFixtures: EspnFixture[] = [];
@@ -240,7 +252,18 @@ async function runPopulate(): Promise<void> {
   for (const fixture of fixtures) {
     const key = `${fixture.timeMandante}|${fixture.timeVisitante}`;
 
-    // Tenta artigo de rodada (sem request adicional)
+    // Prioridade 1 (apenas hoje): FutebolExpert
+    if (fixture.data === hojeStr) {
+      const fromFE = feMap.get(key);
+      if (fromFE && (fromFE.canal.length > 0 || fromFE.streaming.length > 0)) {
+        broadcastMap.set(key, fromFE);
+        sourceMap.set(key, 'futebolexpert');
+        console.log(`✅ [futebolexpert] ${fixture.timeMandante} x ${fixture.timeVisitante} → ${[...fromFE.canal, ...fromFE.streaming].join(', ')}`);
+        continue;
+      }
+    }
+
+    // Prioridade 2: artigo de rodada GE (sem request adicional)
     const fromRodada = dadosRodada?.buscarTransmissao(fixture.timeMandante, fixture.timeVisitante);
     if (fromRodada && (fromRodada.canal.length > 0 || fromRodada.streaming.length > 0)) {
       broadcastMap.set(key, fromRodada);
@@ -249,7 +272,7 @@ async function runPopulate(): Promise<void> {
       continue;
     }
 
-    // Fallback: matéria individual
+    // Prioridade 3: matéria individual GE
     const { canal, streaming } = await buscarOndeAssistir(fixture.timeMandante, fixture.timeVisitante);
     if (canal.length > 0 || streaming.length > 0) {
       broadcastMap.set(key, { canal, streaming });
@@ -257,26 +280,6 @@ async function runPopulate(): Promise<void> {
       console.log(`✅ [scrape]  ${fixture.timeMandante} x ${fixture.timeVisitante} → ${[...canal, ...streaming].join(', ')}`);
     } else {
       failedFixtures.push(fixture);
-    }
-  }
-
-  // Passo 3: FutebolExpert para jogos de HOJE que falharam no GE
-  const hoje = new Date(Date.now() - 3 * 60 * 60 * 1000); // BRT
-  const hojeStr = hoje.toISOString().slice(0, 10);
-  const jogosHoje = failedFixtures.filter(f => f.data === hojeStr);
-
-  if (jogosHoje.length > 0) {
-    const feResults = await buscarFutebolExpert(jogosHoje);
-    const feFound = new Set<string>();
-    for (const [key, broadcast] of feResults) {
-      broadcastMap.set(key, broadcast);
-      sourceMap.set(key, 'futebolexpert');
-      feFound.add(key);
-    }
-    // Remove da lista de falhos os que o FutebolExpert resolveu
-    for (let i = failedFixtures.length - 1; i >= 0; i--) {
-      const k = `${failedFixtures[i].timeMandante}|${failedFixtures[i].timeVisitante}`;
-      if (feFound.has(k)) failedFixtures.splice(i, 1);
     }
   }
 
