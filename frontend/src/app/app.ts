@@ -655,6 +655,7 @@ export class App implements OnInit, OnDestroy {
     'ESPN':               'https://www.espn.com.br',
     'Record':             'https://www.r7.com/ao-vivo',
     'Record TV':          'https://www.r7.com/ao-vivo',
+    'SBT':                'https://www.sbt.com.br/ao-vivo',
   };
 
   getStreamingUrl(plataforma: string): string | null {

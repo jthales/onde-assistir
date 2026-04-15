@@ -10,7 +10,7 @@ import { GoogleGenAI } from '@google/genai';
 import { Jogo } from './types';
 import { db } from './firebase';
 import { espnScoreboardUrlForLeague, ESPN_LEAGUES, TEAM_NAME_MAP } from './constants';
-import { buscarDadosRodada, buscarOndeAssistir, buscarCazeTvUpcoming } from './scraper';
+import { buscarDadosRodada, buscarOndeAssistir } from './scraper';
 
 const ai = new GoogleGenAI({ apiKey: process.env['GEMINI_API_KEY'] ?? '' });
 const GEMINI_MODEL_ID = 'gemini-3.1-flash-lite-preview';
@@ -231,11 +231,9 @@ async function runPopulate(): Promise<void> {
   const dadosRodada = await buscarDadosRodada(fixtures);
   const rodadaNum = dadosRodada?.rodada ?? 0;
 
-  const cazeTvJogos = await buscarCazeTvUpcoming(fixtures);
-
   // Passo 2: para cada jogo, tenta rodada primeiro; fallback busca individual; fallback Gemini
   const broadcastMap = new Map<string, Broadcast>();
-  const sourceMap = new Map<string, 'rodada' | 'scrape' | 'gemini' | 'caze' | 'nenhum'>();
+  const sourceMap = new Map<string, 'rodada' | 'scrape' | 'gemini' | 'nenhum'>();
   const failedFixtures: EspnFixture[] = [];
 
   console.log('\n── Transmissões ──');
@@ -305,15 +303,7 @@ async function runPopulate(): Promise<void> {
     const key = `${fixture.timeMandante}|${fixture.timeVisitante}`;
     const broadcast = broadcastMap.get(key);
 
-    const streamingBase = broadcast?.streaming ?? [];
-    const streaming = cazeTvJogos.has(key) && !streamingBase.includes('Cazé TV')
-      ? [...streamingBase, 'Cazé TV']
-      : streamingBase;
-
-    // Marca como fonte 'caze' apenas se não teve outra fonte
-    if (cazeTvJogos.has(key) && (sourceMap.get(key) === 'nenhum' || !sourceMap.has(key))) {
-      sourceMap.set(key, 'caze');
-    }
+    const streaming = broadcast?.streaming ?? [];
 
     const jogo: Jogo & { id: string; lastUpdated: string } = {
       id: jogoId(fixture.data, fixture.timeMandante, fixture.timeVisitante),
@@ -354,7 +344,7 @@ async function runPopulate(): Promise<void> {
   }
 
   // Resumo final
-  const bySource = { rodada: 0, scrape: 0, gemini: 0, caze: 0, nenhum: 0 };
+  const bySource = { rodada: 0, scrape: 0, gemini: 0, nenhum: 0 };
   for (const fixture of fixtures) {
     const key = `${fixture.timeMandante}|${fixture.timeVisitante}`;
     const src = sourceMap.get(key) ?? 'nenhum';
@@ -362,7 +352,7 @@ async function runPopulate(): Promise<void> {
   }
   console.log('\n── Resultado ──');
   console.log(`  ${total} jogos salvos`);
-  console.log(`  Fontes: ${bySource.rodada} rodada · ${bySource.scrape} scrape · ${bySource.gemini} Gemini · ${bySource.caze} Cazé TV · ${bySource.nenhum} sem transmissão`);
+  console.log(`  Fontes: ${bySource.rodada} rodada · ${bySource.scrape} scrape · ${bySource.gemini} Gemini · ${bySource.nenhum} sem transmissão`);
 }
 
 runPopulate()

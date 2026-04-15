@@ -32,6 +32,7 @@ const CANAIS_TV: Array<{ match: string; display: string }> = [
   { match: 'espn',       display: 'ESPN'         },
   { match: 'record',     display: 'Record'       },
   { match: 'band',       display: 'Band'         },
+  { match: 'sbt',        display: 'SBT'          },
   { match: 'tnt',        display: 'TNT'          },
   { match: 'fox sports', display: 'Fox Sports'   },
 ];
@@ -341,101 +342,6 @@ export async function buscarDadosRodada(
     url: rodadaHit.url,
     buscarTransmissao: (mandante, visitante) => extrairDeRodada(bodyText, mandante, visitante),
   };
-}
-
-// ─── Cazé TV YouTube ─────────────────────────────────────────────────────────
-
-function findUpcomingVideos(obj: unknown): Array<{ title: string; startTime: number }> {
-  if (!obj || typeof obj !== 'object') return [];
-  if (Array.isArray(obj)) return obj.flatMap(item => findUpcomingVideos(item));
-
-  const o = obj as Record<string, unknown>;
-  const results: Array<{ title: string; startTime: number }> = [];
-
-  if (o['upcomingEventData'] && o['title']) {
-    const titleObj = o['title'] as { runs?: Array<{ text: string }>; simpleText?: string };
-    const title: string = titleObj?.runs?.[0]?.text ?? titleObj?.simpleText ?? '';
-    const startTime = parseInt((o['upcomingEventData'] as { startTime?: string })?.startTime ?? '0', 10);
-    if (title && startTime > 0) results.push({ title, startTime });
-  }
-
-  for (const value of Object.values(o)) {
-    results.push(...findUpcomingVideos(value));
-  }
-
-  return results;
-}
-
-/**
- * Busca transmissões programadas no canal Cazé TV do YouTube (@cazetv/streams).
- * Retorna um Set com as chaves "mandante|visitante" dos jogos encontrados.
- * Em caso de falha, retorna Set vazio para não bloquear o populate.
- */
-export async function buscarCazeTvUpcoming(
-  fixtures: Array<{ timeMandante: string; timeVisitante: string }>,
-): Promise<Set<string>> {
-  const result = new Set<string>();
-  console.log('\n── Cazé TV (YouTube) ──');
-
-  try {
-    const url = 'https://www.youtube.com/@cazetv/streams';
-    const res = await fetchWithTimeout(url, {
-      headers: {
-        ...FETCH_HEADERS,
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      },
-    }, 15000);
-
-    if (!res.ok) {
-      console.log(`   ⚠️  YouTube retornou ${res.status}`);
-      return result;
-    }
-
-    const html = await res.text();
-    const marker = 'ytInitialData = ';
-    const startIdx = html.indexOf(marker);
-    if (startIdx === -1) {
-      console.log('   ⚠️  ytInitialData não encontrado na página');
-      return result;
-    }
-
-    const from = startIdx + marker.length; // aponta para o '{'
-    const scriptEnd = html.indexOf('</script>', from);
-    if (scriptEnd === -1) {
-      console.log('   ⚠️  fim do script não encontrado');
-      return result;
-    }
-
-    const raw = html.slice(from, scriptEnd).replace(/;\s*$/, '');
-    const ytData: unknown = JSON.parse(raw);
-    const upcoming = findUpcomingVideos(ytData);
-    console.log(`   ${upcoming.length} transmissão(ões) programada(s) no canal`);
-
-    for (const video of upcoming) {
-      const titleNorm = removeAccents(video.title).toLowerCase();
-      for (const fixture of fixtures) {
-        const key = `${fixture.timeMandante}|${fixture.timeVisitante}`;
-        if (result.has(key)) continue;
-
-        const hasMandante = teamVariants(fixture.timeMandante).some(v => titleNorm.includes(v));
-        const hasVisitante = teamVariants(fixture.timeVisitante).some(v => titleNorm.includes(v));
-
-        if (hasMandante && hasVisitante) {
-          result.add(key);
-          const brt = new Date(video.startTime * 1000 - 3 * 60 * 60 * 1000);
-          console.log(`   ✅ ${fixture.timeMandante} x ${fixture.timeVisitante}`);
-          console.log(`      ${brt.toISOString().slice(0, 16).replace('T', ' ')} BRT — "${video.title}"`);
-        }
-      }
-    }
-
-    if (result.size === 0) console.log('   nenhum jogo dos fixtures encontrado');
-  } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
-    console.log(`   ❌ Erro ao buscar Cazé TV: ${reason}`);
-  }
-
-  return result;
 }
 
 // ─── API pública ─────────────────────────────────────────────────────────────
