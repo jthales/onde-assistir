@@ -2,15 +2,19 @@
  * Populate: ESPN API (fixtures reais) + scrape ge.globo (transmissões).
  * Limpa a coleção antes de gravar.
  *
- * Uso: npm run populate
+ * Uso normal:   npm run populate
+ * Dry-run:      npm run populate:dry   (não toca no banco, grava populate-dry-run.json)
  */
 import 'dotenv/config';
+import * as fs from 'fs';
 import * as admin from 'firebase-admin';
 import { GoogleGenAI } from '@google/genai';
 import { Jogo } from './types';
 import { db } from './firebase';
 import { espnScoreboardUrlForLeague, ESPN_LEAGUES, TEAM_NAME_MAP } from './constants';
 import { buscarDadosRodada, buscarOndeAssistir, buscarFutebolExpert } from './scraper';
+
+const DRY_RUN = process.env['DRY_RUN'] === '1';
 
 const ai = new GoogleGenAI({ apiKey: process.env['GEMINI_API_KEY'] ?? '' });
 const GEMINI_MODEL_ID = 'gemini-3.1-flash-lite-preview';
@@ -212,8 +216,12 @@ async function clearCollection(ref: admin.firestore.CollectionReference): Promis
 }
 
 async function runPopulate(): Promise<void> {
-  console.log('Limpando coleção jogos...');
-  await clearCollection(db.collection('jogos'));
+  if (DRY_RUN) {
+    console.log('🔍 DRY-RUN ativo — nenhuma alteração será feita no banco de dados.\n');
+  } else {
+    console.log('Limpando coleção jogos...');
+    await clearCollection(db.collection('jogos'));
+  }
 
   console.log('\n── ESPN ──');
   const fixtures = await fetchFixturesFromEspn();
@@ -318,16 +326,14 @@ async function runPopulate(): Promise<void> {
     }
   }
 
-  const batch = db.batch();
-  let total = 0;
+  const jogosParaSalvar: Array<Jogo & { id: string; lastUpdated: string; fonte: string }> = [];
 
   for (const fixture of fixtures) {
     const key = `${fixture.timeMandante}|${fixture.timeVisitante}`;
     const broadcast = broadcastMap.get(key);
-
     const streaming = broadcast?.streaming ?? [];
 
-    const jogo: Jogo & { id: string; lastUpdated: string } = {
+    jogosParaSalvar.push({
       id: jogoId(fixture.data, fixture.timeMandante, fixture.timeVisitante),
       rodada: rodadaNum,
       timeMandante: fixture.timeMandante,
@@ -341,18 +347,28 @@ async function runPopulate(): Promise<void> {
       estadio: fixture.estadio,
       campeonato: fixture.campeonato,
       lastUpdated: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    };
-
-    batch.set(db.collection('jogos').doc(jogo.id), jogo, { merge: true });
-    total++;
+      fonte: sourceMap.get(key) ?? 'nenhum',
+    });
   }
 
-  batch.set(db.collection('meta').doc('lastUpdated'), {
-    timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    totalJogos: total,
-  });
+  const total = jogosParaSalvar.length;
 
-  await batch.commit();
+  if (DRY_RUN) {
+    const outPath = 'populate-dry-run.json';
+    fs.writeFileSync(outPath, JSON.stringify(jogosParaSalvar, null, 2), 'utf-8');
+    console.log(`\n📄 Dry-run: ${total} jogo(s) escritos em ${outPath} (banco não alterado)`);
+  } else {
+    const batch = db.batch();
+    for (const jogo of jogosParaSalvar) {
+      const { fonte: _fonte, ...jogoSemFonte } = jogo;
+      batch.set(db.collection('jogos').doc(jogo.id), jogoSemFonte, { merge: true });
+    }
+    batch.set(db.collection('meta').doc('lastUpdated'), {
+      timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+      totalJogos: total,
+    });
+    await batch.commit();
+  }
 
   // Resumo dos jogos encontrados via scrape
   const scrapeGames = fixtures.filter(f => sourceMap.get(`${f.timeMandante}|${f.timeVisitante}`) === 'scrape');
@@ -373,7 +389,7 @@ async function runPopulate(): Promise<void> {
     bySource[src]++;
   }
   console.log('\n── Resultado ──');
-  console.log(`  ${total} jogos salvos`);
+  console.log(`  ${total} jogos ${DRY_RUN ? 'simulados (dry-run)' : 'salvos'}`);
   console.log(`  Fontes: ${bySource.rodada} rodada · ${bySource.scrape} scrape · ${bySource.futebolexpert} FutebolExpert · ${bySource.gemini} Gemini · ${bySource.nenhum} sem transmissão`);
 }
 

@@ -7,6 +7,7 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "populate": "ts-node src/populate.ts",
+    "populate:dry": "DRY_RUN=1 ts-node src/populate.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
