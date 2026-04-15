@@ -14,7 +14,7 @@ import { db } from './firebase';
 import { espnScoreboardUrlForLeague, ESPN_LEAGUES, TEAM_NAME_MAP } from './constants';
 import { buscarDadosRodada, buscarOndeAssistir, buscarFutebolExpert } from './scraper';
 
-const DRY_RUN = process.env['DRY_RUN'] === '1';
+const DRY_RUN = process.argv.includes('--dry-run');
 
 const ai = new GoogleGenAI({ apiKey: process.env['GEMINI_API_KEY'] ?? '' });
 const GEMINI_MODEL_ID = 'gemini-3.1-flash-lite-preview';
