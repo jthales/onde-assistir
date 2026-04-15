@@ -160,6 +160,7 @@ async function fetchBodyText(url: string): Promise<string> {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const html = await res.text();
   const $ = cheerio.load(html);
+  $('script, style, noscript').remove();
   return $('body').text().replace(/\s+/g, ' ');
 }
 
