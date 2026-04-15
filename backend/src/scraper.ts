@@ -74,8 +74,10 @@ const TEAM_ALIASES: Record<string, string[]> = {
   'Red Bull Bragantino':  ['Bragantino', 'RB Bragantino'],
   'Sport Recife':         ['Sport'],
   // Times internacionais com nome diferente no GE vs ESPN
-  'Liga de Quito':        ['LDU', 'LDU Quito'],
-  'Deportivo Recoleta':   ['Recoleta', 'Recoleta-PAR'],
+  'Liga de Quito':          ['LDU', 'LDU Quito'],
+  'Deportivo Recoleta':     ['Recoleta', 'Recoleta-PAR'],
+  'Racing Club':            ['Racing'],
+  'Independiente Santa Fe': ['Santa Fe', 'Ind. Santa Fe', 'Ind Santa Fe'],
 };
 
 // Sufixos de clube que o ge.globo costuma omitir (ex: "Caracas FC" → "Caracas")
