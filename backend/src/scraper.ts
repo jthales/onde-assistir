@@ -40,6 +40,8 @@ const CANAIS_STREAMING: Array<{ match: string; display: string }> = [
   { match: 'amazon prime', display: 'Amazon Prime Video' }, // captura "Amazon Prime" e "Amazon Prime Video"
   { match: 'prime video',  display: 'Amazon Prime Video' },
   { match: 'globoplay',    display: 'Globoplay'           },
+  { match: 'paramount+',   display: 'Paramount+'          },
+  { match: 'paramount +',  display: 'Paramount+'          },
   { match: 'premiere',     display: 'Premiere'            },
   { match: 'caze tv',      display: 'Cazé TV'             },
   { match: 'cazetv',       display: 'Cazé TV'             },
