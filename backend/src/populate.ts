@@ -10,7 +10,7 @@ import { GoogleGenAI } from '@google/genai';
 import { Jogo } from './types';
 import { db } from './firebase';
 import { espnScoreboardUrlForLeague, ESPN_LEAGUES, TEAM_NAME_MAP } from './constants';
-import { buscarDadosRodada, buscarOndeAssistir } from './scraper';
+import { buscarDadosRodada, buscarOndeAssistir, buscarFutebolExpert } from './scraper';
 
 const ai = new GoogleGenAI({ apiKey: process.env['GEMINI_API_KEY'] ?? '' });
 const GEMINI_MODEL_ID = 'gemini-3.1-flash-lite-preview';
@@ -233,7 +233,7 @@ async function runPopulate(): Promise<void> {
 
   // Passo 2: para cada jogo, tenta rodada primeiro; fallback busca individual; fallback Gemini
   const broadcastMap = new Map<string, Broadcast>();
-  const sourceMap = new Map<string, 'rodada' | 'scrape' | 'gemini' | 'nenhum'>();
+  const sourceMap = new Map<string, 'rodada' | 'scrape' | 'futebolexpert' | 'gemini' | 'nenhum'>();
   const failedFixtures: EspnFixture[] = [];
 
   console.log('\n── Transmissões ──');
@@ -260,11 +260,30 @@ async function runPopulate(): Promise<void> {
     }
   }
 
-  // Passo 3: divide failedFixtures por janela
+  // Passo 3: FutebolExpert para jogos de HOJE que falharam no GE
+  const hoje = new Date(Date.now() - 3 * 60 * 60 * 1000); // BRT
+  const hojeStr = hoje.toISOString().slice(0, 10);
+  const jogosHoje = failedFixtures.filter(f => f.data === hojeStr);
+
+  if (jogosHoje.length > 0) {
+    const feResults = await buscarFutebolExpert(jogosHoje);
+    const feFound = new Set<string>();
+    for (const [key, broadcast] of feResults) {
+      broadcastMap.set(key, broadcast);
+      sourceMap.set(key, 'futebolexpert');
+      feFound.add(key);
+    }
+    // Remove da lista de falhos os que o FutebolExpert resolveu
+    for (let i = failedFixtures.length - 1; i >= 0; i--) {
+      const k = `${failedFixtures[i].timeMandante}|${failedFixtures[i].timeVisitante}`;
+      if (feFound.has(k)) failedFixtures.splice(i, 1);
+    }
+  }
+
+  // Passo 4: divide failedFixtures por janela
   // - Jogos nos próximos GEMINI_JANELA_DIAS dias → Gemini (transmissão já deve estar definida)
   // - Jogos mais distantes → vazio (transmissão ainda não anunciada)
   if (failedFixtures.length > 0) {
-    const hoje = new Date(Date.now() - 3 * 60 * 60 * 1000); // BRT
     const limite = new Date(hoje.getTime() + GEMINI_JANELA_DIAS * 24 * 60 * 60 * 1000);
 
     const paraGemini = failedFixtures.filter(f => new Date(f.data) <= limite);
@@ -344,7 +363,7 @@ async function runPopulate(): Promise<void> {
   }
 
   // Resumo final
-  const bySource = { rodada: 0, scrape: 0, gemini: 0, nenhum: 0 };
+  const bySource = { rodada: 0, scrape: 0, futebolexpert: 0, gemini: 0, nenhum: 0 };
   for (const fixture of fixtures) {
     const key = `${fixture.timeMandante}|${fixture.timeVisitante}`;
     const src = sourceMap.get(key) ?? 'nenhum';
@@ -352,7 +371,7 @@ async function runPopulate(): Promise<void> {
   }
   console.log('\n── Resultado ──');
   console.log(`  ${total} jogos salvos`);
-  console.log(`  Fontes: ${bySource.rodada} rodada · ${bySource.scrape} scrape · ${bySource.gemini} Gemini · ${bySource.nenhum} sem transmissão`);
+  console.log(`  Fontes: ${bySource.rodada} rodada · ${bySource.scrape} scrape · ${bySource.futebolexpert} FutebolExpert · ${bySource.gemini} Gemini · ${bySource.nenhum} sem transmissão`);
 }
 
 runPopulate()

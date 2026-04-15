@@ -344,6 +344,102 @@ export async function buscarDadosRodada(
   };
 }
 
+// ─── FutebolExpert ───────────────────────────────────────────────────────────
+
+/**
+ * Busca transmissões de HOJE em futebolexpert.com.br/onde-assistir/todos-os-canais/hoje.
+ * Fonte curada e confiável para jogos do dia atual.
+ * Retorna um Map com chave "mandante|visitante" → { canal, streaming }.
+ * Em caso de falha retorna Map vazio para não bloquear o populate.
+ */
+export async function buscarFutebolExpert(
+  fixtures: Array<{ timeMandante: string; timeVisitante: string }>,
+): Promise<Map<string, { canal: string[]; streaming: string[] }>> {
+  const result = new Map<string, { canal: string[]; streaming: string[] }>();
+  console.log('\n── FutebolExpert (hoje) ──');
+
+  try {
+    const url = 'https://www.futebolexpert.com.br/onde-assistir/todos-os-canais/hoje';
+    const res = await fetchWithTimeout(url, {
+      headers: { ...FETCH_HEADERS, Accept: 'text/html' },
+    }, 20000);
+
+    if (!res.ok) {
+      console.log(`   ⚠️  FutebolExpert retornou ${res.status}`);
+      return result;
+    }
+
+    const html = await res.text();
+    const $ = cheerio.load(html);
+
+    // Extrai linhas da tabela principal: Horário | Competição | Confronto | Onde assistir | Fase
+    const entries: Array<{ mandante: string; visitante: string; canais: string }> = [];
+    $('tbody.wixui-table__body tr').each((_, row) => {
+      const cells = $(row).find('td');
+      if (cells.length < 4) return;
+
+      const confronto = $(cells[2]).text().trim();
+      const canaisRaw  = $(cells[3]).text().trim();
+      if (!confronto || !canaisRaw) return;
+
+      // Separa "Time A x Time B" → [mandante, visitante]
+      const xIdx = confronto.indexOf(' x ');
+      if (xIdx === -1) return;
+      const mand = normalizeForSearch(confronto.slice(0, xIdx));
+      const visit = normalizeForSearch(confronto.slice(xIdx + 3));
+
+      // Remove anotações regionais do texto de canais: "(NE)", "[De graça]", "- SP e alguns..."
+      const canais = canaisRaw
+        .replace(/\([^)]*\)/g, '')   // remove (...) ex: "(NE)", "(SP)"
+        .replace(/\[[^\]]*\]/g, '')  // remove [...] ex: "[De graça]"
+        .replace(/\s*-\s*.+$/g, '') // remove " - SP e alguns estados"
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      entries.push({ mandante: mand, visitante: visit, canais });
+    });
+
+    console.log(`   ${entries.length} jogo(s) na tabela`);
+
+    for (const fixture of fixtures) {
+      const key = `${fixture.timeMandante}|${fixture.timeVisitante}`;
+      const mandVariants = teamVariants(fixture.timeMandante);
+      const visitVariants = teamVariants(fixture.timeVisitante);
+
+      for (const entry of entries) {
+        // Considera match se qualquer variante ESPN "inclui" ou "está contida em" o nome do FutebolExpert
+        const matchMand = mandVariants.some(v =>
+          entry.mandante.includes(v) || v.includes(entry.mandante)
+        );
+        const matchVisit = visitVariants.some(v =>
+          entry.visitante.includes(v) || v.includes(entry.visitante)
+        );
+
+        if (!matchMand || !matchVisit) continue;
+
+        const broadcast = classifyChannels(entry.canais);
+        if (broadcast.canal.length > 0 || broadcast.streaming.length > 0) {
+          result.set(key, broadcast);
+          console.log(`   ✅ ${fixture.timeMandante} x ${fixture.timeVisitante} → ${[...broadcast.canal, ...broadcast.streaming].join(', ')}`);
+        } else {
+          console.log(`   ⚠️  ${fixture.timeMandante} x ${fixture.timeVisitante} — canais não mapeados: "${entry.canais}"`);
+        }
+        break;
+      }
+    }
+
+    const naoCobertos = fixtures.filter(f => !result.has(`${f.timeMandante}|${f.timeVisitante}`));
+    if (naoCobertos.length > 0) {
+      console.log(`   sem match para: ${naoCobertos.map(f => `${f.timeMandante} x ${f.timeVisitante}`).join(', ')}`);
+    }
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    console.log(`   ❌ Erro ao buscar FutebolExpert: ${reason}`);
+  }
+
+  return result;
+}
+
 // ─── API pública ─────────────────────────────────────────────────────────────
 
 /**
