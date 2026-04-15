@@ -168,7 +168,7 @@ Retorne um array JSON, um objeto por jogo, na mesma ordem:
 ]
 Retorne apenas o JSON.`;
 
-  const MAX_RETRIES = 6;
+  const MAX_RETRIES = 5;
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const response = await ai.models.generateContent({
