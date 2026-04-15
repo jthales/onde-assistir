@@ -646,6 +646,7 @@ export class App implements OnInit, OnDestroy {
     'Cazé TV':            'https://www.youtube.com/cazetv',
     'CazéTV':             'https://www.youtube.com/cazetv',
     'Ge TV':              'https://www.youtube.com/geglobo',
+    'Paramount+':         'https://www.paramountplus.com/br',
     'Amazon Prime Video': 'https://www.primevideo.com',
     'Prime Video':        'https://www.primevideo.com',
     'Disney+':            'https://www.disneyplus.com/pt-br',
