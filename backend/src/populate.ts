@@ -138,13 +138,14 @@ async function fetchBroadcastFromGemini(fixtures: EspnFixture[]): Promise<Map<st
 
 Para cada jogo abaixo, informe os canais de TV e plataformas de streaming que vão transmitir no Brasil.
 
-Direitos de transmissão atuais:
+Direitos de transmissão atuais (temporada 2025/2026):
 - TV aberta: "Globo" transmite jogos selecionados do Brasileirão Série A e Copa do Brasil.
-- TV fechada: "SporTV", "SporTV 2", "SporTV 3" transmitem Brasileirão, Copa do Brasil, Libertadores e Sul-Americana.
+- TV fechada: "SporTV", "SporTV 2", "SporTV 3" transmitem Brasileirão, Copa do Brasil e Libertadores. NÃO transmitem Sul-Americana.
 - Pay-per-view: "Premiere" transmite Brasileirão Série A (exceto jogos da Globo).
 - Streaming:
   - "Globoplay": transmite todos os jogos do Brasileirão, Copa do Brasil e seleção brasileira.
-  - "Cazé TV": transmite ao vivo no YouTube jogos do Brasileirão Série A (jogos de grande audiência), Copa do Brasil, Libertadores e Sul-Americana.
+  - "Paramount+": transmite TODOS os jogos da Copa Sul-Americana no Brasil (direitos exclusivos de streaming). É o principal canal da Sul-Americana.
+  - "Cazé TV": transmite ao vivo no YouTube jogos do Brasileirão Série A (jogos de grande audiência), Copa do Brasil e Libertadores.
   - "Ge TV": canal do YouTube do Ge/Globo Esporte que transmite alguns jogos ao vivo gratuitamente.
   - "Amazon Prime Video": transmite alguns jogos do Brasileirão Série A.
 - Se não tiver certeza sobre um canal ou plataforma específica, use [].
