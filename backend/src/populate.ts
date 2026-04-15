@@ -370,6 +370,17 @@ async function runPopulate(): Promise<void> {
     await batch.commit();
   }
 
+  // Resumo dos jogos encontrados via FutebolExpert
+  const feGames = fixtures.filter(f => sourceMap.get(`${f.timeMandante}|${f.timeVisitante}`) === 'futebolexpert');
+  if (feGames.length > 0) {
+    console.log(`\n── FutebolExpert (${feGames.length} jogo(s)) ──`);
+    for (const f of feGames) {
+      const b = broadcastMap.get(`${f.timeMandante}|${f.timeVisitante}`);
+      const channels = [...(b?.canal ?? []), ...(b?.streaming ?? [])].join(', ');
+      console.log(`✅ [futebolexpert]  ${f.timeMandante} x ${f.timeVisitante} → ${channels}`);
+    }
+  }
+
   // Resumo dos jogos encontrados via scrape
   const scrapeGames = fixtures.filter(f => sourceMap.get(`${f.timeMandante}|${f.timeVisitante}`) === 'scrape');
   if (scrapeGames.length > 0) {
