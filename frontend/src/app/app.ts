@@ -298,7 +298,7 @@ export class App implements OnInit, OnDestroy {
     });
   });
 
-  temJogoAoVivo = computed(() => this.filtroAoVivo() || this.jogos().some(j => this.eAoVivo(j)));
+  temJogoAoVivo = computed(() => this.jogos().some(j => this.eAoVivo(j)));
 
   classificacaoProvisoria = computed(() => {
     const base = this.classificacao();
