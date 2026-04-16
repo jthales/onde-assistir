@@ -348,14 +348,26 @@ export async function buscarDadosRodada(
 
 // ─── FutebolExpert ───────────────────────────────────────────────────────────
 
+function toFutebolExpertSlug(name: string): string {
+  return removeAccents(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+// Slug da competição no FutebolExpert (para URLs individuais de jogos)
+const FE_COMPETITION_SLUGS: Record<string, string> = {
+  'Libertadores': 'copa-libertadores-da-america',
+  'Sul-Americana': 'copa-sulamericana',
+};
+
 /**
  * Busca transmissões de HOJE em futebolexpert.com.br/onde-assistir/todos-os-canais/hoje.
  * Fonte curada e confiável para jogos do dia atual.
+ * Para jogos não encontrados na tabela principal (conteúdo JS-renderizado),
+ * tenta a página individual do jogo como fallback.
  * Retorna um Map com chave "mandante|visitante" → { canal, streaming }.
  * Em caso de falha retorna Map vazio para não bloquear o populate.
  */
 export async function buscarFutebolExpert(
-  fixtures: Array<{ timeMandante: string; timeVisitante: string }>,
+  fixtures: Array<{ timeMandante: string; timeVisitante: string; campeonato?: string; data?: string }>,
 ): Promise<Map<string, { canal: string[]; streaming: string[] }>> {
   const result = new Map<string, { canal: string[]; streaming: string[] }>();
   console.log('\n── FutebolExpert (hoje) ──');
@@ -432,7 +444,44 @@ export async function buscarFutebolExpert(
 
     const naoCobertos = fixtures.filter(f => !result.has(`${f.timeMandante}|${f.timeVisitante}`));
     if (naoCobertos.length > 0) {
-      console.log(`   sem match para: ${naoCobertos.map(f => `${f.timeMandante} x ${f.timeVisitante}`).join(', ')}`);
+      console.log(`   sem match tabela: ${naoCobertos.map(f => `${f.timeMandante} x ${f.timeVisitante}`).join(', ')}`);
+
+      // Fallback: página individual do jogo (jogos de Libertadores/Sul-Americana são JS-renderizados no /hoje)
+      for (const fixture of naoCobertos) {
+        const compSlug = fixture.campeonato ? FE_COMPETITION_SLUGS[fixture.campeonato] : undefined;
+        if (!compSlug || !fixture.data) continue;
+
+        const key = `${fixture.timeMandante}|${fixture.timeVisitante}`;
+        const mandSlugs = [...new Set(teamVariants(fixture.timeMandante).map(toFutebolExpertSlug))];
+        const visitSlugs = [...new Set(teamVariants(fixture.timeVisitante).map(toFutebolExpertSlug))];
+
+        let found = false;
+        outer: for (const ms of mandSlugs) {
+          for (const vs of visitSlugs) {
+            const pageUrl = `https://www.futebolexpert.com.br/onde-assistir/${ms}-x-${vs}/${compSlug}/${fixture.data}`;
+            try {
+              const pageRes = await fetchWithTimeout(pageUrl, { headers: { ...FETCH_HEADERS, Accept: 'text/html' } }, 10000);
+              if (!pageRes.ok) continue;
+              const pageHtml = await pageRes.text();
+              const $page = cheerio.load(pageHtml);
+              $page('script, style, noscript').remove();
+              const bodyText = $page('body').text().replace(/\s+/g, ' ');
+              const broadcast = extrairDeMateria(bodyText);
+              if (broadcast && (broadcast.canal.length > 0 || broadcast.streaming.length > 0)) {
+                result.set(key, broadcast);
+                console.log(`   ✅ [individual] ${fixture.timeMandante} x ${fixture.timeVisitante} → ${[...broadcast.canal, ...broadcast.streaming].join(', ')}`);
+                found = true;
+                break outer;
+              }
+            } catch {
+              // tenta próxima variante
+            }
+          }
+        }
+        if (!found) {
+          console.log(`   ⚠️  sem página individual para ${fixture.timeMandante} x ${fixture.timeVisitante}`);
+        }
+      }
     }
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
