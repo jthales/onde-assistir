@@ -75,6 +75,7 @@ export interface JogoCampeonato {
   hora: string;
   status: 'agendado' | 'em-andamento' | 'encerrado';
   rodada: number | null;
+  fase: string | null;
   placarMandante: number | null;
   placarVisitante: number | null;
   estadio: string;
@@ -86,7 +87,32 @@ export interface GrupoClassificacao {
   times: ClassificacaoEntry[];
 }
 
+export interface JogoMataMata {
+  mandante: string;
+  logoMandante: string | null;
+  visitante: string;
+  logoVisitante: string | null;
+  data: string;
+  hora: string;
+  placarMandante: number | null;
+  placarVisitante: number | null;
+  status: 'agendado' | 'em-andamento' | 'encerrado';
+  estadio: string;
+}
+
+export interface ConfrontoMataMata {
+  time1: { nome: string; logo: string | null };
+  time2: { nome: string; logo: string | null };
+  ida: JogoMataMata | null;
+  volta: JogoMataMata | null;
+  agregadoTime1: number | null;
+  agregadoTime2: number | null;
+  vencedor: 'time1' | 'time2' | null;
+}
+
 export interface ClassificacaoResponse {
-  tipo: 'tabela-unica' | 'grupos';
+  tipo: 'tabela-unica' | 'grupos' | 'mata-mata';
   grupos: GrupoClassificacao[];
+  faseAtual?: string;
+  confrontos?: ConfrontoMataMata[];
 }

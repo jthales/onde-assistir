@@ -1283,6 +1283,102 @@ body {
   @media (min-width: 900px) { grid-template-columns: repeat(3, 1fr); }
 }
 
+// ── Mata-Mata (Copa do Brasil) ───────────────────────────────────────────────
+
+.mata-mata-section {
+  margin-bottom: 1.5rem;
+}
+
+.confrontos-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  @media (min-width: 600px) { grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 900px) { grid-template-columns: repeat(3, 1fr); }
+}
+
+.confronto-mm-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-sm);
+  @include flex-col(0.6rem);
+
+  &.confronto-mm-card--encerrado {
+    opacity: 0.85;
+  }
+}
+
+.confronto-mm-times {
+  @include flex(0.4rem, center, space-between);
+}
+
+.confronto-mm-time {
+  flex: 1;
+  @include flex(0.35rem, center, flex-start);
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-width: 0;
+  span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  &.confronto-mm-time--right {
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+    text-align: right;
+  }
+}
+
+.confronto-mm-vencedor {
+  color: var(--color-accent);
+}
+
+.confronto-mm-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.confronto-mm-vs {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  white-space: nowrap;
+  padding: 0 0.25rem;
+}
+
+.confronto-mm-agregado {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--color-text);
+}
+
+.confronto-mm-jogos {
+  @include flex-col(0.25rem);
+  border-top: 1px solid var(--color-border-light);
+  padding-top: 0.5rem;
+}
+
+.confronto-mm-leg {
+  @include flex(0.4rem, center, flex-start);
+  font-size: 0.71rem;
+  color: var(--color-text-muted);
+  flex-wrap: wrap;
+}
+
+.confronto-mm-leg-label {
+  font-weight: 600;
+  color: var(--color-text);
+  min-width: 2.5rem;
+}
+
+.confronto-mm-placar {
+  font-weight: 600;
+  color: var(--color-text);
+  margin-left: auto;
+}
+
 // Cards leves de jogos na sidebar do campeonato
 .jogos-camp-lista {
   @include flex-col(0.6rem);

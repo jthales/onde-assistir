@@ -65,12 +65,15 @@ export class App implements OnInit, OnDestroy {
     const jogos = this.jogosCampeonato().slice(0, 10);
     const map = new Map<number | string, JogoCampeonato[]>();
     for (const jogo of jogos) {
-      const key = jogo.rodada ?? 'sem-rodada';
+      const key = jogo.rodada ?? jogo.fase ?? 'sem-rodada';
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(jogo);
     }
     return Array.from(map.entries()).map(([key, list]) => ({
-      rodada: key === 'sem-rodada' ? null : key as number,
+      rodada: typeof key === 'number' ? key : null,
+      label: typeof key === 'number' ? `${key}ª Rodada`
+           : key !== 'sem-rodada'   ? String(key)
+           : null,
       jogos: list,
     }));
   });
