@@ -1285,98 +1285,190 @@ body {
 
 // ── Mata-Mata (Copa do Brasil) ───────────────────────────────────────────────
 
-.mata-mata-section {
-  margin-bottom: 1.5rem;
-}
+.mata-mata-section { margin-bottom: 1.5rem; }
 
 .confrontos-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.75rem;
-  @media (min-width: 600px) { grid-template-columns: repeat(2, 1fr); }
-  @media (min-width: 900px) { grid-template-columns: repeat(3, 1fr); }
+  gap: 0.875rem;
+  @media (min-width: 560px)  { grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 1000px) { grid-template-columns: repeat(3, 1fr); }
+  @media (min-width: 1360px) { grid-template-columns: repeat(4, 1fr); }
 }
 
-.confronto-mm-card {
+// Card container
+.mm-card {
   background: var(--color-surface);
   border-radius: var(--radius-md);
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--color-border-light);
+  border: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm);
-  @include flex-col(0.6rem);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.15s, transform 0.15s;
 
-  &.confronto-mm-card--encerrado {
-    opacity: 0.85;
+  &:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
+  &.mm-card--encerrado {
+    border-color: var(--color-border-light);
+    .mm-teams { opacity: 0.65; }
   }
 }
 
-.confronto-mm-times {
-  @include flex(0.4rem, center, space-between);
+// Teams + aggregate row
+.mm-teams {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1rem 0.875rem;
 }
 
-.confronto-mm-time {
+.mm-team {
   flex: 1;
-  @include flex(0.35rem, center, flex-start);
-  font-size: 0.8rem;
-  font-weight: 600;
   min-width: 0;
-  span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
 
-  &.confronto-mm-time--right {
-    flex-direction: row-reverse;
-    justify-content: flex-start;
-    text-align: right;
+  &--right { align-items: flex-end; }
+
+  &--winner .mm-team-name {
+    color: var(--color-primary);
+    font-weight: 800;
   }
 }
 
-.confronto-mm-vencedor {
-  color: var(--color-accent);
-}
-
-.confronto-mm-logo {
-  width: 22px;
-  height: 22px;
+.mm-team-logo {
+  width: 34px;
+  height: 34px;
   object-fit: contain;
-  flex-shrink: 0;
 }
 
-.confronto-mm-vs {
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
-  text-align: center;
-  white-space: nowrap;
-  padding: 0 0.25rem;
-}
-
-.confronto-mm-agregado {
+.mm-team-name {
+  font-size: 0.76rem;
   font-weight: 700;
-  font-size: 1rem;
   color: var(--color-text);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
-.confronto-mm-jogos {
-  @include flex-col(0.25rem);
+// Center score box
+.mm-center {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+  text-align: center;
+}
+
+.mm-score {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--color-text);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.mm-score-label {
+  font-size: 0.54rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-3);
+  margin-top: 0.15rem;
+}
+
+.mm-vs {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-text-3);
+  background: var(--color-border-light);
+  padding: 0.3rem 0.55rem;
+  border-radius: var(--radius-sm);
+}
+
+// Legs section (Ida / Volta)
+.mm-legs {
   border-top: 1px solid var(--color-border-light);
-  padding-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
-.confronto-mm-leg {
-  @include flex(0.4rem, center, flex-start);
-  font-size: 0.71rem;
-  color: var(--color-text-muted);
-  flex-wrap: wrap;
+.mm-leg {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--color-border-light);
+
+  &:first-child { border-top: none; }
+  &--live { background: rgba(220, 38, 38, 0.04); }
 }
 
-.confronto-mm-leg-label {
-  font-weight: 600;
+.mm-leg-tag {
+  font-size: 0.59rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: var(--color-primary);
+  background: var(--color-primary-muted);
+
+  &--volta {
+    color: var(--color-text-3);
+    background: var(--color-border-light);
+  }
+}
+
+.mm-leg-detail {
+  font-size: 0.7rem;
+  color: var(--color-text-3);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mm-leg-result {
+  font-size: 0.8rem;
+  font-weight: 700;
   color: var(--color-text);
-  min-width: 2.5rem;
-}
-
-.confronto-mm-placar {
-  font-weight: 600;
-  color: var(--color-text);
+  flex-shrink: 0;
   margin-left: auto;
+}
+
+.mm-badge-live {
+  font-size: 0.54rem !important;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+// "Classificado:" footer strip
+.mm-classified {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  font-size: 0.63rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-primary);
+  background: var(--color-primary-muted);
+  padding: 0.4rem 1rem;
+  border-top: 1px solid var(--color-border-light);
 }
 
 // Cards leves de jogos na sidebar do campeonato

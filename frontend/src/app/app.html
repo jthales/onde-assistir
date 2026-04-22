@@ -21,7 +21,7 @@
           Voltar
         </button>
         <h1 class="hero-title">{{ getLabelCampeonato(campeonatoSelecionado()) }}</h1>
-        <p class="hero-subtitle">{{ campeonatoSelecionado() === 'copa-do-brasil' ? 'Mata-Mata · Próximos Jogos · Notícias' : 'Tabela de Classificação · Próximos Jogos · Notícias' }}</p>
+        <p class="hero-subtitle">{{ campeonatoSelecionado() === 'copa-do-brasil' ? 'Mata-Mata · Notícias' : 'Tabela de Classificação · Próximos Jogos · Notícias' }}</p>
       } @else if (timeSelecionado()) {
         <h1 class="hero-title">{{ timeSelecionado() }} — Próximos Jogos e Onde Assistir</h1>
         <p class="hero-subtitle">Brasileirão, Libertadores e mais — TV e Streaming</p>
@@ -117,52 +117,66 @@
                     </div>
                     <div class="confrontos-grid">
                       @for (c of classif.confrontos ?? []; track c.time1.nome + c.time2.nome) {
-                        <div class="confronto-mm-card" [class.confronto-mm-card--encerrado]="c.vencedor">
-                          <div class="confronto-mm-times">
-                            <div class="confronto-mm-time" [class.confronto-mm-vencedor]="c.vencedor === 'time1'">
+                        <div class="mm-card" [class.mm-card--encerrado]="c.vencedor">
+
+                          <!-- Times + Placar Agregado -->
+                          <div class="mm-teams">
+                            <div class="mm-team mm-team--left" [class.mm-team--winner]="c.vencedor === 'time1'">
                               @if (c.time1.logo) {
-                                <img [src]="c.time1.logo" [alt]="c.time1.nome" class="confronto-mm-logo" (error)="$any($event.target).style.display='none'">
+                                <img [src]="c.time1.logo" [alt]="c.time1.nome" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
                               }
-                              <span>{{ c.time1.nome }}</span>
+                              <span class="mm-team-name">{{ c.time1.nome }}</span>
                             </div>
-                            <div class="confronto-mm-vs">
+
+                            <div class="mm-center">
                               @if (c.agregadoTime1 !== null) {
-                                <span class="confronto-mm-agregado">{{ c.agregadoTime1 }} – {{ c.agregadoTime2 }}</span>
+                                <span class="mm-score">{{ c.agregadoTime1 }} – {{ c.agregadoTime2 }}</span>
+                                <span class="mm-score-label">agregado</span>
                               } @else {
-                                <span>vs</span>
+                                <span class="mm-vs">vs</span>
                               }
                             </div>
-                            <div class="confronto-mm-time confronto-mm-time--right" [class.confronto-mm-vencedor]="c.vencedor === 'time2'">
+
+                            <div class="mm-team mm-team--right" [class.mm-team--winner]="c.vencedor === 'time2'">
                               @if (c.time2.logo) {
-                                <img [src]="c.time2.logo" [alt]="c.time2.nome" class="confronto-mm-logo" (error)="$any($event.target).style.display='none'">
+                                <img [src]="c.time2.logo" [alt]="c.time2.nome" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
                               }
-                              <span>{{ c.time2.nome }}</span>
+                              <span class="mm-team-name">{{ c.time2.nome }}</span>
                             </div>
                           </div>
-                          <div class="confronto-mm-jogos">
+
+                          <!-- Jogos: Ida e Volta -->
+                          <div class="mm-legs">
                             @if (c.ida) {
-                              <div class="confronto-mm-leg">
-                                <span class="confronto-mm-leg-label">Ida</span>
-                                <span>{{ formatarData(c.ida.data) }} {{ c.ida.hora }}</span>
+                              <div class="mm-leg" [class.mm-leg--live]="c.ida.status === 'em-andamento'">
+                                <span class="mm-leg-tag">Ida</span>
+                                <span class="mm-leg-detail">{{ formatarData(c.ida.data) }} · {{ c.ida.hora }}</span>
                                 @if (c.ida.status === 'em-andamento') {
-                                  <span class="ao-vivo-badge" style="font-size:0.6rem">AO VIVO</span>
+                                  <span class="ao-vivo-badge mm-badge-live">AO VIVO</span>
                                 } @else if (c.ida.status === 'encerrado') {
-                                  <span class="confronto-mm-placar">{{ c.ida.placarMandante }} – {{ c.ida.placarVisitante }}</span>
+                                  <span class="mm-leg-result">{{ c.ida.placarMandante }} – {{ c.ida.placarVisitante }}</span>
                                 }
                               </div>
                             }
                             @if (c.volta) {
-                              <div class="confronto-mm-leg">
-                                <span class="confronto-mm-leg-label">Volta</span>
-                                <span>{{ formatarData(c.volta.data) }} {{ c.volta.hora }}</span>
+                              <div class="mm-leg" [class.mm-leg--live]="c.volta.status === 'em-andamento'">
+                                <span class="mm-leg-tag mm-leg-tag--volta">Volta</span>
+                                <span class="mm-leg-detail">{{ formatarData(c.volta.data) }} · {{ c.volta.hora }}</span>
                                 @if (c.volta.status === 'em-andamento') {
-                                  <span class="ao-vivo-badge" style="font-size:0.6rem">AO VIVO</span>
+                                  <span class="ao-vivo-badge mm-badge-live">AO VIVO</span>
                                 } @else if (c.volta.status === 'encerrado') {
-                                  <span class="confronto-mm-placar">{{ c.volta.placarMandante }} – {{ c.volta.placarVisitante }}</span>
+                                  <span class="mm-leg-result">{{ c.volta.placarMandante }} – {{ c.volta.placarVisitante }}</span>
                                 }
                               </div>
                             }
                           </div>
+
+                          @if (c.vencedor) {
+                            <div class="mm-classified">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                              {{ c.vencedor === 'time1' ? c.time1.nome : c.time2.nome }}
+                            </div>
+                          }
                         </div>
                       }
                     </div>
@@ -231,8 +245,8 @@
 
             </div>
 
-            <!-- Sidebar: próximos jogos por rodada (max 10) -->
-            @if (jogosCampeonatoAgrupados().length > 0) {
+            <!-- Sidebar: próximos jogos por rodada (max 10) — oculto no mata-mata -->
+            @if (jogosCampeonatoAgrupados().length > 0 && campeonatoSelecionado() !== 'copa-do-brasil') {
               <aside class="campeonato-sidebar">
                 <section>
                   <h2 class="camp-sidebar-titulo">Próximos Jogos</h2>
