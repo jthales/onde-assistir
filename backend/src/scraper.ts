@@ -354,8 +354,9 @@ function toFutebolExpertSlug(name: string): string {
 
 // Slug da competição no FutebolExpert (para URLs individuais de jogos)
 const FE_COMPETITION_SLUGS: Record<string, string> = {
-  'Libertadores': 'copa-libertadores-da-america',
-  'Sul-Americana': 'copa-sulamericana',
+  'Libertadores':   'copa-libertadores-da-america',
+  'Sul-Americana':  'copa-sulamericana',
+  'Copa do Brasil': 'copa-do-brasil',
 };
 
 /**

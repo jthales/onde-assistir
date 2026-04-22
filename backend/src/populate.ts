@@ -24,6 +24,7 @@ const ESPN_LEAGUE_LABELS: Record<string, string> = {
   'bra.1':                  'Brasileirão',
   'conmebol.libertadores':  'Libertadores',
   'conmebol.sudamericana':  'Sul-Americana',
+  'bra.copa_do_brazil':     'Copa do Brasil',
 };
 
 const LEAGUE_NAME_MAP: Record<string, string> = {
@@ -35,6 +36,10 @@ const LEAGUE_NAME_MAP: Record<string, string> = {
   'Brazil Serie B':           'Brasileirão Série B',
   'CONMEBOL Libertadores':    'Libertadores',
   'CONMEBOL Sudamericana':    'Sul-Americana',
+  'Copa Do Brasil':           'Copa do Brasil',
+  'Copa do Brasil':           'Copa do Brasil',
+  'Brazilian Cup':            'Copa do Brasil',
+  'Brazil Cup':               'Copa do Brasil',
 };
 
 function normalizeLeagueName(raw: string): string {
@@ -112,6 +117,7 @@ async function fetchFixturesFromEspn(): Promise<EspnFixture[]> {
     { id: ESPN_LEAGUES.brasileirao,  filtrarBR: false, janelaDias: 5 },
     { id: ESPN_LEAGUES.libertadores, filtrarBR: true,  janelaDias: 5 },
     { id: ESPN_LEAGUES.sudamericana, filtrarBR: true,  janelaDias: 5 },
+    { id: ESPN_LEAGUES.copadobrasil, filtrarBR: false, janelaDias: 5 },
   ];
 
   const todas: EspnFixture[] = [];
@@ -168,7 +174,7 @@ Retorne um array JSON, um objeto por jogo, na mesma ordem:
 ]
 Retorne apenas o JSON.`;
 
-  const MAX_RETRIES = 5;
+  const MAX_RETRIES = 2;
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const response = await ai.models.generateContent({

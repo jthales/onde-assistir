@@ -105,12 +105,14 @@ export class App implements OnInit, OnDestroy {
     'SUL-AMERICANA':         'sul-americana',
     'COPA SUL-AMERICANA':    'sul-americana',
     'CONMEBOL SULAMERICANA': 'sul-americana',
+    'COPA DO BRASIL':        'copa-do-brasil',
   };
 
   private readonly CAMP_SLUG_LABEL: Record<string, string> = {
-    'brasileirao':   'Brasileirão Série A',
-    'libertadores':  'Copa Libertadores',
-    'sul-americana': 'Copa Sul-Americana',
+    'brasileirao':    'Brasileirão Série A',
+    'libertadores':   'Copa Libertadores',
+    'sul-americana':  'Copa Sul-Americana',
+    'copa-do-brasil': 'Copa do Brasil',
   };
 
   slugifyCampeonato(nome: string): string {

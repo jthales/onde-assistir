@@ -2,6 +2,7 @@ export const ESPN_LEAGUES = {
   brasileirao:  'bra.1',
   libertadores: 'conmebol.libertadores',
   sudamericana: 'conmebol.sudamericana',
+  copadobrasil: 'bra.copa_do_brazil',
 } as const;
 
 export function espnScoreboardUrl(): string {
@@ -42,15 +43,17 @@ export const TEAM_ESPN_ID_MAP: Record<string, number> = {
 };
 
 export const LIGA_SLUG_TO_ESPN: Record<string, string> = {
-  'brasileirao':   ESPN_LEAGUES.brasileirao,
-  'libertadores':  ESPN_LEAGUES.libertadores,
-  'sul-americana': ESPN_LEAGUES.sudamericana,
+  'brasileirao':    ESPN_LEAGUES.brasileirao,
+  'libertadores':   ESPN_LEAGUES.libertadores,
+  'sul-americana':  ESPN_LEAGUES.sudamericana,
+  'copa-do-brasil': ESPN_LEAGUES.copadobrasil,
 };
 
 export const LIGA_SLUG_LABEL: Record<string, string> = {
-  'brasileirao':   'Brasileirão Série A',
-  'libertadores':  'Copa Libertadores',
-  'sul-americana': 'Copa Sul-Americana',
+  'brasileirao':    'Brasileirão Série A',
+  'libertadores':   'Copa Libertadores',
+  'sul-americana':  'Copa Sul-Americana',
+  'copa-do-brasil': 'Copa do Brasil',
 };
 
 export const TEAM_NAME_MAP: Record<string, string> = {
