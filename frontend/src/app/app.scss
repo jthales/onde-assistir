@@ -709,14 +709,23 @@ body {
   white-space: nowrap;
 }
 
-.odds-values { @include flex(0.3rem); }
+.odds-values {
+  @include flex(0.3rem);
+  width: 100%;
+  margin-top: 0.25rem;
+}
 
 .odds-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
   font-size: 0.78rem;
   font-weight: 600;
   color: #1d6f42;
   background: #f0fdf4;
-  padding: 0.15rem 0.4rem;
+  padding: 0.25rem 0.4rem;
   border-radius: 5px;
 }
 
