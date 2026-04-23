@@ -693,7 +693,9 @@ body {
 // ── Odds Bet365 ──────────────────────────────────────────────────────────────
 
 .odds-row {
-  @include flex(0.5rem);
+  @include flex(0.25rem);
+  flex-direction: column;
+  align-items: flex-start;
   padding-top: 0.5rem;
   border-top: 1px solid #f1f3f5;
 }
