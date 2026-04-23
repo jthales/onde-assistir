@@ -12,9 +12,10 @@ import { GoogleGenAI } from '@google/genai';
 import { Jogo } from './types';
 import { db } from './firebase';
 import { espnScoreboardUrlForLeague, ESPN_LEAGUES, TEAM_NAME_MAP } from './constants';
-import { buscarDadosRodada, buscarOndeAssistir, buscarFutebolExpert } from './scraper';
+import { buscarDadosRodada, buscarOndeAssistir, buscarFutebolExpert, buscarFutebolExpertCampeonato } from './scraper';
 
-const DRY_RUN = process.argv.includes('--dry-run');
+const DRY_RUN    = process.argv.includes('--dry-run');
+const NO_GEMINI  = process.argv.includes('--no-gemini');
 
 const ai = new GoogleGenAI({ apiKey: process.env['GEMINI_API_KEY'] ?? '' });
 const GEMINI_MODEL_ID = 'gemini-3.1-flash-lite-preview';
@@ -250,6 +251,12 @@ async function runPopulate(): Promise<void> {
     ? await buscarFutebolExpert(fixturesHoje)
     : new Map<string, Broadcast>();
 
+  // Passo 1.5: FutebolExpert por campeonato para jogos NÃO de hoje
+  const fixturesNaoHoje = fixtures.filter(f => f.data !== hojeStr);
+  const feCampeonatoMap = fixturesNaoHoje.length > 0
+    ? await buscarFutebolExpertCampeonato(fixturesNaoHoje)
+    : new Map<string, Broadcast>();
+
   // Passo 2: buscar artigo de rodada uma vez (1 request) para extrair rodada + transmissões em lote
   console.log('\nBuscando artigo de rodada no ge.globo...');
   const dadosRodada = await buscarDadosRodada(fixtures);
@@ -273,6 +280,17 @@ async function runPopulate(): Promise<void> {
         broadcastMap.set(key, fromFE);
         sourceMap.set(key, 'futebolexpert');
         console.log(`✅ [futebolexpert] ${fixture.timeMandante} x ${fixture.timeVisitante} → ${[...fromFE.canal, ...fromFE.streaming].join(', ')}`);
+        continue;
+      }
+    }
+
+    // Prioridade 1.5 (apenas não-hoje): FutebolExpert por campeonato
+    if (fixture.data !== hojeStr) {
+      const fromFECamp = feCampeonatoMap.get(key);
+      if (fromFECamp && (fromFECamp.canal.length > 0 || fromFECamp.streaming.length > 0)) {
+        broadcastMap.set(key, fromFECamp);
+        sourceMap.set(key, 'futebolexpert');
+        console.log(`✅ [futebolexpert/${fixture.campeonato}] ${fixture.timeMandante} x ${fixture.timeVisitante} → ${[...fromFECamp.canal, ...fromFECamp.streaming].join(', ')}`);
         continue;
       }
     }
@@ -314,7 +332,15 @@ async function runPopulate(): Promise<void> {
       }
     }
 
-    if (paraGemini.length > 0) {
+    if (paraGemini.length > 0 && NO_GEMINI) {
+      console.log(`\n⏭️  Gemini desativado (--no-gemini): ${paraGemini.length} jogo(s) marcados sem transmissão`);
+      for (const f of paraGemini) {
+        sourceMap.set(`${f.timeMandante}|${f.timeVisitante}`, 'nenhum');
+        console.log(`   ${f.timeMandante} x ${f.timeVisitante} (${f.data})`);
+      }
+    }
+
+    if (paraGemini.length > 0 && !NO_GEMINI) {
       console.log(`\n── Gemini (fallback para ${paraGemini.length} jogo(s) em até ${GEMINI_JANELA_DIAS} dias) ──`);
       const geminiResults = await fetchBroadcastFromGemini(paraGemini);
       for (const [key, broadcast] of geminiResults) {

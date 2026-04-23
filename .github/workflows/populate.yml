@@ -36,7 +36,7 @@ jobs:
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
         run: |
           echo "Iniciando populate de jogos — $(date '+%d/%m/%Y %H:%M:%S UTC')"
-          npm run populate 2>&1 | tee ../populate.log
+          npm run populate:no-gemini 2>&1 | tee ../populate.log
           exit ${PIPESTATUS[0]}
 
       - name: 📄 Salvar log completo como artifact

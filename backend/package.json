@@ -7,7 +7,9 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "populate": "ts-node src/populate.ts",
+    "populate:no-gemini": "ts-node src/populate.ts --no-gemini",
     "populate:dry": "ts-node src/populate.ts --dry-run",
+    "populate:dry:no-gemini": "ts-node src/populate.ts --dry-run --no-gemini",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

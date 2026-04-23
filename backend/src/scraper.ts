@@ -71,6 +71,7 @@ const ESTADO_UF: Record<string, string> = {
 const TEAM_ALIASES: Record<string, string[]> = {
   'Atlético Mineiro':     ['Atlético-MG', 'Atletico-MG'],
   'Athletico Paranaense': ['Athletico', 'Athletico-PR'],
+  'Atlético Goianiense':  ['Atlético-GO', 'Atletico-GO', 'Atlético GO'],
   'Red Bull Bragantino':  ['Bragantino', 'RB Bragantino'],
   'Sport Recife':         ['Sport'],
   // Times internacionais com nome diferente no GE vs ESPN
@@ -359,6 +360,13 @@ const FE_COMPETITION_SLUGS: Record<string, string> = {
   'Copa do Brasil': 'copa-do-brasil',
 };
 
+// URLs das páginas por campeonato no FutebolExpert (todos os jogos, não apenas hoje)
+export const FE_CAMPEONATO_URLS: Record<string, string> = {
+  'Brasileirão':    'https://www.futebolexpert.com.br/onde-assistir/brasileirao-serie-a/todos-os-canais',
+  'Libertadores':   'https://www.futebolexpert.com.br/onde-assistir/copa-libertadores-da-america/todos-os-canais',
+  'Copa do Brasil': 'https://www.futebolexpert.com.br/onde-assistir/copa-do-brasil/todos-os-canais',
+};
+
 /**
  * Busca transmissões de HOJE em futebolexpert.com.br/onde-assistir/todos-os-canais/hoje.
  * Fonte curada e confiável para jogos do dia atual.
@@ -487,6 +495,107 @@ export async function buscarFutebolExpert(
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
     console.log(`   ❌ Erro ao buscar FutebolExpert: ${reason}`);
+  }
+
+  return result;
+}
+
+/**
+ * Busca transmissões em páginas por campeonato do FutebolExpert para jogos NÃO de hoje.
+ * Faz no máximo 1 request por campeonato (3 no total: Brasileirão, Libertadores, Copa do Brasil).
+ * Retorna Map com chave "mandante|visitante" → { canal, streaming }.
+ */
+export async function buscarFutebolExpertCampeonato(
+  fixtures: Array<{ timeMandante: string; timeVisitante: string; campeonato: string }>,
+): Promise<Map<string, { canal: string[]; streaming: string[] }>> {
+  const result = new Map<string, { canal: string[]; streaming: string[] }>();
+
+  // Agrupa fixtures por URL de campeonato, descartando os sem URL mapeada
+  const campMap = new Map<string, typeof fixtures>();
+  for (const f of fixtures) {
+    const url = FE_CAMPEONATO_URLS[f.campeonato];
+    if (!url) continue;
+    if (!campMap.has(url)) campMap.set(url, []);
+    campMap.get(url)!.push(f);
+  }
+  if (campMap.size === 0) return result;
+
+  console.log('\n── FutebolExpert (por campeonato) ──');
+
+  for (const [url, campFixtures] of campMap) {
+    const campName = campFixtures[0].campeonato;
+    try {
+      const res = await fetchWithTimeout(url, { headers: { ...FETCH_HEADERS, Accept: 'text/html' } }, 20_000);
+      if (!res.ok) { console.log(`   ⚠️  ${campName} retornou ${res.status}`); continue; }
+
+      const html = await res.text();
+      const $ = cheerio.load(html);
+
+      const entries: Array<{ mandante: string; visitante: string; canais: string }> = [];
+      $('tbody.wixui-table__body tr').each((_, row) => {
+        const cells = $(row).find('td');
+        if (cells.length < 3) return;
+
+        // Detecta qual coluna é o confronto (contém " x ") — pode ser col[2] (5 colunas) ou col[1] (4 colunas)
+        let confronto = '';
+        let canaisRaw = '';
+        const col2 = $(cells[2]).text().trim();
+        const col1 = $(cells[1]).text().trim();
+        if (col2.includes(' x ')) {
+          confronto = col2;
+          canaisRaw = cells.length > 3 ? $(cells[3]).text().trim() : '';
+        } else if (col1.includes(' x ')) {
+          confronto = col1;
+          canaisRaw = $(cells[2]).text().trim();
+        } else return;
+
+        if (!confronto || !canaisRaw) return;
+
+        const xIdx = confronto.indexOf(' x ');
+        const mand  = normalizeForSearch(confronto.slice(0, xIdx));
+        const visit = normalizeForSearch(confronto.slice(xIdx + 3));
+        const canais = canaisRaw
+          .replace(/\([^)]*\)/g, '')
+          .replace(/\[[^\]]*\]/g, '')
+          .replace(/\s*-\s*.+$/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+        entries.push({ mandante: mand, visitante: visit, canais });
+      });
+
+      console.log(`   ${entries.length} jogo(s) em ${campName}`);
+
+      for (const fixture of campFixtures) {
+        const key = `${fixture.timeMandante}|${fixture.timeVisitante}`;
+        if (result.has(key)) continue;
+
+        const mandVariants  = teamVariants(fixture.timeMandante);
+        const visitVariants = teamVariants(fixture.timeVisitante);
+
+        for (const entry of entries) {
+          // Testa ordem direta e invertida — FE pode listar o mandante/visitante diferente da ESPN
+          const matchDireto =
+            mandVariants.some(v => entry.mandante.includes(v) || v.includes(entry.mandante)) &&
+            visitVariants.some(v => entry.visitante.includes(v) || v.includes(entry.visitante));
+          const matchInvertido =
+            mandVariants.some(v => entry.visitante.includes(v) || v.includes(entry.visitante)) &&
+            visitVariants.some(v => entry.mandante.includes(v) || v.includes(entry.mandante));
+
+          if (!matchDireto && !matchInvertido) continue;
+
+          const broadcast = classifyChannels(entry.canais);
+          if (broadcast.canal.length > 0 || broadcast.streaming.length > 0) {
+            result.set(key, broadcast);
+            console.log(`   ✅ [${campName}] ${fixture.timeMandante} x ${fixture.timeVisitante} → ${[...broadcast.canal, ...broadcast.streaming].join(', ')}`);
+          } else {
+            console.log(`   ⚠️  [${campName}] canais não mapeados "${entry.canais}" para ${fixture.timeMandante} x ${fixture.timeVisitante}`);
+          }
+          break;
+        }
+      }
+    } catch (err) {
+      console.log(`   ❌ Erro FutebolExpert ${campName}: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   return result;
