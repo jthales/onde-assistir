@@ -718,6 +718,13 @@ body {
   border-radius: 5px;
 }
 
+.odds-key {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #86efac;
+  margin-right: 0.1rem;
+}
+
 .odds-sep { font-size: 0.7rem; color: #d1d5db; }
 
 // ── Footer ───────────────────────────────────────────────────────────────────
@@ -1700,6 +1707,7 @@ body {
     background: #0a2e1a;
     color: #22c55e;
   }
+  .odds-key { color: #166534; }
   .odds-sep { color: #475569; }
 
   // Estados (loading, erro)
