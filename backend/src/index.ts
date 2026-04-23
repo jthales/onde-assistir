@@ -209,19 +209,38 @@ app.get('/api/odds', async (_req, res) => {
   }
 
   try {
-    const resp = await fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.brasileirao, 1));
-    const data: any = await resp.json();
-    const events: any[] = data.events ?? [];
+    const ligas = [
+      ESPN_LEAGUES.brasileirao,
+      ESPN_LEAGUES.libertadores,
+      ESPN_LEAGUES.sudamericana,
+      ESPN_LEAGUES.copadobrasil,
+    ];
+
+    const ligaResults = await Promise.allSettled(
+      ligas.map(leagueId =>
+        fetch(espnScoreboardUrlForLeague(leagueId, 1))
+          .then(r => r.json())
+          .then((data: any) => ({ leagueId, events: (data.events ?? []) as any[] }))
+      )
+    );
+
+    const allEvents: Array<{ leagueId: string; event: any }> = [];
+    for (const result of ligaResults) {
+      if (result.status === 'fulfilled') {
+        const { leagueId, events } = result.value;
+        for (const event of events) allEvents.push({ leagueId, event });
+      }
+    }
 
     const oddsResults = await Promise.allSettled(
-      events.map(async (event: any) => {
+      allEvents.map(async ({ leagueId, event }) => {
         const comp = event.competitions?.[0];
         const home = comp?.competitors?.find((c: any) => c.homeAway === 'home');
         const away = comp?.competitors?.find((c: any) => c.homeAway === 'away');
         const eventId = event.id;
         const compId = comp?.id ?? eventId;
         const brtDate = new Date(new Date(event.date).getTime() - 3 * 60 * 60 * 1000);
-      const dataJogo = brtDate.toISOString().slice(0, 10); // data BRT (não UTC)
+        const dataJogo = brtDate.toISOString().slice(0, 10);
         const base = {
           timeMandante:  TEAM_NAME_MAP[home?.team?.displayName] ?? home?.team?.displayName ?? '',
           timeVisitante: TEAM_NAME_MAP[away?.team?.displayName] ?? away?.team?.displayName ?? '',
@@ -230,34 +249,31 @@ app.get('/api/odds', async (_req, res) => {
 
         try {
           const oddsResp = await fetch(
-            `https://sports.core.api.espn.com/v2/sports/soccer/leagues/bra.1/events/${eventId}/competitions/${compId}/odds`
+            `https://sports.core.api.espn.com/v2/sports/soccer/leagues/${leagueId}/events/${eventId}/competitions/${compId}/odds`
           );
           const oddsData: any = await oddsResp.json();
-          const PROVIDERS = [
-            { id: '2000', nome: 'Bet365' },
-            { id: '68',   nome: 'ESPN BET' },
-            { id: '41',   nome: 'DraftKings' },
-            { id: '37',   nome: 'FanDuel' },
-            { id: '58',   nome: 'BetMGM' },
-            { id: '38',   nome: 'Caesars' },
-          ];
           const items: any[] = oddsData.items ?? [];
-          let provedor: string | null = null;
+
+          // Ordena por prioridade do provider e pega o primeiro com odds decimais disponíveis
+          const sorted = [...items].sort((a, b) => (a.provider?.priority ?? 99) - (b.provider?.priority ?? 99));
           let provider: any = null;
-          for (const p of PROVIDERS) {
-            const found = items.find((item: any) => String(item.provider?.id) === p.id);
-            if (found?.homeTeamOdds?.moneyLine != null || found?.drawOdds?.moneyLine != null || found?.awayTeamOdds?.moneyLine != null) {
-              provider = found;
-              provedor = p.nome;
+          for (const item of sorted) {
+            if (
+              item.homeTeamOdds?.current?.moneyLine?.decimal != null ||
+              item.awayTeamOdds?.current?.moneyLine?.decimal != null ||
+              item.current?.draw?.decimal != null
+            ) {
+              provider = item;
               break;
             }
           }
+
           return {
             ...base,
-            provedor,
-            mandante:  provider?.homeTeamOdds?.moneyLine ?? null,
-            empate:    provider?.drawOdds?.moneyLine ?? null,
-            visitante: provider?.awayTeamOdds?.moneyLine ?? null,
+            provedor:  provider?.provider?.name ?? null,
+            mandante:  provider?.homeTeamOdds?.current?.moneyLine?.decimal ?? null,
+            empate:    provider?.current?.draw?.decimal ?? null,
+            visitante: provider?.awayTeamOdds?.current?.moneyLine?.decimal ?? null,
           };
         } catch {
           return { ...base, provedor: null, mandante: null, empate: null, visitante: null };
