@@ -56,6 +56,7 @@ export class App implements OnInit, OnDestroy {
   loadingCampeonato = signal(false);
 
   private pollingInterval?: ReturnType<typeof setInterval>;
+  private oddsInterval?: ReturnType<typeof setInterval>;
   private classificacaoInterval?: ReturnType<typeof setInterval>;
   private campeonatoClassifInterval?: ReturnType<typeof setInterval>;
   private golToastTimer?: ReturnType<typeof setTimeout>;
@@ -429,6 +430,8 @@ export class App implements OnInit, OnDestroy {
         this.atualizarSportsEvents(this.jogosFiltrados());
         this.atualizarPlacar();
         this.pollingInterval = setInterval(() => this.atualizarPlacar(), 10_000);
+        this.atualizarOdds();
+        this.oddsInterval = setInterval(() => this.atualizarOdds(), 5 * 60_000);
         this.atualizarClassificacao();
         this.classificacaoInterval = setInterval(() => this.atualizarClassificacao(), 5 * 60_000);
       },
@@ -458,6 +461,7 @@ export class App implements OnInit, OnDestroy {
     }
     this.isRefreshing.set(true);
     clearInterval(this.pollingInterval);
+    clearInterval(this.oddsInterval);
     clearInterval(this.classificacaoInterval);
     this.jogosService.getJogosDaSemana().subscribe({
       next: (data) => {
@@ -470,6 +474,8 @@ export class App implements OnInit, OnDestroy {
         this.error.set(null);
         this.atualizarPlacar();
         this.pollingInterval = setInterval(() => this.atualizarPlacar(), 10_000);
+        this.atualizarOdds();
+        this.oddsInterval = setInterval(() => this.atualizarOdds(), 5 * 60_000);
         this.atualizarClassificacao();
         this.classificacaoInterval = setInterval(() => this.atualizarClassificacao(), 5 * 60_000);
         gaPush('pull_to_refresh');
@@ -624,6 +630,7 @@ export class App implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     clearInterval(this.pollingInterval);
+    clearInterval(this.oddsInterval);
     clearInterval(this.classificacaoInterval);
     clearInterval(this.campeonatoClassifInterval);
     clearTimeout(this.golToastTimer);
@@ -670,9 +677,9 @@ export class App implements OnInit, OnDestroy {
   }
 
   private atualizarPlacar(): void {
-    this.atualizarOdds();
     const temAtivo = this.jogos().some(j => this.eAoVivo(j) || this.podeTerPlacar(j));
     if (!temAtivo) return;
+    this.atualizarOdds();
     this.jogosService.getPlacar().subscribe({
       next: (lista) => {
         const map = new Map<string, Placar>();
