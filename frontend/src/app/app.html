@@ -531,18 +531,20 @@
               </div>
             }
 
-            @if (getOddsJogo(jogo); as o) {
-              @if (o.mandante !== null || o.empate !== null || o.visitante !== null) {
-                <div class="odds-row">
-                  <span class="odds-label">{{ o.provedor ?? 'Odds' }}</span>
-                  <div class="odds-values">
-                    <span class="odds-item" [title]="jogo.timeMandante"><span class="odds-key">1</span> {{ o.mandante | number:'1.2-2' }}</span>
-                    <span class="odds-sep">·</span>
-                    <span class="odds-item" title="Empate"><span class="odds-key">X</span> {{ o.empate | number:'1.2-2' }}</span>
-                    <span class="odds-sep">·</span>
-                    <span class="odds-item" [title]="jogo.timeVisitante"><span class="odds-key">2</span> {{ o.visitante | number:'1.2-2' }}</span>
+            @if (!eEncerrado(jogo)) {
+              @if (getOddsJogo(jogo); as o) {
+                @if (o.mandante !== null || o.empate !== null || o.visitante !== null) {
+                  <div class="odds-row">
+                    <span class="odds-label">{{ o.provedor ?? 'Odds' }}</span>
+                    <div class="odds-values">
+                      <span class="odds-item" [title]="jogo.timeMandante"><span class="odds-key">1</span> {{ o.mandante | number:'1.2-2' }}</span>
+                      <span class="odds-sep">·</span>
+                      <span class="odds-item" title="Empate"><span class="odds-key">X</span> {{ o.empate | number:'1.2-2' }}</span>
+                      <span class="odds-sep">·</span>
+                      <span class="odds-item" [title]="jogo.timeVisitante"><span class="odds-key">2</span> {{ o.visitante | number:'1.2-2' }}</span>
+                    </div>
                   </div>
-                </div>
+                }
               }
             }
           </div>
