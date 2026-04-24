@@ -377,15 +377,25 @@ function parseLegJogo(event: any, home: any, away: any) {
 async function fetchMataMata(espnLeague: string) {
   const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '');
   const brtNow = new Date(Date.now() - 3 * 60 * 60 * 1000);
-  const inicio = new Date(brtNow.getTime() - 90 * 24 * 60 * 60 * 1000);
-  const fim = new Date(brtNow.getTime() + 60 * 24 * 60 * 60 * 1000);
-  const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${espnLeague}/scoreboard?dates=${fmt(inicio)}-${fmt(fim)}`;
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error(`ESPN scoreboard error: ${resp.status}`);
-  const data: any = await resp.json();
+  const passado = new Date(brtNow.getTime() - 90 * 24 * 60 * 60 * 1000);
+  const futuro  = new Date(brtNow.getTime() + 60 * 24 * 60 * 60 * 1000);
+  const base = `https://site.api.espn.com/apis/site/v2/sports/soccer/${espnLeague}/scoreboard`;
+
+  const [respPass, respFut] = await Promise.all([
+    fetch(`${base}?dates=${fmt(passado)}-${fmt(brtNow)}`),
+    fetch(`${base}?dates=${fmt(brtNow)}-${fmt(futuro)}`),
+  ]);
+  if (!respPass.ok) throw new Error(`ESPN scoreboard error: ${respPass.status}`);
+  if (!respFut.ok)  throw new Error(`ESPN scoreboard error: ${respFut.status}`);
+
+  const [dataPass, dataFut] = await Promise.all([respPass.json(), respFut.json()]);
+  const allEvents: any[] = [...(dataPass.events ?? []), ...(dataFut.events ?? [])];
 
   const seriesMap = new Map<string, any[]>();
-  for (const event of data.events ?? []) {
+  const seenEventIds = new Set<string>();
+  for (const event of allEvents) {
+    if (seenEventIds.has(event.id)) continue;
+    seenEventIds.add(event.id);
     const comp = event.competitions?.[0];
     const sc = comp?.series?.competitors ?? [];
     if (sc.length < 2) continue;
