@@ -377,8 +377,9 @@ function parseLegJogo(event: any, home: any, away: any) {
 async function fetchMataMata(espnLeague: string) {
   const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '');
   const brtNow = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  const inicio = new Date(brtNow.getTime() - 90 * 24 * 60 * 60 * 1000);
   const fim = new Date(brtNow.getTime() + 60 * 24 * 60 * 60 * 1000);
-  const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${espnLeague}/scoreboard?dates=${fmt(brtNow)}-${fmt(fim)}`;
+  const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${espnLeague}/scoreboard?dates=${fmt(inicio)}-${fmt(fim)}`;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error(`ESPN scoreboard error: ${resp.status}`);
   const data: any = await resp.json();
@@ -422,11 +423,24 @@ async function fetchMataMata(espnLeague: string) {
       const sc2 = comp2?.series?.competitors ?? [];
       const sc2t1 = sc2.find((c: any) => String(c.id) === time1Id);
       const sc2t2 = sc2.find((c: any) => String(c.id) === time2Id);
-      if (sc2t1?.aggregateScore != null) agregadoTime1 = sc2t1.aggregateScore;
-      if (sc2t2?.aggregateScore != null) agregadoTime2 = sc2t2.aggregateScore;
       if (comp2?.series?.completed) {
         const winner = sc2.find((c: any) => c.winner);
         if (winner) vencedor = String(winner.id) === time1Id ? 'time1' : 'time2';
+      }
+
+      // Calcula agregado a partir dos placares das pernas (mais confiável, reflete ao vivo)
+      const home2 = comp2?.competitors?.find((c: any) => c.homeAway === 'home');
+      const away2 = comp2?.competitors?.find((c: any) => c.homeAway === 'away');
+      const score1Ida   = home1?.score != null ? Number(home1.score) : null;
+      const score2Ida   = away1?.score != null ? Number(away1.score) : null;
+      const score2Volta = home2?.score != null ? Number(home2.score) : null;
+      const score1Volta = away2?.score != null ? Number(away2.score) : null;
+      if (score1Ida !== null && score1Volta !== null) {
+        agregadoTime1 = score1Ida + score1Volta;
+        agregadoTime2 = (score2Ida ?? 0) + (score2Volta ?? 0);
+      } else if (sc2t1?.aggregateScore != null) {
+        agregadoTime1 = sc2t1.aggregateScore;
+        agregadoTime2 = sc2t2?.aggregateScore ?? null;
       }
     }
 

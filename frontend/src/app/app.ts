@@ -58,6 +58,7 @@ export class App implements OnInit, OnDestroy {
   private pollingInterval?: ReturnType<typeof setInterval>;
   private oddsInterval?: ReturnType<typeof setInterval>;
   private classificacaoInterval?: ReturnType<typeof setInterval>;
+  private campeonatoClassifInterval?: ReturnType<typeof setInterval>;
   private golToastTimer?: ReturnType<typeof setTimeout>;
   private prevGoalCounts = new Map<string, number>();
 
@@ -145,6 +146,7 @@ export class App implements OnInit, OnDestroy {
     this.classificacaoCampeonato.set(null);
     this.jogosCampeonato.set([]);
     this.noticiasCampeonato.set([]);
+    clearInterval(this.campeonatoClassifInterval);
     history.replaceState(null, '', '/');
     this.atualizarMeta('');
   }
@@ -154,6 +156,7 @@ export class App implements OnInit, OnDestroy {
     this.classificacaoCampeonato.set(null);
     this.jogosCampeonato.set([]);
     this.noticiasCampeonato.set([]);
+    clearInterval(this.campeonatoClassifInterval);
 
     forkJoin({
       classif:  this.jogosService.getClassificacaoCampeonato(liga),
@@ -165,6 +168,11 @@ export class App implements OnInit, OnDestroy {
         this.jogosCampeonato.set(jogos);
         this.noticiasCampeonato.set(noticias);
         this.loadingCampeonato.set(false);
+        this.campeonatoClassifInterval = setInterval(() => {
+          this.jogosService.getClassificacaoCampeonato(liga).subscribe({
+            next: (c) => this.classificacaoCampeonato.set(c),
+          });
+        }, 30_000);
       },
       error: () => this.loadingCampeonato.set(false),
     });
@@ -624,6 +632,7 @@ export class App implements OnInit, OnDestroy {
     clearInterval(this.pollingInterval);
     clearInterval(this.oddsInterval);
     clearInterval(this.classificacaoInterval);
+    clearInterval(this.campeonatoClassifInterval);
     clearTimeout(this.golToastTimer);
     document.removeEventListener('touchstart', this.onTouchStart);
     document.removeEventListener('touchmove', this.onTouchMove);
