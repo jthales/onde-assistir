@@ -377,7 +377,7 @@ function parseLegJogo(event: any, home: any, away: any) {
 async function fetchMataMata(espnLeague: string) {
   const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '');
   const brtNow = new Date(Date.now() - 3 * 60 * 60 * 1000);
-  const passado = new Date(brtNow.getTime() - 90 * 24 * 60 * 60 * 1000);
+  const passado = new Date(brtNow.getTime() - 30 * 24 * 60 * 60 * 1000);
   const futuro  = new Date(brtNow.getTime() + 60 * 24 * 60 * 60 * 1000);
   const base = `https://site.api.espn.com/apis/site/v2/sports/soccer/${espnLeague}/scoreboard`;
 
