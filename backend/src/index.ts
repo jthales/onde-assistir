@@ -198,7 +198,7 @@ app.get('/api/placar', async (_req, res) => {
 
 // Cache de odds — atualiza a cada 5 minutos
 let oddsCache: { dados: any[]; fetchedAt: number } | null = null;
-const ODDS_CACHE_TTL_MS = 5 * 60_000;
+const ODDS_CACHE_TTL_MS = 10_000;
 
 app.get('/api/odds', async (_req, res) => {
   const agora = Date.now();
