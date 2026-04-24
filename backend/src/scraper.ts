@@ -8,6 +8,7 @@
  *    para jogos não encontrados no artigo de rodada.
  */
 import * as cheerio from 'cheerio';
+import puppeteer, { Browser } from 'puppeteer';
 
 const FETCH_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
@@ -383,16 +384,7 @@ export async function buscarFutebolExpert(
 
   try {
     const url = 'https://www.futebolexpert.com.br/onde-assistir/todos-os-canais/hoje';
-    const res = await fetchWithTimeout(url, {
-      headers: { ...FETCH_HEADERS, Accept: 'text/html' },
-    }, 20000);
-
-    if (!res.ok) {
-      console.log(`   ⚠️  FutebolExpert retornou ${res.status}`);
-      return result;
-    }
-
-    const html = await res.text();
+    const html = await fetchRenderedHtml(url);
     const $ = cheerio.load(html);
 
     // Extrai linhas da tabela principal: Horário | Competição | Confronto | Onde assistir | Fase
@@ -501,6 +493,39 @@ export async function buscarFutebolExpert(
 }
 
 /**
+ * Retorna o HTML completo de uma página FutebolExpert (Wix CSR) usando Puppeteer.
+ * Aguarda as linhas da tabela serem renderizadas antes de extrair o DOM.
+ * Se Puppeteer falhar por qualquer motivo, cai para fetch estático como fallback.
+ *
+ * @param browser - Browser já aberto para reuso; se omitido, cria e fecha um interno.
+ */
+async function fetchRenderedHtml(url: string, browser?: Browser): Promise<string> {
+  const ownBrowser = !browser;
+  let b: Browser | undefined;
+  let page;
+  try {
+    b = browser ?? await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+    page = await b.newPage();
+    await page.setUserAgent(FETCH_HEADERS['User-Agent']);
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 35_000 });
+    await page.waitForSelector('tbody.wixui-table__body tr', { timeout: 35_000 });
+    return await page.content();
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    console.log(`   ⚠️  Puppeteer falhou (${url}): ${reason} — usando fetch estático`);
+    const res = await fetchWithTimeout(url, { headers: { ...FETCH_HEADERS, Accept: 'text/html' } }, 20_000);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.text();
+  } finally {
+    try { await page?.close(); } catch { /* ignore */ }
+    if (ownBrowser) try { await b?.close(); } catch { /* ignore */ }
+  }
+}
+
+/**
  * Busca transmissões em páginas por campeonato do FutebolExpert para jogos NÃO de hoje.
  * Faz no máximo 1 request por campeonato (3 no total: Brasileirão, Libertadores, Copa do Brasil).
  * Retorna Map com chave "mandante|visitante" → { canal, streaming }.
@@ -522,80 +547,89 @@ export async function buscarFutebolExpertCampeonato(
 
   console.log('\n── FutebolExpert (por campeonato) ──');
 
-  for (const [url, campFixtures] of campMap) {
-    const campName = campFixtures[0].campeonato;
-    try {
-      const res = await fetchWithTimeout(url, { headers: { ...FETCH_HEADERS, Accept: 'text/html' } }, 20_000);
-      if (!res.ok) { console.log(`   ⚠️  ${campName} retornou ${res.status}`); continue; }
+  // Abre um único Chromium para todos os campeonatos (evita 3× startup)
+  let browser: Browser | undefined;
+  try {
+    browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  } catch (err) {
+    console.log(`   ⚠️  Não foi possível iniciar Puppeteer: ${err instanceof Error ? err.message : String(err)} — usando fetch estático`);
+  }
 
-      const html = await res.text();
-      const $ = cheerio.load(html);
+  try {
+    for (const [url, campFixtures] of campMap) {
+      const campName = campFixtures[0].campeonato;
+      try {
+        const html = await fetchRenderedHtml(url, browser);
+        const $ = cheerio.load(html);
 
-      const entries: Array<{ mandante: string; visitante: string; canais: string }> = [];
-      $('tbody.wixui-table__body tr').each((_, row) => {
-        const cells = $(row).find('td');
-        if (cells.length < 3) return;
+        const entries: Array<{ mandante: string; visitante: string; canais: string }> = [];
+        $('tbody.wixui-table__body tr').each((_, row) => {
+          const cells = $(row).find('td');
+          if (cells.length < 3) return;
 
-        // Detecta qual coluna é o confronto (contém " x ") — pode ser col[2] (5 colunas) ou col[1] (4 colunas)
-        let confronto = '';
-        let canaisRaw = '';
-        const col2 = $(cells[2]).text().trim();
-        const col1 = $(cells[1]).text().trim();
-        if (col2.includes(' x ')) {
-          confronto = col2;
-          canaisRaw = cells.length > 3 ? $(cells[3]).text().trim() : '';
-        } else if (col1.includes(' x ')) {
-          confronto = col1;
-          canaisRaw = $(cells[2]).text().trim();
-        } else return;
+          // Detecta qual coluna é o confronto (contém " x ") — pode ser col[2] (5 colunas) ou col[1] (4 colunas)
+          let confronto = '';
+          let canaisRaw = '';
+          const col2 = $(cells[2]).text().trim();
+          const col1 = $(cells[1]).text().trim();
+          if (col2.includes(' x ')) {
+            confronto = col2;
+            canaisRaw = cells.length > 3 ? $(cells[3]).text().trim() : '';
+          } else if (col1.includes(' x ')) {
+            confronto = col1;
+            canaisRaw = $(cells[2]).text().trim();
+          } else return;
 
-        if (!confronto || !canaisRaw) return;
+          if (!confronto || !canaisRaw) return;
 
-        const xIdx = confronto.indexOf(' x ');
-        const mand  = normalizeForSearch(confronto.slice(0, xIdx));
-        const visit = normalizeForSearch(confronto.slice(xIdx + 3));
-        const canais = canaisRaw
-          .replace(/\([^)]*\)/g, '')
-          .replace(/\[[^\]]*\]/g, '')
-          .replace(/\s*-\s*.+$/g, '')
-          .replace(/\s+/g, ' ')
-          .trim();
-        entries.push({ mandante: mand, visitante: visit, canais });
-      });
+          const xIdx = confronto.indexOf(' x ');
+          const mand  = normalizeForSearch(confronto.slice(0, xIdx));
+          const visit = normalizeForSearch(confronto.slice(xIdx + 3));
+          const canais = canaisRaw
+            .replace(/\([^)]*\)/g, '')
+            .replace(/\[[^\]]*\]/g, '')
+            .replace(/\s*-\s*.+$/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+          entries.push({ mandante: mand, visitante: visit, canais });
+        });
 
-      console.log(`   ${entries.length} jogo(s) em ${campName}`);
+        console.log(`   ${entries.length} jogo(s) em ${campName}`);
 
-      for (const fixture of campFixtures) {
-        const key = `${fixture.timeMandante}|${fixture.timeVisitante}`;
-        if (result.has(key)) continue;
+        for (const fixture of campFixtures) {
+          const key = `${fixture.timeMandante}|${fixture.timeVisitante}`;
+          if (result.has(key)) continue;
 
-        const mandVariants  = teamVariants(fixture.timeMandante);
-        const visitVariants = teamVariants(fixture.timeVisitante);
+          const mandVariants  = teamVariants(fixture.timeMandante);
+          const visitVariants = teamVariants(fixture.timeVisitante);
 
-        for (const entry of entries) {
-          // Testa ordem direta e invertida — FE pode listar o mandante/visitante diferente da ESPN
-          const matchDireto =
-            mandVariants.some(v => entry.mandante.includes(v) || v.includes(entry.mandante)) &&
-            visitVariants.some(v => entry.visitante.includes(v) || v.includes(entry.visitante));
-          const matchInvertido =
-            mandVariants.some(v => entry.visitante.includes(v) || v.includes(entry.visitante)) &&
-            visitVariants.some(v => entry.mandante.includes(v) || v.includes(entry.mandante));
+          for (const entry of entries) {
+            // Testa ordem direta e invertida — FE pode listar o mandante/visitante diferente da ESPN
+            const matchDireto =
+              mandVariants.some(v => entry.mandante.includes(v) || v.includes(entry.mandante)) &&
+              visitVariants.some(v => entry.visitante.includes(v) || v.includes(entry.visitante));
+            const matchInvertido =
+              mandVariants.some(v => entry.visitante.includes(v) || v.includes(entry.visitante)) &&
+              visitVariants.some(v => entry.mandante.includes(v) || v.includes(entry.mandante));
 
-          if (!matchDireto && !matchInvertido) continue;
+            if (!matchDireto && !matchInvertido) continue;
 
-          const broadcast = classifyChannels(entry.canais);
-          if (broadcast.canal.length > 0 || broadcast.streaming.length > 0) {
-            result.set(key, broadcast);
-            console.log(`   ✅ [${campName}] ${fixture.timeMandante} x ${fixture.timeVisitante} → ${[...broadcast.canal, ...broadcast.streaming].join(', ')}`);
-          } else {
-            console.log(`   ⚠️  [${campName}] canais não mapeados "${entry.canais}" para ${fixture.timeMandante} x ${fixture.timeVisitante}`);
+            const broadcast = classifyChannels(entry.canais);
+            if (broadcast.canal.length > 0 || broadcast.streaming.length > 0) {
+              result.set(key, broadcast);
+              console.log(`   ✅ [${campName}] ${fixture.timeMandante} x ${fixture.timeVisitante} → ${[...broadcast.canal, ...broadcast.streaming].join(', ')}`);
+            } else {
+              console.log(`   ⚠️  [${campName}] canais não mapeados "${entry.canais}" para ${fixture.timeMandante} x ${fixture.timeVisitante}`);
+            }
+            break;
           }
-          break;
         }
+      } catch (err) {
+        console.log(`   ❌ Erro FutebolExpert ${campName}: ${err instanceof Error ? err.message : String(err)}`);
       }
-    } catch (err) {
-      console.log(`   ❌ Erro FutebolExpert ${campName}: ${err instanceof Error ? err.message : String(err)}`);
     }
+  } finally {
+    try { await browser?.close(); } catch { /* ignore */ }
   }
 
   return result;
