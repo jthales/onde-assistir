@@ -19,7 +19,8 @@ app.use(express.json());
 
 app.get('/api/jogos', async (_req, res) => {
   try {
-    const snap = await db.collection('jogos').get();
+    const hojeStr = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const snap = await db.collection('jogos').where('data', '>=', hojeStr).get();
 
     if (snap.empty) {
       res.json([]);
@@ -624,7 +625,8 @@ app.get('/og', async (req, res) => {
   let canonicalUrl = FRONTEND_URL;
 
   try {
-    const snap = await db.collection('jogos').get();
+    const hojeStrOg = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const snap = await db.collection('jogos').where('data', '>=', hojeStrOg).get();
     const jogos: Jogo[] = snap.docs.map(doc => {
       const d = doc.data();
       return {
