@@ -80,6 +80,8 @@ const TEAM_ALIASES: Record<string, string[]> = {
   'Deportivo Recoleta':     ['Recoleta', 'Recoleta-PAR'],
   'Racing Club':            ['Racing'],
   'Independiente Santa Fe': ['Santa Fe', 'Ind. Santa Fe', 'Ind Santa Fe'],
+  'Cienciano del Cusco':    ['Cienciano'],
+  'Estudiantes de La Plata': ['Estudiantes'],
 };
 
 // Sufixos de clube que o ge.globo costuma omitir (ex: "Caracas FC" → "Caracas")
