@@ -211,10 +211,10 @@ body {
 
   select {
     appearance: none;
-    background: var(--surface);
-    border: 1.5px solid var(--border);
+    background-color: var(--color-surface);
+    border: 1.5px solid var(--color-border);
     border-radius: 2rem;
-    color: var(--text);
+    color: var(--color-text);
     cursor: pointer;
     font-size: 0.875rem;
     font-weight: 600;
@@ -223,11 +223,18 @@ body {
     background-repeat: no-repeat;
     background-position: right 0.75rem center;
     transition: border-color 0.15s;
+    color-scheme: light;
 
     &:focus {
       outline: none;
-      border-color: var(--accent);
+      border-color: var(--color-primary);
     }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .campeonato-dropdown select {
+    color-scheme: dark;
   }
 }
 

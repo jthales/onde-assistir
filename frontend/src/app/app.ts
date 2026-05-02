@@ -119,9 +119,9 @@ export class App implements OnInit, OnDestroy {
   };
 
   private readonly CAMP_SLUG_LABEL: Record<string, string> = {
-    'brasileirao':    'Brasileirão Série A',
-    'libertadores':   'Copa Libertadores',
-    'sul-americana':  'Copa Sul-Americana',
+    'brasileirao':    'Brasileirão',
+    'libertadores':   'Libertadores',
+    'sul-americana':  'Sul-Americana',
     'copa-do-brasil': 'Copa do Brasil',
     'champions':      'Champions League',
   };
