@@ -1,6 +1,7 @@
 // ── Design Tokens ────────────────────────────────────────────────────────────
 
 :root {
+  color-scheme: light;
   --color-bg:           #f0f2f5;
   --color-surface:      #ffffff;
   --color-primary:      #1d6f42;
@@ -30,6 +31,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    color-scheme: dark;
     --color-bg:           #0f172a;
     --color-surface:      #1e293b;
     --color-primary:      #22c55e;
