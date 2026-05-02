@@ -1,0 +1,16 @@
+// ── Mixins ───────────────────────────────────────────────────────────────────
+
+@mixin flex($gap: 0, $align: center, $justify: flex-start, $wrap: nowrap) {
+  display: flex;
+  align-items: $align;
+  @if $justify != flex-start { justify-content: $justify; }
+  @if $gap != 0 { gap: $gap; }
+  @if $wrap != nowrap { flex-wrap: $wrap; }
+}
+
+@mixin flex-col($gap: 0, $align: stretch) {
+  display: flex;
+  flex-direction: column;
+  @if $align != stretch { align-items: $align; }
+  @if $gap != 0 { gap: $gap; }
+}
