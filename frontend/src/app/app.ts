@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed, ElementRef, Inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, ElementRef, Inject, HostListener } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { Meta, Title } from '@angular/platform-browser';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
@@ -56,6 +56,24 @@ export class App implements OnInit, OnDestroy {
   loadingCampeonato = signal(false);
 
   filtroCampeonato = signal<string>('');
+  dropdownCampAberto = signal(false);
+
+  readonly campeonatoAtualLabel = computed(() => {
+    const labels: Record<string, string> = {
+      '':             'Times Brasileiros',
+      'brasileirao':  'Brasileirão Série A',
+      'libertadores': 'Copa Libertadores',
+      'copa-do-brasil': 'Copa do Brasil',
+      'sul-americana': 'Copa Sul-Americana',
+      'champions':    'Champions League',
+    };
+    return labels[this.filtroCampeonato()] ?? 'Times Brasileiros';
+  });
+
+  @HostListener('document:click')
+  fecharDropdownCamp(): void {
+    if (this.dropdownCampAberto()) this.dropdownCampAberto.set(false);
+  }
 
   private pollingInterval?: ReturnType<typeof setInterval>;
   private oddsInterval?: ReturnType<typeof setInterval>;
@@ -506,6 +524,7 @@ export class App implements OnInit, OnDestroy {
 
   selecionarCampeonatoFiltro(slug: string): void {
     this.filtroCampeonato.set(slug);
+    this.dropdownCampAberto.set(false);
     this.timeSelecionado.set('');
     this.filtroAoVivo.set(false);
     this.noticias.set([]);

@@ -307,15 +307,21 @@
     } @else {
 
     <!-- ── Homepage ─────────────────────────────────────────────────────────── -->
-    <div class="campeonato-dropdown">
-      <select [value]="filtroCampeonato()" (change)="selecionarCampeonatoFiltro($any($event.target).value)">
-        <option value="">Times Brasileiros</option>
-        <option value="brasileirao">Brasileirão Série A</option>
-        <option value="libertadores">Copa Libertadores</option>
-        <option value="copa-do-brasil">Copa do Brasil</option>
-        <option value="sul-americana">Copa Sul-Americana</option>
-        <option value="champions">Champions League</option>
-      </select>
+    <div class="camp-dd" [class.camp-dd--open]="dropdownCampAberto()" (click)="$event.stopPropagation()">
+      <button class="camp-dd__btn" (click)="dropdownCampAberto.set(!dropdownCampAberto())">
+        <span>{{ campeonatoAtualLabel() }}</span>
+        <svg class="camp-dd__chevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      @if (dropdownCampAberto()) {
+        <ul class="camp-dd__list">
+          <li class="camp-dd__item" [class.camp-dd__item--ativo]="filtroCampeonato() === ''" (click)="selecionarCampeonatoFiltro('')">Times Brasileiros</li>
+          <li class="camp-dd__item" [class.camp-dd__item--ativo]="filtroCampeonato() === 'brasileirao'" (click)="selecionarCampeonatoFiltro('brasileirao')">Brasileirão Série A</li>
+          <li class="camp-dd__item" [class.camp-dd__item--ativo]="filtroCampeonato() === 'libertadores'" (click)="selecionarCampeonatoFiltro('libertadores')">Copa Libertadores</li>
+          <li class="camp-dd__item" [class.camp-dd__item--ativo]="filtroCampeonato() === 'copa-do-brasil'" (click)="selecionarCampeonatoFiltro('copa-do-brasil')">Copa do Brasil</li>
+          <li class="camp-dd__item" [class.camp-dd__item--ativo]="filtroCampeonato() === 'sul-americana'" (click)="selecionarCampeonatoFiltro('sul-americana')">Copa Sul-Americana</li>
+          <li class="camp-dd__item" [class.camp-dd__item--ativo]="filtroCampeonato() === 'champions'" (click)="selecionarCampeonatoFiltro('champions')">Champions League</li>
+        </ul>
+      }
     </div>
 
     @if (filtroCampeonato() !== 'champions') {
