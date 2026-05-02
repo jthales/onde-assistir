@@ -55,6 +55,8 @@ export class App implements OnInit, OnDestroy {
   noticiasCampeonato = signal<Noticia[]>([]);
   loadingCampeonato = signal(false);
 
+  filtroCampeonato = signal<string>('');
+
   private pollingInterval?: ReturnType<typeof setInterval>;
   private oddsInterval?: ReturnType<typeof setInterval>;
   private classificacaoInterval?: ReturnType<typeof setInterval>;
@@ -98,6 +100,8 @@ export class App implements OnInit, OnDestroy {
     'CONMEBOL LIBERTADORES': 'Copa Libertadores',
     'SUL-AMERICANA':         'Copa Sul-Americana',
     'COPA SUL-AMERICANA':    'Copa Sul-Americana',
+    'CHAMPIONS LEAGUE':      'Champions League',
+    'UEFA CHAMPIONS LEAGUE': 'Champions League',
   };
 
   private readonly CAMP_SLUG_MAP: Record<string, string> = {
@@ -110,6 +114,8 @@ export class App implements OnInit, OnDestroy {
     'COPA SUL-AMERICANA':    'sul-americana',
     'CONMEBOL SULAMERICANA': 'sul-americana',
     'COPA DO BRASIL':        'copa-do-brasil',
+    'CHAMPIONS LEAGUE':      'champions',
+    'UEFA CHAMPIONS LEAGUE': 'champions',
   };
 
   private readonly CAMP_SLUG_LABEL: Record<string, string> = {
@@ -117,6 +123,7 @@ export class App implements OnInit, OnDestroy {
     'libertadores':   'Copa Libertadores',
     'sul-americana':  'Copa Sul-Americana',
     'copa-do-brasil': 'Copa do Brasil',
+    'champions':      'Champions League',
   };
 
   slugifyCampeonato(nome: string): string {
@@ -298,12 +305,21 @@ export class App implements OnInit, OnDestroy {
   jogosFiltrados = computed(() => {
     const time = this.timeSelecionado();
     const aoVivo = this.filtroAoVivo();
-    let jogos = time
-      ? this.jogos().filter(j => j.timeMandante === time || j.timeVisitante === time)
-      : this.jogos();
-    if (aoVivo) {
-      jogos = jogos.filter(j => this.eAoVivo(j));
+    const campFiltro = this.filtroCampeonato();
+
+    let jogos = this.jogos();
+
+    if (!campFiltro) {
+      // padrão: esconde Champions League (times não-brasileiros)
+      jogos = jogos.filter(j => j.campeonato !== 'Champions League');
+    } else {
+      const campLabel = this.CAMP_SLUG_LABEL[campFiltro];
+      if (campLabel) jogos = jogos.filter(j => j.campeonato === campLabel);
     }
+
+    if (time) jogos = jogos.filter(j => j.timeMandante === time || j.timeVisitante === time);
+    if (aoVivo) jogos = jogos.filter(j => this.eAoVivo(j));
+
     return [...jogos].sort((a, b) => {
       const ordemA = this.eEncerrado(a) ? 2 : this.eAoVivo(a) ? 0 : 1;
       const ordemB = this.eEncerrado(b) ? 2 : this.eAoVivo(b) ? 0 : 1;
@@ -486,6 +502,13 @@ export class App implements OnInit, OnDestroy {
         this.pullDistance.set(0);
       }
     });
+  }
+
+  selecionarCampeonatoFiltro(slug: string): void {
+    this.filtroCampeonato.set(slug);
+    this.timeSelecionado.set('');
+    this.filtroAoVivo.set(false);
+    this.noticias.set([]);
   }
 
   selecionarTime(nome: string): void {

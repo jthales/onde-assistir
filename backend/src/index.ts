@@ -116,17 +116,19 @@ app.get('/api/placar', async (_req, res) => {
   }
 
   try {
-    const [dataBra, dataLib, dataSul, dataCopa] = await Promise.all([
+    const [dataBra, dataLib, dataSul, dataCopa, dataCL] = await Promise.all([
       fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.brasileirao, 1)).then(r => r.json()),
       fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.libertadores, 1)).then(r => r.json()),
       fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.sudamericana, 1)).then(r => r.json()),
       fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.copadobrasil, 1)).then(r => r.json()),
+      fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.champions, 1)).then(r => r.json()),
     ]);
     const allEvents = [
       ...(dataBra.events ?? []),
       ...(dataLib.events ?? []),
       ...(dataSul.events ?? []),
       ...(dataCopa.events ?? []),
+      ...(dataCL.events ?? []),
     ];
 
     const placares = allEvents.map((event: any) => {

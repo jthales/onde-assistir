@@ -26,6 +26,7 @@ const ESPN_LEAGUE_LABELS: Record<string, string> = {
   'conmebol.libertadores':  'Libertadores',
   'conmebol.sudamericana':  'Sul-Americana',
   'bra.copa_do_brazil':     'Copa do Brasil',
+  'uefa.champions':         'Champions League',
 };
 
 const LEAGUE_NAME_MAP: Record<string, string> = {
@@ -41,6 +42,8 @@ const LEAGUE_NAME_MAP: Record<string, string> = {
   'Copa do Brasil':           'Copa do Brasil',
   'Brazilian Cup':            'Copa do Brasil',
   'Brazil Cup':               'Copa do Brasil',
+  'UEFA Champions League':    'Champions League',
+  'Champions League':         'Champions League',
 };
 
 function normalizeLeagueName(raw: string): string {
@@ -119,6 +122,7 @@ async function fetchFixturesFromEspn(): Promise<EspnFixture[]> {
     { id: ESPN_LEAGUES.libertadores, filtrarBR: true,  janelaDias: 5 },
     { id: ESPN_LEAGUES.sudamericana, filtrarBR: true,  janelaDias: 5 },
     { id: ESPN_LEAGUES.copadobrasil, filtrarBR: false, janelaDias: 5 },
+    { id: ESPN_LEAGUES.champions,    filtrarBR: false, janelaDias: 7 },
   ];
 
   const todas: EspnFixture[] = [];

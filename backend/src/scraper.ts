@@ -365,9 +365,10 @@ const FE_COMPETITION_SLUGS: Record<string, string> = {
 
 // URLs das páginas por campeonato no FutebolExpert (todos os jogos, não apenas hoje)
 export const FE_CAMPEONATO_URLS: Record<string, string> = {
-  'Brasileirão':    'https://www.futebolexpert.com.br/onde-assistir/brasileirao-serie-a/todos-os-canais',
-  'Libertadores':   'https://www.futebolexpert.com.br/onde-assistir/copa-libertadores-da-america/todos-os-canais',
-  'Copa do Brasil': 'https://www.futebolexpert.com.br/onde-assistir/copa-do-brasil/todos-os-canais',
+  'Brasileirão':       'https://www.futebolexpert.com.br/onde-assistir/brasileirao-serie-a/todos-os-canais',
+  'Libertadores':      'https://www.futebolexpert.com.br/onde-assistir/copa-libertadores-da-america/todos-os-canais',
+  'Copa do Brasil':    'https://www.futebolexpert.com.br/onde-assistir/copa-do-brasil/todos-os-canais',
+  'Champions League': 'https://www.futebolexpert.com.br/onde-assistir/champions-league/todos-os-canais',
 };
 
 /**
