@@ -214,7 +214,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: rgba(0, 0, 0, 0.2);
+    background: color-mix(in srgb, var(--color-bg) 80%, black 20%);
     border: 1.5px solid var(--color-border);
     border-radius: 2rem;
     color: var(--color-text);
