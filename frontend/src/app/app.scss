@@ -865,10 +865,13 @@ body {
   left: 50%;
   transform: translateX(-50%);
   padding: 0.65rem 1.25rem;
-  border-radius: 999px;
+  border-radius: 16px;
   font-size: 0.875rem;
   font-weight: 600;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: center;
+  max-width: calc(100vw - 2rem);
+  width: max-content;
   box-shadow: 0 4px 20px rgba(0,0,0,.25);
   z-index: 1100;
   animation: toastIn 0.25s ease;
