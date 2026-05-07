@@ -853,15 +853,13 @@ body {
   }
 }
 
-// ── Toast de gol ──────────────────────────────────────────────────────────────
+// ── Toasts ────────────────────────────────────────────────────────────────────
 
-.gol-toast {
+.gol-toast,
+.notif-toast {
   position: fixed;
-  top: 1rem;
   left: 50%;
   transform: translateX(-50%);
-  background: #111827;
-  color: #fff;
   padding: 0.65rem 1.25rem;
   border-radius: 999px;
   font-size: 0.875rem;
@@ -870,6 +868,18 @@ body {
   box-shadow: 0 4px 20px rgba(0,0,0,.25);
   z-index: 1100;
   animation: toastIn 0.25s ease;
+}
+
+.gol-toast {
+  top: 1rem;
+  background: #111827;
+  color: #fff;
+}
+
+.notif-toast {
+  top: 4rem;
+  background: var(--color-primary);
+  color: #fff;
 }
 
 @keyframes toastIn {
@@ -1800,10 +1810,14 @@ body {
   .noticia-descricao { color: #94a3b8; }
   .noticia-ler-mais { color: #22c55e; }
 
-  // Toast de gol
+  // Toasts
   .gol-toast {
     background: #f1f5f9;
     color: #0f172a;
+  }
+  .notif-toast {
+    background: var(--color-primary);
+    color: #fff;
   }
 
   // AI disclaimer footer

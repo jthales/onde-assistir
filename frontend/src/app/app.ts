@@ -50,6 +50,7 @@ export class App implements OnInit, OnDestroy {
     JSON.parse(localStorage.getItem('notif-jogos') ?? '[]')
   );
   golToast = signal<string | null>(null);
+  notifToast = signal<string | null>(null);
   pullDistance = signal(0);
   isPulling = signal(false);
   isRefreshing = signal(false);
@@ -64,6 +65,7 @@ export class App implements OnInit, OnDestroy {
   private oddsInterval?: ReturnType<typeof setInterval>;
   private classificacaoInterval?: ReturnType<typeof setInterval>;
   private campeonatoClassifInterval?: ReturnType<typeof setInterval>;
+  private notifToastTimer?: ReturnType<typeof setTimeout>;
   private golToastTimer?: ReturnType<typeof setTimeout>;
   private prevGoalCounts = new Map<string, number>();
 
@@ -773,6 +775,7 @@ export class App implements OnInit, OnDestroy {
       const next = current.filter(t => t !== selected);
       this.timesComNotificacao.set(next);
       this.salvarTimesNotificacao(next);
+      this.mostrarNotifToast(`🔕 Notificações desativadas para ${selected}`);
       return;
     }
 
@@ -784,6 +787,13 @@ export class App implements OnInit, OnDestroy {
     const next = [...current, selected];
     this.timesComNotificacao.set(next);
     this.salvarTimesNotificacao(next);
+    this.mostrarNotifToast(`🔔 Notificações ativadas para ${selected}`);
+  }
+
+  private mostrarNotifToast(msg: string): void {
+    clearTimeout(this.notifToastTimer);
+    this.notifToast.set(msg);
+    this.notifToastTimer = setTimeout(() => this.notifToast.set(null), 3000);
   }
 
   private salvarTimesNotificacao(times: string[]): void {
@@ -808,14 +818,17 @@ export class App implements OnInit, OnDestroy {
 
     const key = this.placarKey(jogo.timeMandante, jogo.timeVisitante, jogo.data);
     const current = this.jogosComNotificacao();
-    const next = current.includes(key) ? current.filter(k => k !== key) : [...current, key];
+    const ativando = !current.includes(key);
+    const next = ativando ? [...current, key] : current.filter(k => k !== key);
     this.jogosComNotificacao.set(next);
     this.salvarJogosNotificacao(next);
+    const label = `${jogo.timeMandante} x ${jogo.timeVisitante}`;
+    this.mostrarNotifToast(ativando ? `🔔 Notificando ${label}` : `🔕 Notificações desativadas para ${label}`);
   }
 
   textoBotaoNotificacao(): string {
     const sel = this.timeSelecionado();
-    if (sel) return this.notifAtivaParaTimeAtual() ? 'Notif. ativas' : 'Notificar gols';
+    if (sel) return this.notifAtivaParaTimeAtual() ? 'Notificações ativas' : 'Notificar gols';
     const n = this.timesComNotificacao().length;
     return n > 0 ? `Seguindo ${n} time${n > 1 ? 's' : ''}` : 'Gols';
   }
