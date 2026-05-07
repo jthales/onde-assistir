@@ -247,6 +247,11 @@ body {
   filter: grayscale(0.5);
 }
 
+.time-chip.notif-ativa {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(29,111,66,0.35);
+}
+
 .time-chip--todos {
   width: auto;
   height: 44px;
@@ -672,6 +677,10 @@ body {
 // ── Calendário ───────────────────────────────────────────────────────────────
 
 .calendario-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
   padding-top: 0.5rem;
   border-top: 1px solid #f1f3f5;
 }
@@ -688,6 +697,28 @@ body {
   border-radius: 6px;
   background: #faf5ff;
   &:hover { background: #ede9fe; }
+}
+
+.btn-notif-jogo {
+  @include flex(0.3rem);
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-3);
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+
+  &:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+  &.ativo {
+    border-color: var(--color-primary);
+    background: var(--color-primary-muted);
+    color: var(--color-primary);
+  }
 }
 
 // ── Odds Bet365 ──────────────────────────────────────────────────────────────
@@ -813,6 +844,12 @@ body {
     border-color: var(--color-primary);
     background: var(--color-primary-muted);
     color: var(--color-primary);
+  }
+
+  &.notif-btn--disabled {
+    opacity: 0.45;
+    cursor: default;
+    pointer-events: none;
   }
 }
 

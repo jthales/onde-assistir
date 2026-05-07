@@ -316,6 +316,7 @@
           <button class="time-chip"
                   [class.ativo]="timeSelecionado() === time.nome"
                   [class.sem-jogo]="!temJogo(time.nome)"
+                  [class.notif-ativa]="timesComNotificacao().includes(time.nome)"
                   (click)="selecionarTime(time.nome)"
                   [title]="time.nome">
             @if (time.logo) {
@@ -334,9 +335,13 @@
           Ao Vivo
         </button>
       }
-      <button class="notif-btn" [class.ativo]="notificacoesAtivas()" (click)="ativarNotificacoes()" [title]="notificacoesAtivas() ? 'Desativar notificações de gol' : 'Ativar notificações de gol'">
+      <button class="notif-btn"
+              [class.ativo]="notifAtivaParaTimeAtual()"
+              [class.notif-btn--disabled]="!timeSelecionado()"
+              (click)="ativarNotificacoes()"
+              [title]="tituloBotaoNotificacao()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        Gols
+        {{ textoBotaoNotificacao() }}
       </button>
     </div>
 
@@ -523,11 +528,20 @@
               }
             </div>
 
-            @if (eJogoFuturo(jogo)) {
+            @if (!eEncerrado(jogo)) {
               <div class="calendario-row">
-                <a [href]="buildCalendarUrl(jogo)" target="_blank" rel="noopener" class="btn-calendario">
-                  📅 Adicionar ao calendário
-                </a>
+                @if (eJogoFuturo(jogo)) {
+                  <a [href]="buildCalendarUrl(jogo)" target="_blank" rel="noopener" class="btn-calendario">
+                    📅 Adicionar ao calendário
+                  </a>
+                }
+                <button class="btn-notif-jogo"
+                        [class.ativo]="notifAtivaParaJogo(jogo)"
+                        (click)="toggleNotificacaoJogo(jogo)"
+                        [title]="notifAtivaParaJogo(jogo) ? 'Desativar notificações de gol' : 'Notificar gols deste jogo'">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                  {{ notifAtivaParaJogo(jogo) ? 'Notif. ativa' : 'Notificar gols' }}
+                </button>
               </div>
             }
 

@@ -43,7 +43,12 @@ export class App implements OnInit, OnDestroy {
   classificacao = signal<ClassificacaoEntry[]>([]);
   noticias = signal<Noticia[]>([]);
   atualizacaoDisponivel = signal(false);
-  notificacoesAtivas = signal(false);
+  timesComNotificacao = signal<string[]>(
+    JSON.parse(localStorage.getItem('notif-times') ?? '[]')
+  );
+  jogosComNotificacao = signal<string[]>(
+    JSON.parse(localStorage.getItem('notif-jogos') ?? '[]')
+  );
   golToast = signal<string | null>(null);
   pullDistance = signal(0);
   isPulling = signal(false);
@@ -77,6 +82,13 @@ export class App implements OnInit, OnDestroy {
            : null,
       jogos: list,
     }));
+  });
+
+  readonly notifAtivaParaTimeAtual = computed(() => {
+    const sel = this.timeSelecionado();
+    return sel
+      ? this.timesComNotificacao().includes(sel)
+      : this.timesComNotificacao().length > 0;
   });
 
   readonly h1Title = computed(() => {
@@ -706,19 +718,34 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
-  private dispararNotificacaoGol(placar: Placar): void {
+  private async dispararNotificacaoGol(placar: Placar): Promise<void> {
+    const times = this.timesComNotificacao();
+    const jogos = this.jogosComNotificacao();
+    if (times.length === 0 && jogos.length === 0) return;
+
+    const jogoKey = this.placarKey(placar.timeMandante, placar.timeVisitante, placar.data);
+    const relevante = times.includes(placar.timeMandante) || times.includes(placar.timeVisitante)
+      || jogos.includes(jogoKey);
+    if (!relevante) return;
+
     const texto = `⚽ GOL! ${placar.timeMandante} ${placar.placarMandante} x ${placar.placarVisitante} ${placar.timeVisitante}`;
     clearTimeout(this.golToastTimer);
     this.golToast.set(texto);
     this.golToastTimer = setTimeout(() => this.golToast.set(null), 5000);
 
-    if (this.notificacoesAtivas() && 'Notification' in window && Notification.permission === 'granted') {
-      new Notification('⚽ GOL!', {
-        body: `${placar.timeMandante} ${placar.placarMandante} x ${placar.placarVisitante} ${placar.timeVisitante}`,
-        icon: '/favicon/icon-512x512.svg',
-        tag: `gol-${placar.timeMandante}-${placar.timeVisitante}`,
-      });
-    }
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+    const options: NotificationOptions = {
+      body: `${placar.timeMandante} ${placar.placarMandante} x ${placar.placarVisitante} ${placar.timeVisitante}`,
+      icon: '/favicon/icon-512x512.svg',
+      tag: `gol-${placar.timeMandante}-${placar.timeVisitante}`,
+    };
+
+    try {
+      const reg = await navigator.serviceWorker?.getRegistration();
+      if (reg) { reg.showNotification('⚽ GOL!', options); return; }
+    } catch {}
+    new Notification('⚽ GOL!', options);
   }
 
   toggleFiltroAoVivo(): void {
@@ -737,13 +764,68 @@ export class App implements OnInit, OnDestroy {
   }
 
   async ativarNotificacoes(): Promise<void> {
+    const selected = this.timeSelecionado();
+    if (!selected) return;
     if (!('Notification' in window)) return;
-    if (Notification.permission === 'granted') {
-      this.notificacoesAtivas.update(v => !v);
+
+    const current = this.timesComNotificacao();
+    if (current.includes(selected)) {
+      const next = current.filter(t => t !== selected);
+      this.timesComNotificacao.set(next);
+      this.salvarTimesNotificacao(next);
       return;
     }
-    const permissao = await Notification.requestPermission();
-    this.notificacoesAtivas.set(permissao === 'granted');
+
+    if (Notification.permission !== 'granted') {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') return;
+    }
+
+    const next = [...current, selected];
+    this.timesComNotificacao.set(next);
+    this.salvarTimesNotificacao(next);
+  }
+
+  private salvarTimesNotificacao(times: string[]): void {
+    try { localStorage.setItem('notif-times', JSON.stringify(times)); } catch {}
+  }
+
+  private salvarJogosNotificacao(jogos: string[]): void {
+    try { localStorage.setItem('notif-jogos', JSON.stringify(jogos)); } catch {}
+  }
+
+  notifAtivaParaJogo(jogo: Jogo): boolean {
+    return this.jogosComNotificacao().includes(this.placarKey(jogo.timeMandante, jogo.timeVisitante, jogo.data));
+  }
+
+  async toggleNotificacaoJogo(jogo: Jogo): Promise<void> {
+    if (!('Notification' in window)) return;
+
+    if (Notification.permission !== 'granted') {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') return;
+    }
+
+    const key = this.placarKey(jogo.timeMandante, jogo.timeVisitante, jogo.data);
+    const current = this.jogosComNotificacao();
+    const next = current.includes(key) ? current.filter(k => k !== key) : [...current, key];
+    this.jogosComNotificacao.set(next);
+    this.salvarJogosNotificacao(next);
+  }
+
+  textoBotaoNotificacao(): string {
+    const sel = this.timeSelecionado();
+    if (sel) return this.notifAtivaParaTimeAtual() ? 'Notif. ativas' : 'Notificar gols';
+    const n = this.timesComNotificacao().length;
+    return n > 0 ? `Seguindo ${n} time${n > 1 ? 's' : ''}` : 'Gols';
+  }
+
+  tituloBotaoNotificacao(): string {
+    const sel = this.timeSelecionado();
+    if (!sel) return 'Selecione um time para ativar notificações de gol';
+    return this.notifAtivaParaTimeAtual()
+      ? `Desativar notificações de gols de ${sel}`
+      : `Ativar notificações de gols de ${sel}`;
   }
 
   getPlacarJogo(jogo: Jogo): Placar | undefined {
