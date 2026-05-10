@@ -338,6 +338,15 @@ body {
   gap: 0.875rem;
 }
 
+app-jogo-card {
+  display: flex;
+  min-width: 0;
+
+  .jogo-card {
+    flex: 1;
+  }
+}
+
 // ── Card ─────────────────────────────────────────────────────────────────────
 
 .h3-seo {
