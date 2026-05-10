@@ -407,14 +407,18 @@ export class App implements OnInit, OnDestroy {
   }
 
   private carregarDados(): void {
-    this.jogosService.getJogosDaSemana().subscribe({
-      next: (data) => {
-        const sorted = [...data].sort((a, b) => {
+    forkJoin({
+      jogos: this.jogosService.getJogosDaSemana(),
+      classificacao: this.jogosService.getClassificacao(),
+    }).subscribe({
+      next: ({ jogos, classificacao }) => {
+        const sorted = [...jogos].sort((a, b) => {
           const ta = new Date(`${a.data}T${a.hora || '00:00'}:00-03:00`).getTime();
           const tb = new Date(`${b.data}T${b.hora || '00:00'}:00-03:00`).getTime();
           return ta - tb;
         });
         this.jogos.set(sorted);
+        this.classificacao.set(classificacao);
         this.loading.set(false);
         gaPush('jogos_carregados', { total_jogos: sorted.length });
         const slug = window.location.pathname.replace(/^\//, '').toLowerCase();
@@ -446,7 +450,6 @@ export class App implements OnInit, OnDestroy {
         this.pollingInterval = setInterval(() => this.atualizarPlacar(), 10_000);
         this.atualizarOdds();
         this.oddsInterval = setInterval(() => this.atualizarOdds(), 5 * 60_000);
-        this.atualizarClassificacao();
         this.classificacaoInterval = setInterval(() => this.atualizarClassificacao(), 5 * 60_000);
       },
       error: (err) => {
