@@ -7,6 +7,7 @@ import { interval, forkJoin } from 'rxjs';
 import { JogosService } from './services/jogos.service';
 import { Jogo, Placar, Odds, ClassificacaoEntry, Noticia, ClassificacaoResponse, JogoCampeonato } from './models/jogo';
 import { teamInitials } from './team-logos';
+import { JogoCardComponent } from './components/jogo-card/jogo-card.component';
 
 declare global {
   interface Window { gtag: (...args: any[]) => void; }
@@ -27,7 +28,7 @@ function gaPush(event: string, params: Record<string, any> = {}): void {
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule],
+  imports: [CommonModule, JogoCardComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
