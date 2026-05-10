@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed, ElementRef, Inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, ElementRef, Inject, ViewEncapsulation } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { Meta, Title } from '@angular/platform-browser';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
@@ -8,6 +8,9 @@ import { JogosService } from './services/jogos.service';
 import { Jogo, Placar, Odds, ClassificacaoEntry, Noticia, ClassificacaoResponse, JogoCampeonato } from './models/jogo';
 import { teamInitials } from './team-logos';
 import { JogoCardComponent } from './components/jogo-card/jogo-card.component';
+import { NoticiaCardComponent } from './components/noticia-card/noticia-card.component';
+import { MataMataCardComponent } from './components/mata-mata-card/mata-mata-card.component';
+import { ClassificacaoTableComponent } from './components/classificacao-table/classificacao-table.component';
 
 declare global {
   interface Window { gtag: (...args: any[]) => void; }
@@ -28,9 +31,10 @@ function gaPush(event: string, params: Record<string, any> = {}): void {
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, JogoCardComponent],
+  imports: [CommonModule, JogoCardComponent, NoticiaCardComponent, MataMataCardComponent, ClassificacaoTableComponent],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrl: './app.scss',
+  encapsulation: ViewEncapsulation.None,
 })
 export class App implements OnInit, OnDestroy {
   jogos = signal<Jogo[]>([]);

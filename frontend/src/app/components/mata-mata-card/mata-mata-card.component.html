@@ -1,0 +1,59 @@
+<div class="mm-card" [class.mm-card--encerrado]="confronto().vencedor">
+
+  <div class="mm-teams">
+    <div class="mm-team mm-team--left" [class.mm-team--winner]="confronto().vencedor === 'time1'">
+      @if (confronto().time1.logo) {
+        <img [src]="confronto().time1.logo" [alt]="confronto().time1.nome" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
+      }
+      <span class="mm-team-name">{{ confronto().time1.nome }}</span>
+    </div>
+
+    <div class="mm-center">
+      @if (confronto().agregadoTime1 !== null) {
+        <span class="mm-score">{{ confronto().agregadoTime1 }} – {{ confronto().agregadoTime2 }}</span>
+        <span class="mm-score-label">agregado</span>
+      } @else {
+        <span class="mm-vs">vs</span>
+      }
+    </div>
+
+    <div class="mm-team mm-team--right" [class.mm-team--winner]="confronto().vencedor === 'time2'">
+      @if (confronto().time2.logo) {
+        <img [src]="confronto().time2.logo" [alt]="confronto().time2.nome" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
+      }
+      <span class="mm-team-name">{{ confronto().time2.nome }}</span>
+    </div>
+  </div>
+
+  <div class="mm-legs">
+    @if (confronto().ida) {
+      <div class="mm-leg" [class.mm-leg--live]="confronto().ida!.status === 'em-andamento'">
+        <span class="mm-leg-tag">Ida</span>
+        <span class="mm-leg-detail">{{ formatarData(confronto().ida!.data) }} · {{ confronto().ida!.hora }}</span>
+        @if (confronto().ida!.status === 'em-andamento') {
+          <span class="ao-vivo-badge mm-badge-live">AO VIVO</span>
+        } @else if (confronto().ida!.status === 'encerrado') {
+          <span class="mm-leg-result">{{ confronto().ida!.placarMandante }} – {{ confronto().ida!.placarVisitante }}</span>
+        }
+      </div>
+    }
+    @if (confronto().volta) {
+      <div class="mm-leg" [class.mm-leg--live]="confronto().volta!.status === 'em-andamento'">
+        <span class="mm-leg-tag mm-leg-tag--volta">Volta</span>
+        <span class="mm-leg-detail">{{ formatarData(confronto().volta!.data) }} · {{ confronto().volta!.hora }}</span>
+        @if (confronto().volta!.status === 'em-andamento') {
+          <span class="ao-vivo-badge mm-badge-live">AO VIVO</span>
+        } @else if (confronto().volta!.status === 'encerrado') {
+          <span class="mm-leg-result">{{ confronto().volta!.placarMandante }} – {{ confronto().volta!.placarVisitante }}</span>
+        }
+      </div>
+    }
+  </div>
+
+  @if (confronto().vencedor) {
+    <div class="mm-classified">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      {{ confronto().vencedor === 'time1' ? confronto().time1.nome : confronto().time2.nome }}
+    </div>
+  }
+</div>

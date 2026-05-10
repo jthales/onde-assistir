@@ -347,6 +347,12 @@ app-jogo-card {
   }
 }
 
+app-noticia-card,
+app-mata-mata-card,
+app-classificacao-table {
+  display: contents;
+}
+
 // ── Card ─────────────────────────────────────────────────────────────────────
 
 .h3-seo {

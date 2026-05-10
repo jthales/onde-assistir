@@ -1,0 +1,81 @@
+<aside [class]="asideClass()">
+  <div class="classificacao-header">
+    <h2 class="classificacao-titulo">{{ titulo() }}</h2>
+    @if (mostrarBadgeLive()) {
+      <span class="classificacao-ao-vivo-badge">
+        <span class="ao-vivo-dot"></span>Ao vivo
+      </span>
+    }
+  </div>
+  <table [class]="tableClass()">
+    <thead>
+      <tr>
+        <th class="col-pos">#</th>
+        <th class="col-time">Time</th>
+        <th class="col-num" [class.col-pts-h]="variant() !== 'compact'" title="Pontos">Pts</th>
+        <th class="col-num" title="Jogos">J</th>
+        @if (variant() !== 'grupo') {
+          <th class="col-num" title="Vitórias">V</th>
+          <th class="col-num" title="Empates">E</th>
+          <th class="col-num" title="Derrotas">D</th>
+        }
+        @if (variant() === 'full') {
+          <th class="col-num col-gp-gc" title="Gols Marcados">GP</th>
+          <th class="col-num col-gp-gc" title="Gols Sofridos">GC</th>
+        }
+        <th class="col-num" title="Saldo de Gols">SG</th>
+        @if (variant() === 'full') {
+          <th class="col-num col-pct" title="Aproveitamento">%</th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (entry of times(); track entry.nome) {
+        <tr
+          [class.classificacao-linha--destaque]="variant() === 'compact' && timeSelecionado() === entry.nome"
+          [class.classificacao-linha--ao-vivo]="variant() === 'compact' && entry.provisorio"
+        >
+          <td class="col-pos">
+            @if (variant() === 'compact') {
+              <span class="pos-col-inner">
+                <span class="pos-delta-slot">
+                  @if (entry.provisorio && entry.posicaoAnterior && entry.posicaoAnterior !== entry.posicao) {
+                    @if (entry.posicaoAnterior > entry.posicao) {
+                      <span class="pos-delta pos-delta--up">▲{{ entry.posicaoAnterior - entry.posicao }}</span>
+                    } @else {
+                      <span class="pos-delta pos-delta--down">▼{{ entry.posicao - entry.posicaoAnterior }}</span>
+                    }
+                  }
+                </span>
+                {{ entry.posicao }}
+              </span>
+            } @else {
+              {{ entry.posicao }}
+            }
+          </td>
+          <td class="col-time">
+            @if (entry.logo) {
+              <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+            }
+            <span [class]="variant() === 'full' ? 'classificacao-nome classificacao-nome--full' : 'classificacao-nome'">{{ entry.nome }}</span>
+          </td>
+          <td class="col-num col-pts">{{ entry.pontos }}</td>
+          <td class="col-num">{{ entry.jogos }}</td>
+          @if (variant() !== 'grupo') {
+            <td class="col-num">{{ entry.vitorias }}</td>
+            <td class="col-num">{{ entry.empates }}</td>
+            <td class="col-num">{{ entry.derrotas }}</td>
+          }
+          @if (variant() === 'full') {
+            <td class="col-num col-gp-gc">{{ entry.gols }}</td>
+            <td class="col-num col-gp-gc">{{ entry.golsSofridos }}</td>
+          }
+          <td class="col-num" [class.saldo-positivo]="entry.saldo > 0" [class.saldo-negativo]="entry.saldo < 0">{{ entry.saldo > 0 ? '+' : '' }}{{ entry.saldo }}</td>
+          @if (variant() === 'full') {
+            <td class="col-num col-pct">{{ entry.jogos > 0 ? ((entry.pontos / (entry.jogos * 3)) * 100 | number:'1.0-0') : 0 }}%</td>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+</aside>

@@ -1,0 +1,11 @@
+<a class="noticia-card" [href]="noticia().link" target="_blank" rel="noopener noreferrer">
+  <div class="noticia-imagem-wrapper">
+    <img [src]="noticia().imagem" [alt]="noticia().titulo" class="noticia-imagem"
+         (error)="$any($event.target).style.display='none'">
+  </div>
+  <div class="noticia-corpo">
+    <p class="noticia-titulo-card">{{ noticia().titulo }}</p>
+    <p class="noticia-descricao">{{ noticia().descricao }}</p>
+    <span class="noticia-ler-mais">Ler mais</span>
+  </div>
+</a>

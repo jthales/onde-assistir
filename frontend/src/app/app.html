@@ -68,50 +68,11 @@
             <div class="campeonato-main">
               @if (classificacaoCampeonato(); as classif) {
                 @if (classif.tipo === 'tabela-unica') {
-                  <aside class="classificacao classificacao--destaque">
-                    <div class="classificacao-header">
-                      <h2 class="classificacao-titulo">{{ getLabelCampeonato(campeonatoSelecionado()) }}</h2>
-                    </div>
-                    <table class="classificacao-tabela classificacao-tabela--full">
-                      <thead>
-                        <tr>
-                          <th class="col-pos">#</th>
-                          <th class="col-time">Time</th>
-                          <th class="col-num col-pts-h" title="Pontos">Pts</th>
-                          <th class="col-num" title="Jogos">J</th>
-                          <th class="col-num" title="Vitórias">V</th>
-                          <th class="col-num" title="Empates">E</th>
-                          <th class="col-num" title="Derrotas">D</th>
-                          <th class="col-num col-gp-gc" title="Gols Marcados">GP</th>
-                          <th class="col-num col-gp-gc" title="Gols Sofridos">GC</th>
-                          <th class="col-num" title="Saldo de Gols">SG</th>
-                          <th class="col-num col-pct" title="Aproveitamento">%</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        @for (entry of classif.grupos[0].times; track entry.nome) {
-                          <tr>
-                            <td class="col-pos">{{ entry.posicao }}</td>
-                            <td class="col-time">
-                              @if (entry.logo) {
-                                <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
-                              }
-                              <span class="classificacao-nome classificacao-nome--full">{{ entry.nome }}</span>
-                            </td>
-                            <td class="col-num col-pts">{{ entry.pontos }}</td>
-                            <td class="col-num">{{ entry.jogos }}</td>
-                            <td class="col-num">{{ entry.vitorias }}</td>
-                            <td class="col-num">{{ entry.empates }}</td>
-                            <td class="col-num">{{ entry.derrotas }}</td>
-                            <td class="col-num col-gp-gc">{{ entry.gols }}</td>
-                            <td class="col-num col-gp-gc">{{ entry.golsSofridos }}</td>
-                            <td class="col-num" [class.saldo-positivo]="entry.saldo > 0" [class.saldo-negativo]="entry.saldo < 0">{{ entry.saldo > 0 ? '+' : '' }}{{ entry.saldo }}</td>
-                            <td class="col-num col-pct">{{ entry.jogos > 0 ? ((entry.pontos / (entry.jogos * 3)) * 100 | number:'1.0-0') : 0 }}%</td>
-                          </tr>
-                        }
-                      </tbody>
-                    </table>
-                  </aside>
+                  <app-classificacao-table
+                    [titulo]="getLabelCampeonato(campeonatoSelecionado())"
+                    [times]="classif.grupos[0].times"
+                    variant="full"
+                  />
                 } @else if (classif.tipo === 'mata-mata') {
                   <!-- Mata-Mata (Copa do Brasil) -->
                   <div class="mata-mata-section">
@@ -120,67 +81,7 @@
                     </div>
                     <div class="confrontos-grid">
                       @for (c of classif.confrontos ?? []; track c.time1.nome + c.time2.nome) {
-                        <div class="mm-card" [class.mm-card--encerrado]="c.vencedor">
-
-                          <!-- Times + Placar Agregado -->
-                          <div class="mm-teams">
-                            <div class="mm-team mm-team--left" [class.mm-team--winner]="c.vencedor === 'time1'">
-                              @if (c.time1.logo) {
-                                <img [src]="c.time1.logo" [alt]="c.time1.nome" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
-                              }
-                              <span class="mm-team-name">{{ c.time1.nome }}</span>
-                            </div>
-
-                            <div class="mm-center">
-                              @if (c.agregadoTime1 !== null) {
-                                <span class="mm-score">{{ c.agregadoTime1 }} – {{ c.agregadoTime2 }}</span>
-                                <span class="mm-score-label">agregado</span>
-                              } @else {
-                                <span class="mm-vs">vs</span>
-                              }
-                            </div>
-
-                            <div class="mm-team mm-team--right" [class.mm-team--winner]="c.vencedor === 'time2'">
-                              @if (c.time2.logo) {
-                                <img [src]="c.time2.logo" [alt]="c.time2.nome" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
-                              }
-                              <span class="mm-team-name">{{ c.time2.nome }}</span>
-                            </div>
-                          </div>
-
-                          <!-- Jogos: Ida e Volta -->
-                          <div class="mm-legs">
-                            @if (c.ida) {
-                              <div class="mm-leg" [class.mm-leg--live]="c.ida.status === 'em-andamento'">
-                                <span class="mm-leg-tag">Ida</span>
-                                <span class="mm-leg-detail">{{ formatarData(c.ida.data) }} · {{ c.ida.hora }}</span>
-                                @if (c.ida.status === 'em-andamento') {
-                                  <span class="ao-vivo-badge mm-badge-live">AO VIVO</span>
-                                } @else if (c.ida.status === 'encerrado') {
-                                  <span class="mm-leg-result">{{ c.ida.placarMandante }} – {{ c.ida.placarVisitante }}</span>
-                                }
-                              </div>
-                            }
-                            @if (c.volta) {
-                              <div class="mm-leg" [class.mm-leg--live]="c.volta.status === 'em-andamento'">
-                                <span class="mm-leg-tag mm-leg-tag--volta">Volta</span>
-                                <span class="mm-leg-detail">{{ formatarData(c.volta.data) }} · {{ c.volta.hora }}</span>
-                                @if (c.volta.status === 'em-andamento') {
-                                  <span class="ao-vivo-badge mm-badge-live">AO VIVO</span>
-                                } @else if (c.volta.status === 'encerrado') {
-                                  <span class="mm-leg-result">{{ c.volta.placarMandante }} – {{ c.volta.placarVisitante }}</span>
-                                }
-                              </div>
-                            }
-                          </div>
-
-                          @if (c.vencedor) {
-                            <div class="mm-classified">
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                              {{ c.vencedor === 'time1' ? c.time1.nome : c.time2.nome }}
-                            </div>
-                          }
-                        </div>
+                        <app-mata-mata-card [confronto]="c" />
                       }
                     </div>
                   </div>
@@ -188,38 +89,11 @@
                   <!-- Grupos (Libertadores / Sul-Americana) -->
                   <div class="grupos-grid">
                     @for (grupo of classif.grupos; track grupo.nome) {
-                      <aside class="classificacao classificacao--grupo">
-                        <div class="classificacao-header">
-                          <h2 class="classificacao-titulo">{{ grupo.nome }}</h2>
-                        </div>
-                        <table class="classificacao-tabela classificacao-tabela--grupo">
-                          <thead>
-                            <tr>
-                              <th class="col-pos">#</th>
-                              <th class="col-time">Time</th>
-                              <th class="col-num col-pts-h" title="Pontos">Pts</th>
-                              <th class="col-num" title="Jogos">J</th>
-                              <th class="col-num" title="Saldo de Gols">SG</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            @for (entry of grupo.times; track entry.nome) {
-                              <tr>
-                                <td class="col-pos">{{ entry.posicao }}</td>
-                                <td class="col-time">
-                                  @if (entry.logo) {
-                                    <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
-                                  }
-                                  <span class="classificacao-nome">{{ entry.nome }}</span>
-                                </td>
-                                <td class="col-num col-pts">{{ entry.pontos }}</td>
-                                <td class="col-num">{{ entry.jogos }}</td>
-                                <td class="col-num" [class.saldo-positivo]="entry.saldo > 0" [class.saldo-negativo]="entry.saldo < 0">{{ entry.saldo > 0 ? '+' : '' }}{{ entry.saldo }}</td>
-                              </tr>
-                            }
-                          </tbody>
-                        </table>
-                      </aside>
+                      <app-classificacao-table
+                        [titulo]="grupo.nome"
+                        [times]="grupo.times"
+                        variant="grupo"
+                      />
                     }
                   </div>
                 }
@@ -230,17 +104,7 @@
                   <h2 class="camp-section-titulo">Notícias</h2>
                   <div class="noticias-grid">
                     @for (noticia of noticiasCampeonato(); track noticia.link) {
-                      <a class="noticia-card" [href]="noticia.link" target="_blank" rel="noopener noreferrer">
-                        <div class="noticia-imagem-wrapper">
-                          <img [src]="noticia.imagem" [alt]="noticia.titulo" class="noticia-imagem"
-                               (error)="$any($event.target).style.display='none'">
-                        </div>
-                        <div class="noticia-corpo">
-                          <p class="noticia-titulo-card">{{ noticia.titulo }}</p>
-                          <p class="noticia-descricao">{{ noticia.descricao }}</p>
-                          <span class="noticia-ler-mais">Ler mais</span>
-                        </div>
-                      </a>
+                      <app-noticia-card [noticia]="noticia" />
                     }
                   </div>
                 </section>
@@ -373,17 +237,7 @@
           <h2 class="noticias-titulo">Notícias sobre {{ timeSelecionado() }}</h2>
           <div class="noticias-grid">
             @for (noticia of noticias(); track noticia.link) {
-              <a class="noticia-card" [href]="noticia.link" target="_blank" rel="noopener noreferrer">
-                <div class="noticia-imagem-wrapper">
-                  <img [src]="noticia.imagem" [alt]="noticia.titulo" class="noticia-imagem"
-                       (error)="$any($event.target).style.display='none'">
-                </div>
-                <div class="noticia-corpo">
-                  <p class="noticia-titulo-card">{{ noticia.titulo }}</p>
-                  <p class="noticia-descricao">{{ noticia.descricao }}</p>
-                  <span class="noticia-ler-mais">Ler mais</span>
-                </div>
-              </a>
+              <app-noticia-card [noticia]="noticia" />
             }
           </div>
         </section>
@@ -409,17 +263,7 @@
             <h2 class="noticias-titulo">Notícias sobre {{ timeSelecionado() }}</h2>
             <div class="noticias-grid">
               @for (noticia of noticias(); track noticia.link) {
-                <a class="noticia-card" [href]="noticia.link" target="_blank" rel="noopener noreferrer">
-                  <div class="noticia-imagem-wrapper">
-                    <img [src]="noticia.imagem" [alt]="noticia.titulo" class="noticia-imagem"
-                         (error)="$any($event.target).style.display='none'">
-                  </div>
-                  <div class="noticia-corpo">
-                    <p class="noticia-titulo-card">{{ noticia.titulo }}</p>
-                    <p class="noticia-descricao">{{ noticia.descricao }}</p>
-                    <span class="noticia-ler-mais">Ler mais</span>
-                  </div>
-                </a>
+                <app-noticia-card [noticia]="noticia" />
               }
             </div>
           </section>
@@ -427,63 +271,13 @@
         </div>
 
         @if (classificacaoProvisoria().length > 0) {
-          <aside class="classificacao">
-            <div class="classificacao-header">
-              <h2 class="classificacao-titulo">Brasileirão Série A</h2>
-              @if (temClassificacaoProvisoria()) {
-                <span class="classificacao-ao-vivo-badge">
-                  <span class="ao-vivo-dot"></span>Ao vivo
-                </span>
-              }
-            </div>
-            <table class="classificacao-tabela">
-              <thead>
-                <tr>
-                  <th class="col-pos">#</th>
-                  <th class="col-time">Time</th>
-                  <th class="col-num" title="Pontos">Pts</th>
-                  <th class="col-num" title="Jogos">J</th>
-                  <th class="col-num" title="Vitórias">V</th>
-                  <th class="col-num" title="Empates">E</th>
-                  <th class="col-num" title="Derrotas">D</th>
-                  <th class="col-num" title="Saldo de Gols">SG</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (entry of classificacaoProvisoria(); track entry.nome) {
-                  <tr [class.classificacao-linha--destaque]="timeSelecionado() === entry.nome"
-                      [class.classificacao-linha--ao-vivo]="entry.provisorio">
-                    <td class="col-pos">
-                      <span class="pos-col-inner">
-                        <span class="pos-delta-slot">
-                          @if (entry.provisorio && entry.posicaoAnterior && entry.posicaoAnterior !== entry.posicao) {
-                            @if (entry.posicaoAnterior > entry.posicao) {
-                              <span class="pos-delta pos-delta--up">▲{{ entry.posicaoAnterior - entry.posicao }}</span>
-                            } @else {
-                              <span class="pos-delta pos-delta--down">▼{{ entry.posicao - entry.posicaoAnterior }}</span>
-                            }
-                          }
-                        </span>
-                        {{ entry.posicao }}
-                      </span>
-                    </td>
-                    <td class="col-time">
-                      @if (entry.logo) {
-                        <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
-                      }
-                      <span class="classificacao-nome">{{ entry.nome }}</span>
-                    </td>
-                    <td class="col-num col-pts">{{ entry.pontos }}</td>
-                    <td class="col-num">{{ entry.jogos }}</td>
-                    <td class="col-num">{{ entry.vitorias }}</td>
-                    <td class="col-num">{{ entry.empates }}</td>
-                    <td class="col-num">{{ entry.derrotas }}</td>
-                    <td class="col-num" [class.saldo-positivo]="entry.saldo > 0" [class.saldo-negativo]="entry.saldo < 0">{{ entry.saldo > 0 ? '+' : '' }}{{ entry.saldo }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </aside>
+          <app-classificacao-table
+            titulo="Brasileirão Série A"
+            [times]="classificacaoProvisoria()"
+            variant="compact"
+            [timeSelecionado]="timeSelecionado()"
+            [mostrarBadgeLive]="temClassificacaoProvisoria()"
+          />
         }
 
       </div>
