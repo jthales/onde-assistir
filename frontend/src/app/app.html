@@ -12,28 +12,12 @@
     </div>
   </div>
 
-  <header class="hero">
-    <div class="hero-inner">
-      <div class="hero-badge">2026</div>
-      @if (campeonatoSelecionado()) {
-        <button class="btn-voltar" (click)="voltarParaHome()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-          Voltar
-        </button>
-        <h1 class="hero-title">{{ getLabelCampeonato(campeonatoSelecionado()) }}</h1>
-        <p class="hero-subtitle">{{ campeonatoSelecionado() === 'copa-do-brasil' ? 'Mata-Mata · Notícias' : 'Tabela de Classificação · Próximos Jogos · Notícias' }}</p>
-      } @else if (timeSelecionado()) {
-        <h1 class="hero-title">{{ timeSelecionado() }} — Próximos Jogos e Onde Assistir</h1>
-        <p class="hero-subtitle">Brasileirão, Libertadores e mais — TV e Streaming</p>
-      } @else {
-        <h1 class="hero-title">Onde <span class="hero-title-accent">Assistir</span> Futebol Ao Vivo — TV e Streaming no Brasil</h1>
-        <p class="hero-subtitle">Brasileirão, Libertadores e mais — TV e Streaming</p>
-      }
-      <!-- @if (descricaoSeo()) {
-        <p class="descricao-seo">{{ descricaoSeo() }}</p>
-      } -->
-    </div>
-  </header>
+  <app-hero-header
+    [campeonatoSlug]="campeonatoSelecionado()"
+    [campeonatoLabel]="getLabelCampeonato(campeonatoSelecionado())"
+    [timeSelecionado]="timeSelecionado()"
+    (voltar)="voltarParaHome()"
+  />
 
   @if (atualizacaoDisponivel()) {
     <div class="update-banner">
@@ -174,43 +158,24 @@
     } @else {
 
     <!-- ── Homepage ─────────────────────────────────────────────────────────── -->
-    <div class="times-picker">
-      <button class="time-chip time-chip--todos" [class.ativo]="timeSelecionado() === ''" (click)="selecionarTime('')">
-        Todos os times
-      </button>
-      <div class="times-grid">
-        @for (time of classificacao(); track time.nome) {
-          <button class="time-chip"
-                  [class.ativo]="timeSelecionado() === time.nome"
-                  [class.sem-jogo]="!temJogo(time.nome)"
-                  [class.notif-ativa]="timesComNotificacao().includes(time.nome)"
-                  (click)="selecionarTime(time.nome)"
-                  [title]="time.nome">
-            @if (time.logo) {
-              <img [src]="time.logo" [alt]="time.nome" class="chip-logo" (error)="$any($event.target).style.display='none'">
-            }
-            <span class="chip-initials">{{ getInitials(time.nome) }}</span>
-          </button>
-        }
-      </div>
-    </div>
+    <app-team-picker
+      [times]="classificacao()"
+      [timeSelecionado]="timeSelecionado()"
+      [timesComJogo]="timesComJogoSet()"
+      [timesComNotificacao]="timesComNotificacao()"
+      (timeSelected)="selecionarTime($event)"
+    />
 
-    <div class="filtros-bar">
-      @if (temJogoAoVivo() || filtroAoVivo()) {
-        <button class="filtro-vivo-btn" [class.ativo]="filtroAoVivo()" (click)="toggleFiltroAoVivo()">
-          <span class="ao-vivo-dot" [class.ao-vivo-dot--pulsando]="temJogoAoVivo()"></span>
-          Ao Vivo
-        </button>
-      }
-      <button class="notif-btn"
-              [class.ativo]="notifAtivaParaTimeAtual()"
-              [class.notif-btn--disabled]="!timeSelecionado()"
-              (click)="ativarNotificacoes()"
-              [title]="tituloBotaoNotificacao()">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        {{ textoBotaoNotificacao() }}
-      </button>
-    </div>
+    <app-filters-bar
+      [temJogoAoVivo]="temJogoAoVivo()"
+      [filtroAoVivo]="filtroAoVivo()"
+      [timeSelecionado]="timeSelecionado()"
+      [notifAtivaParaTimeAtual]="notifAtivaParaTimeAtual()"
+      [tituloBotaoNotificacao]="tituloBotaoNotificacao()"
+      [textoBotaoNotificacao]="textoBotaoNotificacao()"
+      (aoVivoClick)="toggleFiltroAoVivo()"
+      (notifClick)="ativarNotificacoes()"
+    />
 
     @if (loading()) {
       <div class="state-wrapper">

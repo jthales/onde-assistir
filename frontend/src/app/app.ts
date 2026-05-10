@@ -11,6 +11,9 @@ import { JogoCardComponent } from './components/jogo-card/jogo-card.component';
 import { NoticiaCardComponent } from './components/noticia-card/noticia-card.component';
 import { MataMataCardComponent } from './components/mata-mata-card/mata-mata-card.component';
 import { ClassificacaoTableComponent } from './components/classificacao-table/classificacao-table.component';
+import { HeroHeaderComponent } from './components/hero-header/hero-header.component';
+import { TeamPickerComponent } from './components/team-picker/team-picker.component';
+import { FiltersBarComponent } from './components/filters-bar/filters-bar.component';
 
 declare global {
   interface Window { gtag: (...args: any[]) => void; }
@@ -31,7 +34,7 @@ function gaPush(event: string, params: Record<string, any> = {}): void {
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, JogoCardComponent, NoticiaCardComponent, MataMataCardComponent, ClassificacaoTableComponent],
+  imports: [CommonModule, JogoCardComponent, NoticiaCardComponent, MataMataCardComponent, ClassificacaoTableComponent, HeroHeaderComponent, TeamPickerComponent, FiltersBarComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   encapsulation: ViewEncapsulation.None,
@@ -331,6 +334,10 @@ export class App implements OnInit, OnDestroy {
   });
 
   temJogoAoVivo = computed(() => this.jogos().some(j => this.eAoVivo(j)));
+
+  timesComJogoSet = computed(() =>
+    new Set<string>(this.jogos().flatMap(j => [j.timeMandante, j.timeVisitante]))
+  );
 
   classificacaoProvisoria = computed(() => {
     const base = this.classificacao();
