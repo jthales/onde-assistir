@@ -65,22 +65,7 @@
 
   @if ((eAoVivo() || eEncerrado()) && placar(); as p) {
     @if (p.gols.length > 0) {
-      <div class="gols-section">
-        <div class="gols-col gols-col--mandante">
-          @for (g of p.gols; track g.nome + g.minuto) {
-            @if (g.time === 'mandante') {
-              <span class="gol-item">⚽ {{ g.nome }} {{ g.minuto }}{{ g.penalti ? ' (P)' : g.contra ? ' (CG)' : '' }}</span>
-            }
-          }
-        </div>
-        <div class="gols-col gols-col--visitante">
-          @for (g of p.gols; track g.nome + g.minuto) {
-            @if (g.time === 'visitante') {
-              <span class="gol-item">{{ g.nome }} {{ g.minuto }}{{ g.penalti ? ' (P)' : g.contra ? ' (CG)' : '' }} ⚽</span>
-            }
-          }
-        </div>
-      </div>
+      <app-goals-section [gols]="p.gols" />
     }
   }
 
@@ -91,49 +76,11 @@
     </div>
   }
 
-  <div class="onde-assistir">
-    <span class="onde-label">Onde assistir</span>
-    @if (!mostrarOndeAssistir()) {
-      <span class="badge badge-confirmar">A definir</span>
-    } @else if (jogo().canal.length === 0 && jogo().streaming.length === 0) {
-      <span class="badge badge-confirmar">A confirmar</span>
-    } @else {
-      @if (jogo().canal.length > 0) {
-        <div class="onde-row">
-          <span class="onde-tipo">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>
-            TV
-          </span>
-          <div class="badges">
-            @for (canal of jogo().canal; track canal) {
-              @if (getStreamingUrl(canal); as url) {
-                <a [href]="url" target="_blank" rel="noopener" class="badge badge-tv badge-tv--link">{{ canal }}</a>
-              } @else {
-                <span class="badge badge-tv">{{ canal }}</span>
-              }
-            }
-          </div>
-        </div>
-      }
-      @if (jogo().streaming.length > 0) {
-        <div class="onde-row">
-          <span class="onde-tipo">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
-            Streaming
-          </span>
-          <div class="badges">
-            @for (plataforma of jogo().streaming; track plataforma) {
-              @if (getStreamingUrl(plataforma); as url) {
-                <a [href]="url" target="_blank" rel="noopener" class="badge badge-streaming badge-streaming--link">{{ plataforma }}</a>
-              } @else {
-                <span class="badge badge-streaming">{{ plataforma }}</span>
-              }
-            }
-          </div>
-        </div>
-      }
-    }
-  </div>
+  <app-broadcasting-badges
+    [canal]="jogo().canal"
+    [streaming]="jogo().streaming"
+    [mostrar]="mostrarOndeAssistir()"
+  />
 
   @if (!eEncerrado()) {
     <div class="calendario-row">
@@ -154,18 +101,7 @@
 
   @if (!eEncerrado()) {
     @if (odds(); as o) {
-      @if (o.mandante !== null || o.empate !== null || o.visitante !== null) {
-        <div class="odds-row">
-          <span class="odds-label">{{ o.provedor ?? 'Odds' }}</span>
-          <div class="odds-values">
-            <span class="odds-item" [title]="jogo().timeMandante"><span class="odds-key">1</span> {{ o.mandante | number:'1.2-2' }}</span>
-            <span class="odds-sep">·</span>
-            <span class="odds-item" title="Empate"><span class="odds-key">X</span> {{ o.empate | number:'1.2-2' }}</span>
-            <span class="odds-sep">·</span>
-            <span class="odds-item" [title]="jogo().timeVisitante"><span class="odds-key">2</span> {{ o.visitante | number:'1.2-2' }}</span>
-          </div>
-        </div>
-      }
+      <app-odds-row [odds]="o" [timeMandante]="jogo().timeMandante" [timeVisitante]="jogo().timeVisitante" />
     }
   }
 </div>

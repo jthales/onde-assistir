@@ -1,16 +1,6 @@
 <div class="page">
 
-  <div class="pull-indicator"
-       [class.pull-indicator--ready]="pullDistance() >= 72"
-       [class.pull-indicator--refreshing]="isRefreshing()"
-       [style.transform]="'translateX(-50%) translateY(' + (isRefreshing() ? 64 : pullDistance()) + 'px)'"
-       [style.opacity]="isRefreshing() ? 1 : pullDistance() / 72">
-    <div class="pull-spinner" [class.pull-spinner--spin]="isRefreshing()">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-      </svg>
-    </div>
-  </div>
+  <app-pull-to-refresh [pullDistance]="pullDistance()" [isRefreshing]="isRefreshing()" />
 
   <app-hero-header
     [campeonatoSlug]="campeonatoSelecionado()"
@@ -20,17 +10,14 @@
   />
 
   @if (atualizacaoDisponivel()) {
-    <div class="update-banner">
-      <span>Nova versão disponível!</span>
-      <button (click)="aplicarAtualizacao()">Atualizar</button>
-    </div>
+    <app-update-banner (atualizar)="aplicarAtualizacao()" />
   }
 
-  @if (golToast()) {
-    <div class="gol-toast">{{ golToast() }}</div>
+  @if (golToast(); as msg) {
+    <app-toast [mensagem]="msg" tipo="gol" />
   }
-  @if (notifToast()) {
-    <div class="notif-toast">{{ notifToast() }}</div>
+  @if (notifToast(); as msg) {
+    <app-toast [mensagem]="msg" tipo="notif" />
   }
 
   <main class="container">
@@ -41,10 +28,7 @@
       <div class="campeonato-page">
 
         @if (loadingCampeonato()) {
-          <div class="state-wrapper">
-            <div class="spinner"></div>
-            <p class="state-text">Carregando classificação...</p>
-          </div>
+          <app-loading-spinner texto="Carregando classificação..." />
         } @else {
           <div class="campeonato-layout">
 
@@ -178,10 +162,7 @@
     />
 
     @if (loading()) {
-      <div class="state-wrapper">
-        <div class="spinner"></div>
-        <p class="state-text">Carregando jogos...</p>
-      </div>
+      <app-loading-spinner texto="Carregando jogos..." />
     } @else if (error()) {
       <div class="state-error">
         <div class="state-error-icon">⚠️</div>
@@ -260,17 +241,7 @@
   </footer>
 
   @if (showConsentBanner()) {
-    <div class="consent-banner" role="dialog" aria-label="Aviso de cookies">
-      <div class="consent-content">
-        <p class="consent-text">
-          Usamos cookies de analytics para entender como o site é usado e melhorá-lo. Nenhum dado pessoal é vendido.
-        </p>
-        <div class="consent-actions">
-          <button class="consent-btn consent-btn--decline" (click)="recusarConsentimento()">Recusar</button>
-          <button class="consent-btn consent-btn--accept" (click)="aceitarConsentimento()">Aceitar</button>
-        </div>
-      </div>
-    </div>
+    <app-consent-banner (aceitar)="aceitarConsentimento()" (recusar)="recusarConsentimento()" />
   }
 
 </div>

@@ -14,6 +14,11 @@ import { ClassificacaoTableComponent } from './components/classificacao-table/cl
 import { HeroHeaderComponent } from './components/hero-header/hero-header.component';
 import { TeamPickerComponent } from './components/team-picker/team-picker.component';
 import { FiltersBarComponent } from './components/filters-bar/filters-bar.component';
+import { PullToRefreshComponent } from './components/pull-to-refresh/pull-to-refresh.component';
+import { ToastComponent } from './components/toast/toast.component';
+import { UpdateBannerComponent } from './components/update-banner/update-banner.component';
+import { ConsentBannerComponent } from './components/consent-banner/consent-banner.component';
+import { LoadingSpinnerComponent } from './components/loading-spinner/loading-spinner.component';
 
 declare global {
   interface Window { gtag: (...args: any[]) => void; }
@@ -34,7 +39,7 @@ function gaPush(event: string, params: Record<string, any> = {}): void {
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, JogoCardComponent, NoticiaCardComponent, MataMataCardComponent, ClassificacaoTableComponent, HeroHeaderComponent, TeamPickerComponent, FiltersBarComponent],
+  imports: [CommonModule, JogoCardComponent, NoticiaCardComponent, MataMataCardComponent, ClassificacaoTableComponent, HeroHeaderComponent, TeamPickerComponent, FiltersBarComponent, PullToRefreshComponent, ToastComponent, UpdateBannerComponent, ConsentBannerComponent, LoadingSpinnerComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   encapsulation: ViewEncapsulation.None,

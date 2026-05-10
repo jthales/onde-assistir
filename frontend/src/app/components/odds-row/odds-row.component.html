@@ -1,0 +1,12 @@
+@if (odds().mandante !== null || odds().empate !== null || odds().visitante !== null) {
+  <div class="odds-row">
+    <span class="odds-label">{{ odds().provedor ?? 'Odds' }}</span>
+    <div class="odds-values">
+      <span class="odds-item" [title]="timeMandante()"><span class="odds-key">1</span> {{ odds().mandante | number:'1.2-2' }}</span>
+      <span class="odds-sep">·</span>
+      <span class="odds-item" title="Empate"><span class="odds-key">X</span> {{ odds().empate | number:'1.2-2' }}</span>
+      <span class="odds-sep">·</span>
+      <span class="odds-item" [title]="timeVisitante()"><span class="odds-key">2</span> {{ odds().visitante | number:'1.2-2' }}</span>
+    </div>
+  </div>
+}

@@ -1,0 +1,43 @@
+<div class="onde-assistir">
+  <span class="onde-label">Onde assistir</span>
+  @if (!mostrar()) {
+    <span class="badge badge-confirmar">A definir</span>
+  } @else if (canal().length === 0 && streaming().length === 0) {
+    <span class="badge badge-confirmar">A confirmar</span>
+  } @else {
+    @if (canal().length > 0) {
+      <div class="onde-row">
+        <span class="onde-tipo">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>
+          TV
+        </span>
+        <div class="badges">
+          @for (c of canal(); track c) {
+            @if (getStreamingUrl(c); as url) {
+              <a [href]="url" target="_blank" rel="noopener" class="badge badge-tv badge-tv--link">{{ c }}</a>
+            } @else {
+              <span class="badge badge-tv">{{ c }}</span>
+            }
+          }
+        </div>
+      </div>
+    }
+    @if (streaming().length > 0) {
+      <div class="onde-row">
+        <span class="onde-tipo">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+          Streaming
+        </span>
+        <div class="badges">
+          @for (s of streaming(); track s) {
+            @if (getStreamingUrl(s); as url) {
+              <a [href]="url" target="_blank" rel="noopener" class="badge badge-streaming badge-streaming--link">{{ s }}</a>
+            } @else {
+              <span class="badge badge-streaming">{{ s }}</span>
+            }
+          }
+        </div>
+      </div>
+    }
+  }
+</div>

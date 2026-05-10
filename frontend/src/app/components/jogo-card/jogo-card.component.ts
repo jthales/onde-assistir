@@ -1,12 +1,14 @@
 import { Component, input, output, ViewEncapsulation } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { Jogo, Placar, Odds } from '../../models/jogo';
 import { teamInitials } from '../../team-logos';
+import { GoalsSectionComponent } from '../goals-section/goals-section.component';
+import { BroadcastingBadgesComponent } from '../broadcasting-badges/broadcasting-badges.component';
+import { OddsRowComponent } from '../odds-row/odds-row.component';
 
 @Component({
   selector: 'app-jogo-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [GoalsSectionComponent, BroadcastingBadgesComponent, OddsRowComponent],
   templateUrl: './jogo-card.component.html',
   styleUrl: './jogo-card.component.scss',
   encapsulation: ViewEncapsulation.None,
@@ -21,27 +23,6 @@ export class JogoCardComponent {
   toggleNotif = output<void>();
 
   getInitials = teamInitials;
-
-  private readonly STREAMING_URLS: Record<string, string> = {
-    'Globoplay':          'https://globoplay.globo.com',
-    'Premiere':           'https://globoplay.globo.com',
-    'SporTV':             'https://globoplay.globo.com',
-    'SporTV 2':           'https://globoplay.globo.com',
-    'SporTV 3':           'https://globoplay.globo.com',
-    'Cazé TV':            'https://www.youtube.com/cazetv',
-    'CazéTV':             'https://www.youtube.com/cazetv',
-    'Ge TV':              'https://www.youtube.com/geglobo',
-    'Paramount+':         'https://www.paramountplus.com/br',
-    'Amazon Prime Video': 'https://www.primevideo.com',
-    'Prime Video':        'https://www.primevideo.com',
-    'Disney+':            'https://www.disneyplus.com/pt-br',
-    'DAZN':               'https://www.dazn.com/pt-BR',
-    'TNT Sports':         'https://tntbrasil.com.br',
-    'ESPN':               'https://www.espn.com.br',
-    'Record':             'https://www.r7.com/ao-vivo',
-    'Record TV':          'https://www.r7.com/ao-vivo',
-    'SBT':                'https://www.sbt.com.br/ao-vivo',
-  };
 
   eAoVivo(): boolean {
     const p = this.placar();
@@ -90,10 +71,6 @@ export class JogoCardComponent {
     const data = this.formatarData(j.data);
     const hora = j.hora && j.hora !== '00:00' ? ` às ${j.hora}` : '';
     return `${j.timeMandante} x ${j.timeVisitante} — ${data}${hora}`;
-  }
-
-  getStreamingUrl(plataforma: string): string | null {
-    return this.STREAMING_URLS[plataforma] ?? null;
   }
 
   buildCalendarUrl(): string {

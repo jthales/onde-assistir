@@ -1,0 +1,16 @@
+<div class="gols-section">
+  <div class="gols-col gols-col--mandante">
+    @for (g of gols(); track g.nome + g.minuto) {
+      @if (g.time === 'mandante') {
+        <span class="gol-item">⚽ {{ g.nome }} {{ g.minuto }}{{ g.penalti ? ' (P)' : g.contra ? ' (CG)' : '' }}</span>
+      }
+    }
+  </div>
+  <div class="gols-col gols-col--visitante">
+    @for (g of gols(); track g.nome + g.minuto) {
+      @if (g.time === 'visitante') {
+        <span class="gol-item">{{ g.nome }} {{ g.minuto }}{{ g.penalti ? ' (P)' : g.contra ? ' (CG)' : '' }} ⚽</span>
+      }
+    }
+  </div>
+</div>
