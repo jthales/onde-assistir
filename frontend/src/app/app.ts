@@ -5,6 +5,7 @@ import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs/operators';
 import { interval, forkJoin } from 'rxjs';
 import { JogosService } from './services/jogos.service';
+import { PushNotificacaoService } from './services/push-notificacao.service';
 import { Jogo, Placar, Odds, ClassificacaoEntry, Noticia, ClassificacaoResponse, JogoCampeonato } from './models/jogo';
 import { teamInitials } from './team-logos';
 
@@ -390,8 +391,11 @@ export class App implements OnInit, OnDestroy {
     return new Date() >= inicio && new Date() < fim;
   }
 
+  private fcmToken: string | null = null;
+
   constructor(
     private jogosService: JogosService,
+    private pushService: PushNotificacaoService,
     private meta: Meta,
     private titleService: Title,
     private el: ElementRef,
@@ -785,6 +789,13 @@ export class App implements OnInit, OnDestroy {
       this.salvarTimesNotificacao(next);
       this.mostrarNotifToast(`🔕 Notificações desativadas para ${selected}`);
       gaPush('notif_time', { time: selected, acao: 'desativar' });
+      if (this.fcmToken) {
+        if (next.length === 0 && this.jogosComNotificacao().length === 0) {
+          this.pushService.removerSubscricao(this.fcmToken);
+        } else {
+          this.pushService.salvarSubscricao(this.fcmToken, next, this.jogosComNotificacao());
+        }
+      }
       return;
     }
 
@@ -798,6 +809,7 @@ export class App implements OnInit, OnDestroy {
     this.salvarTimesNotificacao(next);
     this.mostrarNotifToast(`🔔 Notificações ativadas para ${selected}`);
     gaPush('notif_time', { time: selected, acao: 'ativar' });
+    await this.sincronizarFcmSubscricao(next, this.jogosComNotificacao());
   }
 
   private mostrarNotifToast(msg: string): void {
@@ -840,6 +852,25 @@ export class App implements OnInit, OnDestroy {
       time_visitante: jogo.timeVisitante,
       acao: ativando ? 'ativar' : 'desativar',
     });
+
+    const times = this.timesComNotificacao();
+    if (!ativando && next.length === 0 && times.length === 0 && this.fcmToken) {
+      this.pushService.removerSubscricao(this.fcmToken);
+    } else {
+      await this.sincronizarFcmSubscricao(times, next);
+    }
+  }
+
+  private async sincronizarFcmSubscricao(times: string[], jogos: string[]): Promise<void> {
+    if (times.length === 0 && jogos.length === 0) return;
+    try {
+      if (!this.fcmToken) {
+        this.fcmToken = await this.pushService.getToken();
+      }
+      if (this.fcmToken) {
+        this.pushService.salvarSubscricao(this.fcmToken, times, jogos);
+      }
+    } catch {}
   }
 
   textoBotaoNotificacao(): string {

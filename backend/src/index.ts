@@ -68,7 +68,107 @@ app.get('/api/jogos', async (_req, res) => {
   }
 });
 
-// Cache em memória — máx 2 chamadas/min à ESPN
+// ── Subscrições FCM ─────────────────────────────────────────────────────────
+
+app.post('/api/subscricao', async (req, res) => {
+  const { fcmToken, times, jogos } = req.body ?? {};
+  if (!fcmToken || typeof fcmToken !== 'string') {
+    res.status(400).json({ error: 'fcmToken obrigatório' });
+    return;
+  }
+  try {
+    await db.collection('subscricoes').doc(fcmToken).set({
+      fcmToken,
+      times: times ?? [],
+      jogos: jogos ?? [],
+      updatedAt: new Date(),
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('Erro ao salvar subscrição:', e);
+    res.status(500).json({ error: 'Falha ao salvar subscrição' });
+  }
+});
+
+app.delete('/api/subscricao/:token', async (req, res) => {
+  const token = req.params['token'];
+  try {
+    await db.collection('subscricoes').doc(token).delete();
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('Erro ao remover subscrição:', e);
+    res.status(500).json({ error: 'Falha ao remover subscrição' });
+  }
+});
+
+// ── Estado de placares para detecção de gols (Fase 4) ───────────────────────
+const estadoPlacarMemoria = new Map<string, { mandante: number; visitante: number }>();
+let estadoPlacarInicializado = false;
+
+async function dispararNotificacoesGol(placares: any[]): Promise<void> {
+  const admin = await import('firebase-admin');
+  const messaging = admin.messaging();
+
+  for (const p of placares) {
+    if (p.status !== 'em-andamento') continue;
+    if (p.placarMandante == null || p.placarVisitante == null) continue;
+
+    const key = `${p.data}_${p.timeMandante}_${p.timeVisitante}`;
+    const prev = estadoPlacarMemoria.get(key);
+    const totalNovo = p.placarMandante + p.placarVisitante;
+    const totalPrev = prev ? prev.mandante + prev.visitante : 0;
+
+    estadoPlacarMemoria.set(key, { mandante: p.placarMandante, visitante: p.placarVisitante });
+
+    if (!estadoPlacarInicializado || !prev || totalNovo <= totalPrev) continue;
+
+    // Detectou gol — buscar assinantes relevantes
+    const jogoKey = key;
+    try {
+      const snap = await db.collection('subscricoes').get();
+      const tokens: string[] = [];
+      for (const doc of snap.docs) {
+        const sub = doc.data();
+        const relevante =
+          (sub['times'] as string[])?.includes(p.timeMandante) ||
+          (sub['times'] as string[])?.includes(p.timeVisitante) ||
+          (sub['jogos'] as string[])?.includes(jogoKey);
+        if (relevante && sub['fcmToken']) tokens.push(sub['fcmToken']);
+      }
+      if (tokens.length === 0) continue;
+
+      const body = `${p.timeMandante} ${p.placarMandante} x ${p.placarVisitante} ${p.timeVisitante}`;
+      const result = await messaging.sendEachForMulticast({
+        tokens,
+        notification: {
+          title: '⚽ GOL!',
+          body,
+        },
+        webpush: {
+          notification: {
+            icon: '/favicon/icon-512x512.svg',
+            tag: `gol-${p.timeMandante}-${p.timeVisitante}`,
+          },
+          fcmOptions: { link: '/' },
+        },
+      });
+
+      // Remover tokens inválidos
+      const tokensInvalidos = result.responses
+        .map((r: any, i: number) => (!r.success ? tokens[i] : null))
+        .filter(Boolean) as string[];
+      for (const t of tokensInvalidos) {
+        db.collection('subscricoes').doc(t).delete().catch(() => {});
+      }
+    } catch (e) {
+      console.error('Erro ao enviar FCM para gol:', e);
+    }
+  }
+
+  estadoPlacarInicializado = true;
+}
+
+// ── Cache em memória — máx 2 chamadas/min à ESPN ─────────────────────────────
 let placarCache: { dados: any[]; fetchedAt: number } | null = null;
 const CACHE_TTL_MS = 10_000;
 
@@ -197,6 +297,9 @@ app.get('/api/placar', async (_req, res) => {
     for (const p of placares) {
       if (p.status === 'encerrado') salvarResultado(p);
     }
+
+    // Detectar gols e enviar FCM (fire-and-forget)
+    dispararNotificacoesGol(placares).catch(() => {});
 
     // Mesclar com resultados salvos: ESPN tem prioridade
     const savedResultados = await getSavedResultados();
