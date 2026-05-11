@@ -68,6 +68,34 @@ app.get('/api/jogos', async (_req, res) => {
   }
 });
 
+// ── Endpoint de teste de push (remover após validação) ───────────────────────
+
+app.post('/api/test-push', async (req, res) => {
+  const { titulo, corpo } = req.body ?? {};
+  try {
+    const admin = await import('firebase-admin');
+    const snap = await db.collection('subscricoes').get();
+    if (snap.empty) { res.json({ ok: true, enviados: 0, msg: 'Nenhum assinante cadastrado' }); return; }
+    const tokens = snap.docs.map(d => d.data()['fcmToken'] as string).filter(Boolean);
+    if (tokens.length === 0) { res.json({ ok: true, enviados: 0 }); return; }
+    const result = await admin.messaging().sendEachForMulticast({
+      tokens,
+      notification: {
+        title: titulo ?? '⚽ GOL! (teste)',
+        body: corpo ?? 'Flamengo 1 x 0 Palmeiras — Notificação de teste',
+      },
+      webpush: {
+        notification: { icon: '/favicon/icon-512x512.svg', tag: 'teste-push' },
+        fcmOptions: { link: '/' },
+      },
+    });
+    res.json({ ok: true, enviados: result.successCount, falhas: result.failureCount });
+  } catch (e: any) {
+    console.error('Erro no test-push:', e);
+    res.status(500).json({ error: String(e?.message ?? e) });
+  }
+});
+
 // ── Subscrições FCM ─────────────────────────────────────────────────────────
 
 app.post('/api/subscricao', async (req, res) => {
