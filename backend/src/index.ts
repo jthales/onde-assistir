@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import { Jogo } from './types';
 import { db } from './firebase';
 import { espnScoreboardUrlForLeague, ESPN_LEAGUES, TEAM_NAME_MAP, TEAM_ESPN_ID_MAP, LIGA_SLUG_TO_ESPN, LIGA_SLUG_LABEL } from './constants';
@@ -17,17 +18,30 @@ app.use(cors({
 }));
 app.use(express.json());
 
+app.use('/api/', rateLimit({
+  windowMs: 60_000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Muitas requisições. Tente novamente em breve.' },
+}));
+
+let jogosCache: { dados: Jogo[]; fetchedAt: number } | null = null;
+const JOGOS_CACHE_TTL_MS = 5 * 60_000;
+
 app.get('/api/jogos', async (_req, res) => {
+  const agora = Date.now();
+  if (jogosCache && agora - jogosCache.fetchedAt < JOGOS_CACHE_TTL_MS) {
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    res.json(jogosCache.dados);
+    return;
+  }
+
   try {
     const hojeStr = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const snap = await db.collection('jogos').where('data', '>=', hojeStr).get();
 
-    if (snap.empty) {
-      res.json([]);
-      return;
-    }
-
-    const jogos: Jogo[] = snap.docs.map((doc) => {
+    const jogos: Jogo[] = snap.empty ? [] : snap.docs.map((doc) => {
       const d = doc.data();
       return {
         rodada: d['rodada'],
@@ -44,9 +58,12 @@ app.get('/api/jogos', async (_req, res) => {
       };
     });
 
+    jogosCache = { dados: jogos, fetchedAt: Date.now() };
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
     res.json(jogos);
   } catch (error) {
     console.error('Erro ao buscar jogos do Firestore:', error);
+    if (jogosCache) { res.json(jogosCache.dados); return; }
     res.status(500).json({ error: 'Falha ao buscar jogos' });
   }
 });
@@ -111,6 +128,7 @@ app.get('/api/placar', async (_req, res) => {
   const agora = Date.now();
 
   if (placarCache && agora - placarCache.fetchedAt < CACHE_TTL_MS) {
+    res.setHeader('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=20');
     res.json(placarCache.dados);
     return;
   }
@@ -189,6 +207,7 @@ app.get('/api/placar', async (_req, res) => {
     const merged = [...placares, ...extras];
 
     placarCache = { dados: merged, fetchedAt: Date.now() };
+    res.setHeader('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=20');
     res.json(merged);
   } catch (error) {
     console.error('Erro ao buscar placares da ESPN:', error);
@@ -205,6 +224,7 @@ app.get('/api/odds', async (_req, res) => {
   const agora = Date.now();
 
   if (oddsCache && agora - oddsCache.fetchedAt < ODDS_CACHE_TTL_MS) {
+    res.setHeader('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=20');
     res.json(oddsCache.dados);
     return;
   }
@@ -287,6 +307,7 @@ app.get('/api/odds', async (_req, res) => {
       .map(r => r.value);
 
     oddsCache = { dados: odds, fetchedAt: Date.now() };
+    res.setHeader('Cache-Control', 'public, s-maxage=10, stale-while-revalidate=20');
     res.json(odds);
   } catch (error) {
     console.error('Erro ao buscar odds:', error);
@@ -303,6 +324,7 @@ app.get('/api/classificacao', async (_req, res) => {
   const agora = Date.now();
 
   if (classificacaoCache && agora - classificacaoCache.fetchedAt < CLASSIFICACAO_CACHE_TTL_MS) {
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
     res.json(classificacaoCache.dados);
     return;
   }
@@ -330,6 +352,7 @@ app.get('/api/classificacao', async (_req, res) => {
     }));
 
     classificacaoCache = { dados, fetchedAt: agora };
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
     res.json(dados);
   } catch (error) {
     console.error('Erro ao buscar classificação:', error);
@@ -484,6 +507,7 @@ app.get('/api/classificacao/:liga', async (req, res) => {
   const agora = Date.now();
   const cached = classificacaoCampeonatoCache.get(liga);
   if (cached && agora - cached.fetchedAt < CLASSIFICACAO_CACHE_TTL_MS) {
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
     res.json(cached.dados); return;
   }
 
@@ -518,6 +542,7 @@ app.get('/api/classificacao/:liga', async (req, res) => {
     }
 
     classificacaoCampeonatoCache.set(liga, { dados: resultado, fetchedAt: agora });
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
     res.json(resultado);
   } catch (error) {
     console.error(`Erro ao buscar classificação de ${liga}:`, error);
@@ -538,6 +563,7 @@ app.get('/api/jogos-campeonato/:liga', async (req, res) => {
   const agora = Date.now();
   const cached = jogosCampeonatoCache.get(liga);
   if (cached && agora - cached.fetchedAt < JOGOS_CAMP_CACHE_TTL_MS) {
+    res.setHeader('Cache-Control', 'public, s-maxage=900, stale-while-revalidate=1800');
     res.json(cached.dados); return;
   }
 
@@ -573,6 +599,7 @@ app.get('/api/jogos-campeonato/:liga', async (req, res) => {
     });
 
     jogosCampeonatoCache.set(liga, { dados: jogos, fetchedAt: agora });
+    res.setHeader('Cache-Control', 'public, s-maxage=900, stale-while-revalidate=1800');
     res.json(jogos);
   } catch (error) {
     console.error(`Erro ao buscar jogos de ${liga}:`, error);
@@ -591,6 +618,7 @@ app.get('/api/noticias-campeonato/:liga', async (req, res) => {
   const agora = Date.now();
   const cached = noticiasCache.get(cacheKey);
   if (cached && agora - cached.fetchedAt < NOTICIAS_CACHE_TTL_MS) {
+    res.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1200');
     res.json(cached.dados); return;
   }
 
@@ -607,6 +635,7 @@ app.get('/api/noticias-campeonato/:liga', async (req, res) => {
       publicadoEm: article.published ?? '',
     }));
     noticiasCache.set(cacheKey, { dados: noticias, fetchedAt: agora });
+    res.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1200');
     res.json(noticias);
   } catch (error) {
     console.error(`Erro ao buscar notícias de ${liga}:`, error);
@@ -682,7 +711,7 @@ app.get('/og', async (req, res) => {
   }
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=3600, stale-while-revalidate=7200');
   res.send(`<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -728,6 +757,7 @@ app.get('/api/noticias/:timeSlug', async (req, res) => {
   const agora = Date.now();
   const cached = noticiasCache.get(timeSlug);
   if (cached && agora - cached.fetchedAt < NOTICIAS_CACHE_TTL_MS) {
+    res.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1200');
     res.json(cached.dados);
     return;
   }
@@ -747,6 +777,7 @@ app.get('/api/noticias/:timeSlug', async (req, res) => {
     }));
 
     noticiasCache.set(timeSlug, { dados: noticias, fetchedAt: agora });
+    res.setHeader('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1200');
     res.json(noticias);
   } catch (error) {
     console.error(`Erro ao buscar notícias para ${timeSlug}:`, error);
@@ -776,7 +807,7 @@ app.get('/sitemap.xml', async (_req, res) => {
     ].join('\n');
 
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=7200');
     res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`);
   } catch (e) {
     console.error('Erro ao gerar sitemap:', e);
