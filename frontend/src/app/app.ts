@@ -68,6 +68,9 @@ export class App implements OnInit, OnDestroy {
   private notifToastTimer?: ReturnType<typeof setTimeout>;
   private golToastTimer?: ReturnType<typeof setTimeout>;
   private prevGoalCounts = new Map<string, number>();
+  private isLoadingPlacar = false;
+  private isLoadingOdds = false;
+  private isLoadingClassificacao = false;
 
   readonly jogosCampeonatoAgrupados = computed(() => {
     const jogos = this.jogosCampeonato().slice(0, 10);
@@ -695,8 +698,8 @@ export class App implements OnInit, OnDestroy {
 
   private atualizarPlacar(): void {
     const temAtivo = this.jogos().some(j => this.eAoVivo(j) || this.podeTerPlacar(j));
-    if (!temAtivo) return;
-    this.atualizarOdds();
+    if (!temAtivo || this.isLoadingPlacar) return;
+    this.isLoadingPlacar = true;
     this.jogosService.getPlacar().subscribe({
       next: (lista) => {
         const map = new Map<string, Placar>();
@@ -705,7 +708,9 @@ export class App implements OnInit, OnDestroy {
         }
         this.verificarGols(map);
         this.placares.set(map);
-      }
+      },
+      complete: () => { this.isLoadingPlacar = false; },
+      error: () => { this.isLoadingPlacar = false; },
     });
   }
 
@@ -849,12 +854,18 @@ export class App implements OnInit, OnDestroy {
   }
 
   private atualizarClassificacao(): void {
+    if (this.isLoadingClassificacao) return;
+    this.isLoadingClassificacao = true;
     this.jogosService.getClassificacao().subscribe({
       next: (lista) => this.classificacao.set(lista),
+      complete: () => { this.isLoadingClassificacao = false; },
+      error: () => { this.isLoadingClassificacao = false; },
     });
   }
 
   private atualizarOdds(): void {
+    if (this.isLoadingOdds) return;
+    this.isLoadingOdds = true;
     this.jogosService.getOdds().subscribe({
       next: (lista) => {
         const map = new Map<string, Odds>();
@@ -862,7 +873,9 @@ export class App implements OnInit, OnDestroy {
           map.set(this.placarKey(o.timeMandante, o.timeVisitante, o.data), o);
         }
         this.odds.set(map);
-      }
+      },
+      complete: () => { this.isLoadingOdds = false; },
+      error: () => { this.isLoadingOdds = false; },
     });
   }
 
