@@ -338,15 +338,7 @@ body {
   gap: 0.875rem;
 }
 
-app-jogo-card {
-  display: flex;
-  min-width: 0;
-
-  .jogo-card {
-    flex: 1;
-  }
-}
-
+app-jogo-card,
 app-noticia-card,
 app-mata-mata-card,
 app-classificacao-table,
