@@ -784,6 +784,7 @@ export class App implements OnInit, OnDestroy {
       this.timesComNotificacao.set(next);
       this.salvarTimesNotificacao(next);
       this.mostrarNotifToast(`🔕 Notificações desativadas para ${selected}`);
+      gaPush('notif_time', { time: selected, acao: 'desativar' });
       return;
     }
 
@@ -796,6 +797,7 @@ export class App implements OnInit, OnDestroy {
     this.timesComNotificacao.set(next);
     this.salvarTimesNotificacao(next);
     this.mostrarNotifToast(`🔔 Notificações ativadas para ${selected}`);
+    gaPush('notif_time', { time: selected, acao: 'ativar' });
   }
 
   private mostrarNotifToast(msg: string): void {
@@ -832,6 +834,12 @@ export class App implements OnInit, OnDestroy {
     this.salvarJogosNotificacao(next);
     const label = `${jogo.timeMandante} x ${jogo.timeVisitante}`;
     this.mostrarNotifToast(ativando ? `🔔 Notificando ${label}` : `🔕 Notificações desativadas para ${label}`);
+    gaPush('notif_jogo', {
+      jogo: label,
+      time_mandante: jogo.timeMandante,
+      time_visitante: jogo.timeVisitante,
+      acao: ativando ? 'ativar' : 'desativar',
+    });
   }
 
   textoBotaoNotificacao(): string {
