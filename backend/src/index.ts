@@ -146,11 +146,31 @@ async function dispararNotificacoesGol(placares: any[]): Promise<void> {
     const totalNovo = p.placarMandante + p.placarVisitante;
     const totalPrev = prev ? prev.mandante + prev.visitante : 0;
 
-    estadoPlacarMemoria.set(key, { mandante: p.placarMandante, visitante: p.placarVisitante });
+    // Só atualiza estado se o placar não diminuiu — evita glitch da ESPN resetar o estado
+    if (!prev || totalNovo >= totalPrev) {
+      estadoPlacarMemoria.set(key, { mandante: p.placarMandante, visitante: p.placarVisitante });
+    }
 
     if (!estadoPlacarInicializado || !prev || totalNovo <= totalPrev) continue;
 
-    // Detectou gol — buscar assinantes relevantes
+    // Detectou gol — deduplicar via Firestore antes de enviar (protege contra múltiplas instâncias/reinicializações)
+    const golKey = `${key}_${p.placarMandante}x${p.placarVisitante}`;
+    try {
+      const golRef = db.collection('gols-notificados').doc(golKey);
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(golRef);
+        if (snap.exists) throw new Error('already-sent');
+        tx.set(golRef, { sentAt: new Date().toISOString(), placar: `${p.placarMandante}x${p.placarVisitante}` });
+      });
+    } catch (e: any) {
+      if (e.message === 'already-sent') {
+        console.log(`[FCM] Gol ${golKey} já notificado, ignorando duplicata`);
+        continue;
+      }
+      console.error('[FCM] Erro na deduplicação, prosseguindo mesmo assim:', e);
+    }
+
+    // Buscar assinantes relevantes
     const jogoKey = key;
     try {
       const snap = await db.collection('subscricoes').get();
