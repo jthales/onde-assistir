@@ -433,8 +433,9 @@
                 <div class="time-logo">
                   @if (jogo.logoMandante) {
                     <img [src]="jogo.logoMandante" [alt]="jogo.timeMandante" class="logo-img" (error)="$any($event.target).style.display='none'">
+                  } @else {
+                    <span class="logo-initials">{{ getInitials(jogo.timeMandante) }}</span>
                   }
-                  <span class="logo-initials">{{ getInitials(jogo.timeMandante) }}</span>
                 </div>
                 <span class="time-nome">{{ jogo.timeMandante }}</span>
                 <span class="time-label">Casa</span>
@@ -455,8 +456,9 @@
                 <div class="time-logo">
                   @if (jogo.logoVisitante) {
                     <img [src]="jogo.logoVisitante" [alt]="jogo.timeVisitante" class="logo-img" (error)="$any($event.target).style.display='none'">
+                  } @else {
+                    <span class="logo-initials">{{ getInitials(jogo.timeVisitante) }}</span>
                   }
-                  <span class="logo-initials">{{ getInitials(jogo.timeVisitante) }}</span>
                 </div>
                 <span class="time-nome">{{ jogo.timeVisitante }}</span>
                 <span class="time-label">Fora</span>
