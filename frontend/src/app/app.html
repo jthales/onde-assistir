@@ -93,10 +93,12 @@
                           <tr>
                             <td class="col-pos">{{ entry.posicao }}</td>
                             <td class="col-time">
-                              @if (entry.logo) {
-                                <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
-                              }
-                              <span class="classificacao-nome classificacao-nome--full">{{ entry.nome }}</span>
+                              <div class="col-time-inner">
+                                @if (entry.logo) {
+                                  <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                                }
+                                <span class="classificacao-nome classificacao-nome--full">{{ entry.nome }}</span>
+                              </div>
                             </td>
                             <td class="col-num col-pts">{{ entry.pontos }}</td>
                             <td class="col-num">{{ entry.jogos }}</td>
@@ -207,10 +209,12 @@
                               <tr>
                                 <td class="col-pos">{{ entry.posicao }}</td>
                                 <td class="col-time">
-                                  @if (entry.logo) {
-                                    <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
-                                  }
-                                  <span class="classificacao-nome">{{ entry.nome }}</span>
+                                  <div class="col-time-inner">
+                                    @if (entry.logo) {
+                                      <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                                    }
+                                    <span class="classificacao-nome">{{ entry.nome }}</span>
+                                  </div>
                                 </td>
                                 <td class="col-num col-pts">{{ entry.pontos }}</td>
                                 <td class="col-num">{{ entry.jogos }}</td>
@@ -632,10 +636,12 @@
                       </span>
                     </td>
                     <td class="col-time">
-                      @if (entry.logo) {
-                        <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
-                      }
-                      <span class="classificacao-nome">{{ entry.nome }}</span>
+                      <div class="col-time-inner">
+                        @if (entry.logo) {
+                          <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                        }
+                        <span class="classificacao-nome">{{ entry.nome }}</span>
+                      </div>
                     </td>
                     <td class="col-num col-pts">{{ entry.pontos }}</td>
                     <td class="col-num">{{ entry.jogos }}</td>

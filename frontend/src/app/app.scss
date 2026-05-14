@@ -1001,8 +1001,11 @@ body {
 
 .col-time {
   text-align: left !important;
-  @include flex(0.35rem);
   padding-left: 0.25rem;
+}
+
+.col-time-inner {
+  @include flex(0.35rem);
 }
 
 .col-num { width: 28px; }
