@@ -167,7 +167,8 @@ async function dispararNotificacoesGol(placares: any[]): Promise<void> {
         console.log(`[FCM] Gol ${golKey} já notificado, ignorando duplicata`);
         continue;
       }
-      console.error('[FCM] Erro na deduplicação, prosseguindo mesmo assim:', e);
+      console.error('[FCM] Erro na deduplicação, pulando notificação para evitar duplicata:', e);
+      continue;
     }
 
     // Buscar assinantes relevantes
@@ -183,13 +184,15 @@ async function dispararNotificacoesGol(placares: any[]): Promise<void> {
           (sub['jogos'] as string[])?.includes(jogoKey);
         if (relevante && sub['fcmToken']) tokens.push(sub['fcmToken']);
       }
-      if (tokens.length === 0) continue;
+      const uniqueTokens = [...new Set(tokens)];
+      if (uniqueTokens.length === 0) continue;
 
+      const timeQueGolou = p.placarMandante > (prev?.mandante ?? 0) ? p.timeMandante : p.timeVisitante;
       const body = `${p.timeMandante} ${p.placarMandante} x ${p.placarVisitante} ${p.timeVisitante}`;
       const result = await messaging.sendEachForMulticast({
-        tokens,
+        tokens: uniqueTokens,
         notification: {
-          title: '⚽ GOL!',
+          title: `⚽ GOL! ${timeQueGolou}`,
           body,
         },
         webpush: {
@@ -203,7 +206,7 @@ async function dispararNotificacoesGol(placares: any[]): Promise<void> {
 
       // Remover tokens inválidos
       const tokensInvalidos = result.responses
-        .map((r: any, i: number) => (!r.success ? tokens[i] : null))
+        .map((r: any, i: number) => (!r.success ? uniqueTokens[i] : null))
         .filter(Boolean) as string[];
       for (const t of tokensInvalidos) {
         db.collection('subscricoes').doc(t).delete().catch(() => {});
