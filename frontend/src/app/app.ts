@@ -335,7 +335,7 @@ export class App implements OnInit, OnDestroy {
     const base = this.classificacao();
     if (base.length === 0) return [];
 
-    const jogosAoVivo = this.jogos().filter(j => this.eAoVivo(j));
+    const jogosAoVivo = this.jogos().filter(j => this.eAoVivo(j) && j.campeonato === 'Brasileirão');
     if (jogosAoVivo.length === 0) return base;
 
     const tabela = base.map(e => ({ ...e }));
