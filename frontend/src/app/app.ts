@@ -7,11 +7,8 @@ import { interval, forkJoin } from 'rxjs';
 import { JogosService } from './services/jogos.service';
 import { PushNotificacaoService } from './services/push-notificacao.service';
 import { Jogo, Placar, Odds, ClassificacaoEntry, Noticia, ClassificacaoResponse, JogoCampeonato } from './models/jogo';
+import { track } from '@vercel/analytics';
 import { teamInitials } from './team-logos';
-
-declare global {
-  interface Window { gtag: (...args: any[]) => void; }
-}
 
 function slugify(s: string): string {
   return s.toLowerCase()
@@ -20,9 +17,15 @@ function slugify(s: string): string {
     .replace(/[^a-z0-9-]/g, '');
 }
 
-function gaPush(event: string, params: Record<string, any> = {}): void {
-  if (typeof window.gtag === 'function') {
-    window.gtag('event', event, params);
+function analyticsTrack(event: string, params: Record<string, string | number | boolean | undefined> = {}): void {
+  const data: Record<string, string> = {};
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) data[key] = String(value);
+  }
+  if (Object.keys(data).length > 0) {
+    track(event, data);
+  } else {
+    track(event);
   }
 }
 
@@ -38,7 +41,6 @@ export class App implements OnInit, OnDestroy {
   error = signal<string | null>(null);
   timeSelecionado = signal<string>('');
   filtroAoVivo = signal(false);
-  showConsentBanner = signal(localStorage.getItem('ga_consent') === null);
   placares = signal<Map<string, Placar>>(new Map());
   odds = signal<Map<string, Odds>>(new Map());
   classificacao = signal<ClassificacaoEntry[]>([]);
@@ -156,7 +158,7 @@ export class App implements OnInit, OnDestroy {
     history.replaceState(null, '', `/campeonato/${slug}`);
     this.atualizarMetaCampeonato(slug);
     this.carregarDadosCampeonato(slug);
-    gaPush('ver_campeonato', { campeonato: slug });
+    analyticsTrack('ver_campeonato', { campeonato: slug });
   }
 
   voltarParaHome(): void {
@@ -427,7 +429,7 @@ export class App implements OnInit, OnDestroy {
         this.jogos.set(sorted);
         this.classificacao.set(classificacao);
         this.loading.set(false);
-        gaPush('jogos_carregados', { total_jogos: sorted.length });
+        analyticsTrack('jogos_carregados', { total_jogos: sorted.length });
         const slug = window.location.pathname.replace(/^\//, '').toLowerCase();
         if (slug === 'ao-vivo') {
           this.filtroAoVivo.set(true);
@@ -470,7 +472,7 @@ export class App implements OnInit, OnDestroy {
           this.error.set('Não foi possível carregar os jogos. Tente novamente mais tarde.');
         }
         this.loading.set(false);
-        gaPush('jogos_erro', { status: err?.status });
+        analyticsTrack('jogos_erro', { status: err?.status });
       }
     });
   }
@@ -502,7 +504,7 @@ export class App implements OnInit, OnDestroy {
         this.oddsInterval = setInterval(() => this.atualizarOdds(), 5 * 60_000);
         this.atualizarClassificacao();
         this.classificacaoInterval = setInterval(() => this.atualizarClassificacao(), 5 * 60_000);
-        gaPush('pull_to_refresh');
+        analyticsTrack('pull_to_refresh');
       },
       error: () => {},
       complete: () => {
@@ -520,10 +522,10 @@ export class App implements OnInit, OnDestroy {
     this.atualizarSportsEvents(this.jogosFiltrados());
     if (nome) {
       this.carregarNoticias(slugify(nome));
-      gaPush('filtro_time', { time: nome });
+      analyticsTrack('filtro_time', { time: nome });
     } else {
       this.noticias.set([]);
-      gaPush('filtro_todos');
+      analyticsTrack('filtro_todos');
     }
   }
 
@@ -639,17 +641,6 @@ export class App implements OnInit, OnDestroy {
       next: (data) => this.noticias.set(data),
       error: () => this.noticias.set([]),
     });
-  }
-
-  aceitarConsentimento(): void {
-    localStorage.setItem('ga_consent', 'granted');
-    window.gtag('consent', 'update', { analytics_storage: 'granted' });
-    this.showConsentBanner.set(false);
-  }
-
-  recusarConsentimento(): void {
-    localStorage.setItem('ga_consent', 'declined');
-    this.showConsentBanner.set(false);
   }
 
   ngOnDestroy(): void {
@@ -788,7 +779,7 @@ export class App implements OnInit, OnDestroy {
       this.timesComNotificacao.set(next);
       this.salvarTimesNotificacao(next);
       this.mostrarNotifToast(`🔕 Notificações desativadas para ${selected}`);
-      gaPush('notif_time', { time: selected, acao: 'desativar' });
+      analyticsTrack('notif_time', { time: selected, acao: 'desativar' });
       if (this.fcmToken) {
         if (next.length === 0 && this.jogosComNotificacao().length === 0) {
           this.pushService.removerSubscricao(this.fcmToken);
@@ -808,7 +799,7 @@ export class App implements OnInit, OnDestroy {
     this.timesComNotificacao.set(next);
     this.salvarTimesNotificacao(next);
     this.mostrarNotifToast(`🔔 Notificações ativadas para ${selected}`);
-    gaPush('notif_time', { time: selected, acao: 'ativar' });
+    analyticsTrack('notif_time', { time: selected, acao: 'ativar' });
     await this.sincronizarFcmSubscricao(next, this.jogosComNotificacao());
   }
 
@@ -846,7 +837,7 @@ export class App implements OnInit, OnDestroy {
     this.salvarJogosNotificacao(next);
     const label = `${jogo.timeMandante} x ${jogo.timeVisitante}`;
     this.mostrarNotifToast(ativando ? `🔔 Notificando ${label}` : `🔕 Notificações desativadas para ${label}`);
-    gaPush('notif_jogo', {
+    analyticsTrack('notif_jogo', {
       jogo: label,
       time_mandante: jogo.timeMandante,
       time_visitante: jogo.timeVisitante,

@@ -1177,60 +1177,11 @@ body {
   color: #1d6f42;
 }
 
-// ── Consent Banner ───────────────────────────────────────────────────────────
-
-.consent-banner {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: #1a1a2e;
-  border-top: 1px solid rgba(255,255,255,0.1);
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.consent-content {
-  @include flex(1.5rem, $wrap: wrap);
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.consent-text {
-  flex: 1;
-  font-size: 0.875rem;
-  color: #d1d5db;
-  line-height: 1.5;
-  min-width: 200px;
-}
-
-.consent-actions {
-  @include flex(0.5rem);
-  flex-shrink: 0;
-}
-
-.consent-btn {
-  padding: 0.5rem 1.25rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  transition: opacity 0.15s;
-  &:hover { opacity: 0.85; }
-}
-
-.consent-btn--decline {
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.25);
-  color: #9ca3af;
-}
-
 // ── PWA Update Banner ─────────────────────────────────────────────────────────
 
 .update-banner {
   position: fixed;
-  bottom: 4.5rem;
+  bottom: 1rem;
   left: 50%;
   transform: translateX(-50%);
   background: #1d6f42;
@@ -1255,11 +1206,6 @@ body {
     font-weight: 600;
     cursor: pointer;
   }
-}
-
-.consent-btn--accept {
-  background: #1d6f42;
-  color: #fff;
 }
 
 // ── Página de Campeonato ──────────────────────────────────────────────────────
