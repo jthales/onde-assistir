@@ -21,7 +21,8 @@
       "resources": {
         "files": [
           "/favicon/**",
-          "/robots.txt"
+          "/robots.txt",
+          "/ads.txt"
         ]
       }
     }
