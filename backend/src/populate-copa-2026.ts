@@ -14,7 +14,7 @@ import { Jogo } from './types';
 const DRY_RUN = process.argv.includes('--dry-run');
 const ESPN_COPA = 'fifa.world';
 const CAMPEONATO_LABEL = 'Copa do Mundo 2026';
-const JANELA_DIAS = 14;
+const JANELA_DIAS = 45;
 
 function slugify(s: string): string {
   return s.toLowerCase()
@@ -28,7 +28,7 @@ function jogoId(data: string, mandante: string, visitante: string): string {
 }
 
 async function fetchCopaFixtures(): Promise<Array<Omit<Jogo, 'rodada'> & { rodada: number }>> {
-  const url = espnScoreboardUrlForLeague(ESPN_COPA, JANELA_DIAS);
+  const url = espnScoreboardUrlForLeague(ESPN_COPA, JANELA_DIAS) + '&limit=100';
   const resp = await fetch(url);
   if (!resp.ok) throw new Error(`ESPN API error: ${resp.status}`);
   const data: any = await resp.json();
