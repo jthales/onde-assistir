@@ -382,7 +382,8 @@
 .grupo-meta-sep { opacity: 0.5; }
 
 .grupo-jogo-confronto {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 5px;
 }
@@ -391,8 +392,8 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  flex: 1;
   min-width: 0;
+  flex-direction: row-reverse; // brasão sempre à direita (colado ao centro)
 
   span {
     font-size: 0.78rem;
@@ -401,11 +402,12 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: right;
   }
 
   &--right {
-    flex-direction: row-reverse;
-    text-align: right;
+    // row-reverse herdado: DOM [name, logo] → visual [logo][name], brasão colado ao centro
+    span { text-align: left; }
   }
 }
 
