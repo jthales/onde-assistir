@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Copa2026Service } from '../services/copa-2026.service';
-import { ClassificacaoResponse, Jogo, Placar } from '../models/jogo';
+import { ClassificacaoEntry, ClassificacaoResponse, Jogo, Placar } from '../models/jogo';
 import { translateCountry } from './country-names';
 
 function formatarData(dataIso: string): string {
@@ -40,6 +40,38 @@ export class Copa2026Component implements OnInit, OnDestroy {
   readonly copaComecou = computed(() => new Date() >= new Date('2026-06-11T12:00:00-03:00'));
 
   readonly translateCountry = translateCountry;
+
+  readonly jogosPorGrupo = computed(() => {
+    const classif = this.classificacao();
+    if (classif?.tipo !== 'grupos') return new Map<string, Jogo[]>();
+    const map = new Map<string, Jogo[]>();
+    for (const grupo of classif.grupos) {
+      const nomes = new Set(grupo.times.map(t => t.nome));
+      const jogosGrupo = this.jogos()
+        .filter(j => nomes.has(j.timeMandante) && nomes.has(j.timeVisitante))
+        .sort((a, b) => a.data.localeCompare(b.data) || a.hora.localeCompare(b.hora));
+      map.set(grupo.nome, jogosGrupo);
+    }
+    return map;
+  });
+
+  readonly rodadasPorGrupo = computed(() => {
+    const result = new Map<string, { rodada: number; jogos: Jogo[] }[]>();
+    for (const [nome, jogos] of this.jogosPorGrupo()) {
+      const byDate = new Map<string, Jogo[]>();
+      for (const j of jogos) {
+        if (!byDate.has(j.data)) byDate.set(j.data, []);
+        byDate.get(j.data)!.push(j);
+      }
+      result.set(nome, Array.from(byDate.keys()).sort().map((d, i) => ({ rodada: i + 1, jogos: byDate.get(d)! })));
+    }
+    return result;
+  });
+
+  aproveitamento(entry: ClassificacaoEntry): number {
+    if (entry.jogos === 0) return 0;
+    return Math.round((entry.pontos / (entry.jogos * 3)) * 100);
+  }
 
   constructor(private copaSvc: Copa2026Service) {}
 

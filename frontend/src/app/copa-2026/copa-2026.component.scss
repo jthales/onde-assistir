@@ -226,19 +226,190 @@
   box-shadow: var(--shadow-sm);
 }
 
-// Grid de 12 grupos: 3 colunas no desktop, 2 no tablet, 1 no mobile
-.copa-grupos-grid {
+// Lista vertical de grupos com standings + jogos ao lado
+.copa-grupos-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.grupo-bloco {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+}
+
+.grupo-bloco-topo {
+  background: var(--color-primary);
+  color: #fff;
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.grupo-bloco-corpo {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) 310px;
 
-  @media (max-width: 900px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (max-width: 560px) {
+  @media (max-width: 720px) {
     grid-template-columns: 1fr;
   }
+}
+
+.grupo-standings {
+  padding: 10px 12px 12px;
+  border-right: 1px solid var(--color-border);
+  overflow-x: auto;
+  background: var(--color-surface);
+
+  @media (max-width: 720px) {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+}
+
+.grupo-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.77rem;
+
+  th {
+    text-align: center;
+    padding: 4px 5px 6px;
+    color: var(--color-text-3);
+    font-weight: 600;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  td {
+    padding: 5px 5px;
+    text-align: center;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-2);
+    white-space: nowrap;
+  }
+
+  tr:first-child td { border-top: none; }
+}
+
+.col-sele {
+  text-align: left !important;
+  padding-left: 0.2rem;
+}
+
+.col-hidden-xs {
+  @media (max-width: 480px) { display: none; }
+}
+
+.grupo-jogos-painel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--color-bg) 35%, var(--color-surface));
+}
+
+.grupo-rodada {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.grupo-rodada-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-3);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.grupo-jogo-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  transition: border-color 0.15s;
+
+  &--live {
+    border-color: var(--color-live);
+    background: color-mix(in srgb, var(--color-live) 5%, var(--color-surface));
+  }
+}
+
+.grupo-jogo-meta {
+  font-size: 0.62rem;
+  color: var(--color-text-4);
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.grupo-meta-sep { opacity: 0.5; }
+
+.grupo-jogo-confronto {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.grupo-jogo-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+
+  span {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &--right {
+    flex-direction: row-reverse;
+    text-align: right;
+  }
+}
+
+.grupo-jogo-vs {
+  font-size: 0.72rem;
+  color: var(--color-text-3);
+  font-weight: 700;
+  flex-shrink: 0;
+  padding: 0 2px;
+}
+
+.grupo-jogo-placar {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--color-text);
+  flex-shrink: 0;
+  min-width: 44px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.grupo-sem-jogos {
+  font-size: 0.75rem;
+  color: var(--color-text-3);
+  text-align: center;
+  padding: 12px 0;
 }
 
 // ── Estilos de tabela de classificação (não herdados do app.scss por ViewEncapsulation)

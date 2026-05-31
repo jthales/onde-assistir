@@ -82,44 +82,106 @@
         <div class="copa-section-header">
           <h3 class="copa-section-titulo">Fase de Grupos</h3>
         </div>
-        <div class="copa-grupos-grid">
+        <div class="copa-grupos-lista">
           @for (grupo of classif.grupos; track grupo.nome) {
-            <aside class="classificacao classificacao--grupo">
-              <div class="classificacao-header">
-                <h2 class="classificacao-titulo">{{ grupo.nome }}</h2>
-              </div>
-              <table class="classificacao-tabela classificacao-tabela--grupo">
-                <thead>
-                  <tr>
-                    <th class="col-pos">#</th>
-                    <th class="col-time">Seleção</th>
-                    <th class="col-num col-pts-h" title="Pontos">Pts</th>
-                    <th class="col-num" title="Jogos">J</th>
-                    <th class="col-num" title="Saldo de Gols">SG</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (entry of grupo.times; track entry.nome) {
-                    <tr [class.classificado]="$index < 2">
-                      <td class="col-pos">{{ entry.posicao }}</td>
-                      <td class="col-time">
-                        <div class="col-time-inner">
-                          @if (entry.logo) {
-                            <img [src]="entry.logo" [alt]="translateCountry(entry.nome)" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
-                          }
-                          <span class="classificacao-nome">{{ translateCountry(entry.nome) }}</span>
+            <div class="grupo-bloco">
+              <div class="grupo-bloco-topo">{{ grupo.nome }}</div>
+              <div class="grupo-bloco-corpo">
+
+                <!-- Classificação -->
+                <div class="grupo-standings">
+                  <table class="grupo-tabela">
+                    <thead>
+                      <tr>
+                        <th class="col-pos">#</th>
+                        <th class="col-sele">Seleção</th>
+                        <th title="Pontos">P</th>
+                        <th title="Jogos">J</th>
+                        <th title="Vitórias">V</th>
+                        <th title="Empates">E</th>
+                        <th title="Derrotas">D</th>
+                        <th class="col-hidden-xs" title="Gols Pró">GP</th>
+                        <th class="col-hidden-xs" title="Gols Contra">GC</th>
+                        <th title="Saldo">SG</th>
+                        <th class="col-hidden-xs" title="Aproveitamento">%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (entry of grupo.times; track entry.nome) {
+                        <tr [class.classificado]="$index < 2">
+                          <td class="col-pos">{{ $index + 1 }}</td>
+                          <td class="col-sele">
+                            <div class="col-time-inner">
+                              @if (entry.logo) {
+                                <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                              }
+                              <span class="classificacao-nome">{{ entry.nome }}</span>
+                            </div>
+                          </td>
+                          <td class="col-pts">{{ entry.pontos }}</td>
+                          <td>{{ entry.jogos }}</td>
+                          <td>{{ entry.vitorias }}</td>
+                          <td>{{ entry.empates }}</td>
+                          <td>{{ entry.derrotas }}</td>
+                          <td class="col-hidden-xs">{{ entry.gols }}</td>
+                          <td class="col-hidden-xs">{{ entry.golsSofridos }}</td>
+                          <td [class.saldo-positivo]="entry.saldo > 0" [class.saldo-negativo]="entry.saldo < 0">
+                            {{ entry.saldo > 0 ? '+' : '' }}{{ entry.saldo }}
+                          </td>
+                          <td class="col-hidden-xs">{{ aproveitamento(entry) }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Jogos por rodada -->
+                <div class="grupo-jogos-painel">
+                  @for (rodada of (rodadasPorGrupo().get(grupo.nome) ?? []); track rodada.rodada) {
+                    <div class="grupo-rodada">
+                      <div class="grupo-rodada-label">{{ rodada.rodada }}ª Rodada</div>
+                      @for (jogo of rodada.jogos; track jogo.timeMandante + jogo.data) {
+                        @let placar = getPlacarJogo(jogo);
+                        <div class="grupo-jogo-card" [class.grupo-jogo-card--live]="placar?.status === 'em-andamento'">
+                          <div class="grupo-jogo-meta">
+                            @if (jogo.estadio) {
+                              <span>{{ jogo.estadio }}</span>
+                              <span class="grupo-meta-sep">·</span>
+                            }
+                            <span>{{ formatarData(jogo.data) }} · {{ jogo.hora }}</span>
+                          </div>
+                          <div class="grupo-jogo-confronto">
+                            <div class="grupo-jogo-time">
+                              @if (jogo.logoMandante) {
+                                <img [src]="jogo.logoMandante" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                              }
+                              <span>{{ jogo.timeMandante }}</span>
+                            </div>
+                            @if (placar && (placar.status === 'encerrado' || placar.status === 'em-andamento')) {
+                              <span class="grupo-jogo-placar" [class.ao-vivo-score]="placar.status === 'em-andamento'">
+                                {{ placar.placarMandante }} – {{ placar.placarVisitante }}
+                              </span>
+                            } @else {
+                              <span class="grupo-jogo-vs">×</span>
+                            }
+                            <div class="grupo-jogo-time grupo-jogo-time--right">
+                              <span>{{ jogo.timeVisitante }}</span>
+                              @if (jogo.logoVisitante) {
+                                <img [src]="jogo.logoVisitante" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                              }
+                            </div>
+                          </div>
                         </div>
-                      </td>
-                      <td class="col-num col-pts">{{ entry.pontos }}</td>
-                      <td class="col-num">{{ entry.jogos }}</td>
-                      <td class="col-num" [class.saldo-positivo]="entry.saldo > 0" [class.saldo-negativo]="entry.saldo < 0">
-                        {{ entry.saldo > 0 ? '+' : '' }}{{ entry.saldo }}
-                      </td>
-                    </tr>
+                      }
+                    </div>
                   }
-                </tbody>
-              </table>
-            </aside>
+                  @if ((rodadasPorGrupo().get(grupo.nome) ?? []).length === 0) {
+                    <p class="grupo-sem-jogos">Jogos em breve</p>
+                  }
+                </div>
+
+              </div>
+            </div>
           }
         </div>
       </section>
