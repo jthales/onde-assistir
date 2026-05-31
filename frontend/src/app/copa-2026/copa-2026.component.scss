@@ -393,7 +393,6 @@
   align-items: center;
   gap: 4px;
   min-width: 0;
-  flex-direction: row-reverse; // brasão sempre à direita (colado ao centro)
 
   span {
     font-size: 0.78rem;
@@ -402,12 +401,6 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    text-align: right;
-  }
-
-  &--right {
-    // row-reverse herdado: DOM [name, logo] → visual [logo][name], brasão colado ao centro
-    span { text-align: left; }
   }
 }
 

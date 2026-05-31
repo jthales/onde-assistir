@@ -165,11 +165,11 @@
                             } @else {
                               <span class="grupo-jogo-vs">×</span>
                             }
-                            <div class="grupo-jogo-time grupo-jogo-time--right">
-                              <span>{{ translateCountry(jogo.timeVisitante) }}</span>
+                            <div class="grupo-jogo-time">
                               @if (jogo.logoVisitante) {
                                 <img [src]="jogo.logoVisitante" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
                               }
+                              <span>{{ translateCountry(jogo.timeVisitante) }}</span>
                             </div>
                           </div>
                         </div>
