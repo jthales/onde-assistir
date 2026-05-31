@@ -48,7 +48,7 @@ export class Copa2026Component implements OnInit, OnDestroy {
     for (const grupo of classif.grupos) {
       const nomes = new Set(grupo.times.map(t => t.nome));
       const jogosGrupo = this.jogos()
-        .filter(j => nomes.has(j.timeMandante) && nomes.has(j.timeVisitante))
+        .filter(j => nomes.has(translateCountry(j.timeMandante)) && nomes.has(translateCountry(j.timeVisitante)))
         .sort((a, b) => a.data.localeCompare(b.data) || a.hora.localeCompare(b.hora));
       map.set(grupo.nome, jogosGrupo);
     }

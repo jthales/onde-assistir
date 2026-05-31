@@ -56,7 +56,7 @@ async function fetchGrupos() {
   const children: any[] = data.children ?? [];
 
   const grupos = children.map((child: any) => ({
-    nome: child.name ?? 'Grupo',
+    nome: (child.name ?? 'Grupo A').replace(/^Group\s+/i, 'Grupo '),
     times: ((child.standings?.entries ?? []) as any[]).map((entry: any) => ({
       posicao:      getStat(entry.stats, 'rank'),
       nome:         translateCountry(entry.team.displayName),
