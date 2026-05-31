@@ -67,7 +67,8 @@ export class App implements OnInit, OnDestroy {
 
   readonly isCopaPeriod = computed(() => {
     const agora = new Date();
-    return agora >= new Date('2026-06-01T00:00:00') && agora <= new Date('2026-07-22T23:59:59');
+    const isDatePeriod = agora >= new Date('2026-06-01T00:00:00') && agora <= new Date('2026-07-22T23:59:59');
+    return isDatePeriod || window.location.pathname.startsWith('/copa-2026');
   });
 
   private pollingInterval?: ReturnType<typeof setInterval>;
