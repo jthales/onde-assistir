@@ -332,9 +332,11 @@ export class App implements OnInit, OnDestroy {
       jogos = jogos.filter(j => this.eAoVivo(j));
     }
     return [...jogos].sort((a, b) => {
+      if (a.data !== b.data) return a.data.localeCompare(b.data);
       const ordemA = this.eEncerrado(a) ? 2 : this.eAoVivo(a) ? 0 : 1;
       const ordemB = this.eEncerrado(b) ? 2 : this.eAoVivo(b) ? 0 : 1;
-      return ordemA - ordemB;
+      if (ordemA !== ordemB) return ordemA - ordemB;
+      return (a.hora || '99:99').localeCompare(b.hora || '99:99');
     });
   });
 
