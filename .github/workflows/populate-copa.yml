@@ -1,0 +1,73 @@
+name: ⚽ Populate Copa do Mundo 2026
+
+on:
+  schedule:
+    # 4x ao dia: 00, 06, 12, 18 UTC (21h, 03h, 09h, 15h BRT)
+    - cron: '0 0,6,12,18 * * *'
+  workflow_dispatch:
+
+jobs:
+  populate-copa:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📅 Verificar período da Copa
+        id: periodo
+        run: |
+          TODAY=$(date -u +%Y-%m-%d)
+          if [[ "$TODAY" < "2026-06-11" || "$TODAY" > "2026-07-20" ]]; then
+            echo "Fora do período da Copa ($TODAY). Encerrando."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "Dentro do período da Copa ($TODAY). Executando."
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📥 Baixando o código
+        if: steps.periodo.outputs.skip == 'false'
+        uses: actions/checkout@v4
+
+      - name: 🟢 Configurando Node.js v20
+        if: steps.periodo.outputs.skip == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: 📦 Instalando dependências
+        if: steps.periodo.outputs.skip == 'false'
+        working-directory: backend
+        run: npm ci
+
+      - name: ⚽ Executando populate Copa 2026
+        if: steps.periodo.outputs.skip == 'false'
+        working-directory: backend
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+        run: |
+          echo "Iniciando populate Copa 2026 — $(date '+%d/%m/%Y %H:%M:%S UTC')"
+          npm run populate:copa 2>&1 | tee ../populate-copa.log
+          exit ${PIPESTATUS[0]}
+
+      - name: 📄 Salvar log como artifact
+        if: steps.periodo.outputs.skip == 'false' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: populate-copa-log-${{ github.run_number }}
+          path: populate-copa.log
+          retention-days: 7
+
+      - name: 📋 Step Summary
+        if: always()
+        run: |
+          echo "## Copa 2026 Populate — $(date '+%d/%m/%Y %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+          if [ -f populate-copa.log ]; then
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            grep -E "(──|jogos|✅|⚠️|❌|Erro)" populate-copa.log || echo "(sem linhas de resumo)"
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Execução ignorada (fora do período da Copa)." >> $GITHUB_STEP_SUMMARY
+          fi

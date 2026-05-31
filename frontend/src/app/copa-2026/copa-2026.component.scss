@@ -1,0 +1,314 @@
+// Copa do Mundo 2026 — Component Styles
+// Reutiliza variáveis CSS e classes do app.scss
+
+.copa-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+// ── Hero ─────────────────────────────────────────────────────────────────────
+
+.copa-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  color: #fff;
+  box-shadow: var(--shadow-md);
+}
+
+.copa-hero-trophy {
+  font-size: 2.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.copa-hero-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.copa-hero-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.copa-hero-sub {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.75);
+  margin-top: 2px;
+}
+
+.copa-countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255,255,255,0.15);
+  border-radius: var(--radius-md);
+  padding: 8px 14px;
+  flex-shrink: 0;
+}
+
+.copa-countdown-num {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+
+.copa-countdown-label {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+// ── Section header ────────────────────────────────────────────────────────────
+
+.copa-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.copa-section-titulo {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+// ── Ao vivo (placares em andamento) ──────────────────────────────────────────
+
+.copa-ao-vivo {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  border-left: 3px solid var(--color-live);
+}
+
+.copa-placares-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.copa-placar-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.copa-placar-time {
+  flex: 1;
+  color: var(--color-text);
+  font-weight: 500;
+
+  &:last-child { text-align: right; }
+}
+
+.copa-placar-score {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-live);
+  min-width: 60px;
+  text-align: center;
+}
+
+// ── Classificação ─────────────────────────────────────────────────────────────
+
+.copa-classificacao {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+// Grid de 12 grupos: 3 colunas no desktop, 2 no tablet, 1 no mobile
+.copa-grupos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Destaque para top-2 (classificados)
+.classificado {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+
+  td:first-child {
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+}
+
+// ── Eliminatórias ─────────────────────────────────────────────────────────────
+
+.mm-fase-tag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.ao-vivo-score {
+  color: var(--color-live);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.mm-leg-estadio {
+  color: var(--color-text-4);
+  font-size: 0.72rem;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+// ── Próximos jogos ────────────────────────────────────────────────────────────
+
+.copa-jogos {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.copa-jogos-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.copa-jogo-card {
+  position: relative;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  overflow: hidden;
+  transition: box-shadow 0.15s;
+
+  &:hover { box-shadow: var(--shadow-sm); }
+
+  &--ao-vivo {
+    border-color: var(--color-live);
+    background: color-mix(in srgb, var(--color-live) 5%, var(--color-surface));
+  }
+}
+
+.copa-jogo-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.copa-jogo-campeonato {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.copa-jogo-datahora {
+  font-size: 0.78rem;
+  color: var(--color-text-3);
+  font-weight: 500;
+}
+
+.copa-jogo-confronto {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.copa-jogo-time {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+
+  &--right {
+    flex-direction: row-reverse;
+    text-align: right;
+  }
+}
+
+.copa-jogo-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.copa-jogo-time-nome {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.copa-jogo-placar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 64px;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.copa-score-num {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.copa-score-sep {
+  font-size: 1rem;
+  color: var(--color-text-3);
+}
+
+.copa-score-vs {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-3);
+}
+
+.copa-jogo-estadio {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: var(--color-text-4);
+}
+
+.copa-jogo-canais {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}

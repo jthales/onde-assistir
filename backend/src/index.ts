@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import { Jogo } from './types';
 import { db } from './firebase';
 import { espnScoreboardUrlForLeague, ESPN_LEAGUES, TEAM_NAME_MAP, TEAM_ESPN_ID_MAP, LIGA_SLUG_TO_ESPN, LIGA_SLUG_LABEL } from './constants';
+import copa2026Router from './copa-2026-routes';
 const app = express();
 const PORT = process.env['PORT'] ?? 3000;
 
@@ -25,6 +26,8 @@ app.use('/api/', rateLimit({
   legacyHeaders: false,
   message: { error: 'Muitas requisições. Tente novamente em breve.' },
 }));
+
+app.use(copa2026Router);
 
 let jogosCache: { dados: Jogo[]; fetchedAt: number } | null = null;
 const JOGOS_CACHE_TTL_MS = 5 * 60_000;
@@ -285,17 +288,19 @@ app.get('/api/placar', async (_req, res) => {
   }
 
   try {
-    const [dataBra, dataLib, dataSul, dataCopa] = await Promise.all([
+    const [dataBra, dataLib, dataSul, dataCopa, dataCopa2026] = await Promise.all([
       fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.brasileirao, 1)).then(r => r.json()),
       fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.libertadores, 1)).then(r => r.json()),
       fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.sudamericana, 1)).then(r => r.json()),
       fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.copadobrasil, 1)).then(r => r.json()),
+      fetch(espnScoreboardUrlForLeague('fifa.world', 1)).then(r => r.json()),
     ]);
     const allEvents = [
       ...(dataBra.events ?? []),
       ...(dataLib.events ?? []),
       ...(dataSul.events ?? []),
       ...(dataCopa.events ?? []),
+      ...(dataCopa2026.events ?? []),
     ];
 
     const placares = allEvents.map((event: any) => {

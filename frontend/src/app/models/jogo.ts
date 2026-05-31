@@ -103,6 +103,7 @@ export interface JogoMataMata {
 export interface ConfrontoMataMata {
   time1: { nome: string; logo: string | null };
   time2: { nome: string; logo: string | null };
+  fase?: string;
   ida: JogoMataMata | null;
   volta: JogoMataMata | null;
   agregadoTime1: number | null;

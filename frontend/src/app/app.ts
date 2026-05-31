@@ -9,6 +9,7 @@ import { PushNotificacaoService } from './services/push-notificacao.service';
 import { Jogo, Placar, Odds, ClassificacaoEntry, Noticia, ClassificacaoResponse, JogoCampeonato } from './models/jogo';
 import { track } from '@vercel/analytics';
 import { teamInitials } from './team-logos';
+import { Copa2026Component } from './copa-2026/copa-2026.component';
 
 function slugify(s: string): string {
   return s.toLowerCase()
@@ -31,7 +32,7 @@ function analyticsTrack(event: string, params: Record<string, string | number | 
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule],
+  imports: [CommonModule, Copa2026Component],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -63,6 +64,11 @@ export class App implements OnInit, OnDestroy {
   jogosCampeonato = signal<JogoCampeonato[]>([]);
   noticiasCampeonato = signal<Noticia[]>([]);
   loadingCampeonato = signal(false);
+
+  readonly isCopaPeriod = computed(() => {
+    const agora = new Date();
+    return agora >= new Date('2026-06-01T00:00:00') && agora <= new Date('2026-07-22T23:59:59');
+  });
 
   private pollingInterval?: ReturnType<typeof setInterval>;
   private oddsInterval?: ReturnType<typeof setInterval>;

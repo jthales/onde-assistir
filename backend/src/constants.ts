@@ -47,6 +47,7 @@ export const LIGA_SLUG_TO_ESPN: Record<string, string> = {
   'libertadores':   ESPN_LEAGUES.libertadores,
   'sul-americana':  ESPN_LEAGUES.sudamericana,
   'copa-do-brasil': ESPN_LEAGUES.copadobrasil,
+  'copa-2026':      'fifa.world',
 };
 
 export const LIGA_SLUG_LABEL: Record<string, string> = {
@@ -54,6 +55,7 @@ export const LIGA_SLUG_LABEL: Record<string, string> = {
   'libertadores':   'Copa Libertadores',
   'sul-americana':  'Copa Sul-Americana',
   'copa-do-brasil': 'Copa do Brasil',
+  'copa-2026':      'Copa do Mundo 2026',
 };
 
 export const TEAM_NAME_MAP: Record<string, string> = {

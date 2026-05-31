@@ -1,0 +1,233 @@
+<div class="copa-page">
+
+  <!-- ── Header Copa ───────────────────────────────────────────────────────── -->
+  <div class="copa-hero">
+    <div class="copa-hero-trophy">🏆</div>
+    <div class="copa-hero-info">
+      <h2 class="copa-hero-title">Copa do Mundo 2026</h2>
+      <p class="copa-hero-sub">EUA · Canadá · México | 11 Jun – 19 Jul 2026</p>
+    </div>
+    @if (!copaComecou()) {
+      <div class="copa-countdown">
+        <span class="copa-countdown-num">{{ diasParaCopa() }}</span>
+        <span class="copa-countdown-label">dias</span>
+      </div>
+    }
+  </div>
+
+  <!-- ── Placares Ao Vivo ──────────────────────────────────────────────────── -->
+  @if (temJogosAoVivo()) {
+    <section class="copa-ao-vivo">
+      <div class="copa-section-header">
+        <span class="ao-vivo-dot ao-vivo-dot--pulsando"></span>
+        <h3 class="copa-section-titulo">Ao Vivo</h3>
+      </div>
+      <div class="copa-placares-grid">
+        @for (p of placoresAoVivo(); track p.timeMandante + p.timeVisitante) {
+          <div class="copa-placar-card">
+            <span class="copa-placar-time">{{ p.timeMandante }}</span>
+            <span class="copa-placar-score">{{ p.placarMandante }} – {{ p.placarVisitante }}</span>
+            <span class="copa-placar-time">{{ p.timeVisitante }}</span>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- ── Classificação ────────────────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="state-wrapper">
+      <div class="spinner"></div>
+      <p class="state-text">Carregando classificação...</p>
+    </div>
+  } @else if (erro()) {
+    <div class="state-error">
+      <div class="state-error-icon">⚠️</div>
+      <p>{{ erro() }}</p>
+    </div>
+  } @else if (classificacao(); as classif) {
+
+    @if (classif.tipo === 'grupos') {
+      <!-- Fase de Grupos: 12 grupos A–L -->
+      <section class="copa-classificacao">
+        <div class="copa-section-header">
+          <h3 class="copa-section-titulo">Fase de Grupos</h3>
+        </div>
+        <div class="copa-grupos-grid">
+          @for (grupo of classif.grupos; track grupo.nome) {
+            <aside class="classificacao classificacao--grupo">
+              <div class="classificacao-header">
+                <h2 class="classificacao-titulo">{{ grupo.nome }}</h2>
+              </div>
+              <table class="classificacao-tabela classificacao-tabela--grupo">
+                <thead>
+                  <tr>
+                    <th class="col-pos">#</th>
+                    <th class="col-time">Seleção</th>
+                    <th class="col-num col-pts-h" title="Pontos">Pts</th>
+                    <th class="col-num" title="Jogos">J</th>
+                    <th class="col-num" title="Saldo de Gols">SG</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (entry of grupo.times; track entry.nome) {
+                    <tr [class.classificado]="$index < 2">
+                      <td class="col-pos">{{ entry.posicao }}</td>
+                      <td class="col-time">
+                        <div class="col-time-inner">
+                          @if (entry.logo) {
+                            <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                          }
+                          <span class="classificacao-nome">{{ entry.nome }}</span>
+                        </div>
+                      </td>
+                      <td class="col-num col-pts">{{ entry.pontos }}</td>
+                      <td class="col-num">{{ entry.jogos }}</td>
+                      <td class="col-num" [class.saldo-positivo]="entry.saldo > 0" [class.saldo-negativo]="entry.saldo < 0">
+                        {{ entry.saldo > 0 ? '+' : '' }}{{ entry.saldo }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </aside>
+          }
+        </div>
+      </section>
+
+    } @else if (classif.tipo === 'mata-mata') {
+      <!-- Fase Eliminatória -->
+      <section class="copa-classificacao">
+        <div class="copa-section-header">
+          <h3 class="copa-section-titulo">{{ classif.faseAtual }}</h3>
+        </div>
+        <div class="confrontos-grid">
+          @for (c of classif.confrontos ?? []; track c.time1.nome + c.time2.nome) {
+            <div class="mm-card" [class.mm-card--encerrado]="c.vencedor">
+              @if (c.fase) {
+                <div class="mm-fase-tag">{{ c.fase }}</div>
+              }
+              <div class="mm-teams">
+                <div class="mm-team mm-team--left" [class.mm-team--winner]="c.vencedor === 'time1'">
+                  @if (c.time1.logo) {
+                    <img [src]="c.time1.logo" [alt]="c.time1.nome" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
+                  }
+                  <span class="mm-team-name">{{ c.time1.nome }}</span>
+                </div>
+                <div class="mm-center">
+                  @if (c.ida?.placarMandante !== null && c.ida?.status === 'encerrado') {
+                    <span class="mm-score">{{ c.ida?.placarMandante }} – {{ c.ida?.placarVisitante }}</span>
+                  } @else if (c.ida?.status === 'em-andamento') {
+                    <span class="mm-score ao-vivo-score">{{ c.ida?.placarMandante }} – {{ c.ida?.placarVisitante }}</span>
+                  } @else {
+                    <span class="mm-vs">vs</span>
+                  }
+                </div>
+                <div class="mm-team mm-team--right" [class.mm-team--winner]="c.vencedor === 'time2'">
+                  @if (c.time2.logo) {
+                    <img [src]="c.time2.logo" [alt]="c.time2.nome" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
+                  }
+                  <span class="mm-team-name">{{ c.time2.nome }}</span>
+                </div>
+              </div>
+              @if (c.ida) {
+                <div class="mm-legs">
+                  <div class="mm-leg" [class.mm-leg--live]="c.ida.status === 'em-andamento'">
+                    <span class="mm-leg-detail">{{ formatarData(c.ida.data) }} · {{ c.ida.hora }}</span>
+                    @if (c.ida.estadio) {
+                      <span class="mm-leg-detail mm-leg-estadio">{{ c.ida.estadio }}</span>
+                    }
+                    @if (c.ida.status === 'em-andamento') {
+                      <span class="ao-vivo-badge mm-badge-live">AO VIVO</span>
+                    }
+                  </div>
+                </div>
+              }
+              @if (c.vencedor) {
+                <div class="mm-classified">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  {{ c.vencedor === 'time1' ? c.time1.nome : c.time2.nome }} classificado
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    }
+  }
+
+  <!-- ── Próximos Jogos ────────────────────────────────────────────────────── -->
+  @if (jogos().length > 0) {
+    <section class="copa-jogos">
+      <div class="copa-section-header">
+        <h3 class="copa-section-titulo">Próximos Jogos</h3>
+      </div>
+      <div class="copa-jogos-lista">
+        @for (jogo of jogos(); track jogo.timeMandante + jogo.data) {
+          <div class="copa-jogo-card" [class.copa-jogo-card--ao-vivo]="eAoVivo(jogo)">
+            @if (eAoVivo(jogo)) {
+              <div class="barra-vivo"></div>
+            }
+            <div class="copa-jogo-top">
+              <span class="copa-jogo-campeonato">Copa do Mundo 2026</span>
+              <span class="copa-jogo-datahora">
+                @if (eAoVivo(jogo)) {
+                  <span class="ao-vivo-badge"><span class="ao-vivo-dot"></span>AO VIVO</span>
+                } @else {
+                  {{ formatarData(jogo.data) }}
+                  @if (jogo.hora && jogo.hora !== '00:00') {
+                    · {{ jogo.hora }}
+                  }
+                }
+              </span>
+            </div>
+            <div class="copa-jogo-confronto">
+              <div class="copa-jogo-time">
+                @if (jogo.logoMandante) {
+                  <img [src]="jogo.logoMandante" [alt]="jogo.timeMandante" class="copa-jogo-logo" (error)="$any($event.target).style.display='none'">
+                }
+                <span class="copa-jogo-time-nome">{{ jogo.timeMandante }}</span>
+              </div>
+              <div class="copa-jogo-placar">
+                @if (getPlacarJogo(jogo); as p) {
+                  <span class="copa-score-num">{{ p.placarMandante }}</span>
+                  <span class="copa-score-sep">–</span>
+                  <span class="copa-score-num">{{ p.placarVisitante }}</span>
+                } @else {
+                  <span class="copa-score-vs">vs</span>
+                }
+              </div>
+              <div class="copa-jogo-time copa-jogo-time--right">
+                <span class="copa-jogo-time-nome">{{ jogo.timeVisitante }}</span>
+                @if (jogo.logoVisitante) {
+                  <img [src]="jogo.logoVisitante" [alt]="jogo.timeVisitante" class="copa-jogo-logo" (error)="$any($event.target).style.display='none'">
+                }
+              </div>
+            </div>
+            @if (jogo.estadio) {
+              <div class="copa-jogo-estadio">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                {{ jogo.estadio }}
+              </div>
+            }
+            @if (jogo.canal.length > 0 || jogo.streaming.length > 0) {
+              <div class="copa-jogo-canais">
+                @for (c of jogo.canal; track c) {
+                  <span class="tag-tv">{{ c }}</span>
+                }
+                @for (s of jogo.streaming; track s) {
+                  <span class="tag-stream">{{ s }}</span>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </section>
+  } @else if (!loading() && copaComecou()) {
+    <div class="state-wrapper">
+      <p class="state-text">Nenhum jogo da Copa nos próximos dias.</p>
+    </div>
+  }
+
+</div>

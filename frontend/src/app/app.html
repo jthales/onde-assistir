@@ -25,6 +25,9 @@
       } @else if (timeSelecionado()) {
         <h1 class="hero-title">{{ timeSelecionado() }} — Próximos Jogos e Onde Assistir</h1>
         <p class="hero-subtitle">Brasileirão, Libertadores e mais — TV e Streaming</p>
+      } @else if (isCopaPeriod()) {
+        <h1 class="hero-title">Copa do <span class="hero-title-accent">Mundo</span> 2026</h1>
+        <p class="hero-subtitle">Onde assistir os jogos — EUA · Canadá · México</p>
       } @else {
         <h1 class="hero-title">Onde <span class="hero-title-accent">Assistir</span> Futebol Ao Vivo — TV e Streaming no Brasil</h1>
         <p class="hero-subtitle">Brasileirão, Libertadores e mais — TV e Streaming</p>
@@ -310,6 +313,11 @@
           </div>
         }
       </div>
+
+    } @else if (isCopaPeriod() && !timeSelecionado()) {
+
+      <!-- ── Copa do Mundo 2026 ─────────────────────────────────────────────── -->
+      <app-copa-2026></app-copa-2026>
 
     } @else {
 
