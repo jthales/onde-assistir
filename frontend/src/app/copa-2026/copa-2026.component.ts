@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Copa2026Service } from '../services/copa-2026.service';
 import { ClassificacaoResponse, Jogo, Placar } from '../models/jogo';
+import { translateCountry } from './country-names';
 
 function formatarData(dataIso: string): string {
   const hoje = new Date();
@@ -13,6 +14,8 @@ function formatarData(dataIso: string): string {
   const mes = String(data.getMonth() + 1).padStart(2, '0');
   return `${dias[data.getDay()]}, ${dia}/${mes}`;
 }
+
+interface Regressiva { dias: number; horas: number; minutos: number; segundos: number }
 
 @Component({
   selector: 'app-copa-2026',
@@ -31,15 +34,12 @@ export class Copa2026Component implements OnInit, OnDestroy {
   private classificacaoInterval?: ReturnType<typeof setInterval>;
   private jogosInterval?: ReturnType<typeof setInterval>;
   private placarInterval?: ReturnType<typeof setInterval>;
+  private regressivaTimer?: ReturnType<typeof setInterval>;
 
-  readonly diasParaCopa = computed(() => {
-    const inicio = new Date('2026-06-11T00:00:00');
-    const agora = new Date();
-    const diff = Math.ceil((inicio.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24));
-    return diff > 0 ? diff : 0;
-  });
+  readonly regressiva = signal<Regressiva>(this.calcularRegressiva());
+  readonly copaComecou = computed(() => new Date() >= new Date('2026-06-11T12:00:00-03:00'));
 
-  readonly copaComecou = computed(() => new Date() >= new Date('2026-06-11T00:00:00'));
+  readonly translateCountry = translateCountry;
 
   constructor(private copaSvc: Copa2026Service) {}
 
@@ -48,15 +48,28 @@ export class Copa2026Component implements OnInit, OnDestroy {
     this.carregarJogos();
     this.carregarPlacares();
 
-    this.classificacaoInterval = setInterval(() => this.carregarClassificacao(), 3 * 60_000);
-    this.jogosInterval         = setInterval(() => this.carregarJogos(), 5 * 60_000);
-    this.placarInterval        = setInterval(() => this.carregarPlacares(), 10_000);
+    this.regressivaTimer        = setInterval(() => this.regressiva.set(this.calcularRegressiva()), 1000);
+    this.classificacaoInterval  = setInterval(() => this.carregarClassificacao(), 3 * 60_000);
+    this.jogosInterval          = setInterval(() => this.carregarJogos(), 5 * 60_000);
+    this.placarInterval         = setInterval(() => this.carregarPlacares(), 10_000);
   }
 
   ngOnDestroy(): void {
+    clearInterval(this.regressivaTimer);
     clearInterval(this.classificacaoInterval);
     clearInterval(this.jogosInterval);
     clearInterval(this.placarInterval);
+  }
+
+  private calcularRegressiva(): Regressiva {
+    const inicio = new Date('2026-06-11T12:00:00-03:00');
+    const diff = Math.max(0, inicio.getTime() - Date.now());
+    return {
+      dias:     Math.floor(diff / 86_400_000),
+      horas:    Math.floor((diff % 86_400_000) / 3_600_000),
+      minutos:  Math.floor((diff % 3_600_000) / 60_000),
+      segundos: Math.floor((diff % 60_000) / 1000),
+    };
   }
 
   private carregarClassificacao(): void {

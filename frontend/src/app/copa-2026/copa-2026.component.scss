@@ -7,23 +7,46 @@
   gap: 24px;
 }
 
-// ── Hero ─────────────────────────────────────────────────────────────────────
+// ── Hero Copa do Mundo — Temático Brasil ─────────────────────────────────────
 
 .copa-hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #003d14 0%, #006622 60%, #009c3b 100%);
+  border-radius: var(--radius-lg);
+  padding: 24px 20px;
+  box-shadow: 0 4px 24px rgba(0, 100, 30, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  color: #fff;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg,
+      transparent 30%,
+      rgba(255, 223, 0, 0.06) 30%,
+      rgba(255, 223, 0, 0.06) 70%,
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+}
+
+.copa-hero-body {
   display: flex;
   align-items: center;
-  gap: 16px;
-  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
-  border-radius: var(--radius-lg);
-  padding: 20px 24px;
-  color: #fff;
-  box-shadow: var(--shadow-md);
+  gap: 14px;
+  position: relative;
 }
 
 .copa-hero-trophy {
-  font-size: 2.4rem;
+  font-size: 3rem;
   line-height: 1;
   flex-shrink: 0;
+  filter: drop-shadow(0 2px 8px rgba(255, 223, 0, 0.5));
 }
 
 .copa-hero-info {
@@ -31,41 +54,112 @@
   min-width: 0;
 }
 
-.copa-hero-title {
-  font-size: 1.25rem;
+.copa-hero-label {
+  font-size: 0.65rem;
   font-weight: 700;
+  color: #FFDF00;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 2px;
+}
+
+.copa-hero-title {
+  font-size: 1.5rem;
+  font-weight: 800;
   color: #fff;
-  line-height: 1.2;
+  line-height: 1.15;
+}
+
+.copa-hero-accent {
+  color: #FFDF00;
 }
 
 .copa-hero-sub {
-  font-size: 0.8rem;
-  color: rgba(255,255,255,0.75);
-  margin-top: 2px;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.7);
+  margin-top: 3px;
 }
 
-.copa-countdown {
+// ── Countdown ─────────────────────────────────────────────────────────────────
+
+.copa-countdown-wrap {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: rgba(255,255,255,0.15);
-  border-radius: var(--radius-md);
-  padding: 8px 14px;
-  flex-shrink: 0;
+  gap: 8px;
+}
+
+.copa-countdown-label-top {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.copa-countdown-blocks {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.copa-countdown-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 223, 0, 0.4);
+  border-radius: 8px;
+  padding: 8px 12px 6px;
+  min-width: 56px;
+
+  &--seg {
+    border-color: rgba(255, 223, 0, 0.15);
+  }
 }
 
 .copa-countdown-num {
-  font-size: 1.6rem;
+  font-size: 1.7rem;
   font-weight: 800;
-  color: #fff;
+  color: #FFDF00;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
-.copa-countdown-label {
-  font-size: 0.7rem;
-  color: rgba(255,255,255,0.8);
+.copa-countdown-unit {
+  font-size: 0.58rem;
+  color: rgba(255,255,255,0.6);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  margin-top: 3px;
+}
+
+.copa-countdown-sep {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: rgba(255, 223, 0, 0.5);
+  margin-bottom: 14px;
+}
+
+// ── Em andamento ─────────────────────────────────────────────────────────────
+
+.copa-em-andamento {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #FFDF00;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 480px) {
+  .copa-hero-title { font-size: 1.2rem; }
+  .copa-countdown-block { min-width: 46px; padding: 6px 8px 5px; }
+  .copa-countdown-num { font-size: 1.35rem; }
 }
 
 // ── Section header ────────────────────────────────────────────────────────────

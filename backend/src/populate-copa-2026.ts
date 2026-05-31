@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import { db } from './firebase';
 import { espnScoreboardUrlForLeague } from './constants';
 import { Jogo } from './types';
+import { translateCountry } from './country-names';
 
 const DRY_RUN = process.argv.includes('--dry-run');
 const ESPN_COPA = 'fifa.world';
@@ -52,8 +53,8 @@ async function fetchCopaFixtures(): Promise<Array<Omit<Jogo, 'rodada'> & { rodad
 
     fixtures.push({
       rodada:        0,
-      timeMandante:  mand.team.displayName,
-      timeVisitante: visit.team.displayName,
+      timeMandante:  translateCountry(mand.team.displayName),
+      timeVisitante: translateCountry(visit.team.displayName),
       logoMandante:  mand.team.logo ?? '',
       logoVisitante: visit.team.logo ?? '',
       data:          brt.toISOString().slice(0, 10),

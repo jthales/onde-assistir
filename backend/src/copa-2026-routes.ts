@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { translateCountry } from './country-names';
 
 const router = Router();
 
@@ -58,7 +59,7 @@ async function fetchGrupos() {
     nome: child.name ?? 'Grupo',
     times: ((child.standings?.entries ?? []) as any[]).map((entry: any) => ({
       posicao:      getStat(entry.stats, 'rank'),
-      nome:         entry.team.displayName,
+      nome:         translateCountry(entry.team.displayName),
       logo:         entry.team.logos?.[0]?.href ?? null,
       jogos:        getStat(entry.stats, 'gamesPlayed'),
       vitorias:     getStat(entry.stats, 'wins'),
@@ -104,13 +105,13 @@ async function fetchEliminatorias(phaseSlug: string) {
       : null;
 
     return {
-      time1:         { nome: mand?.team?.displayName ?? '',  logo: mand?.team?.logo ?? null },
-      time2:         { nome: visit?.team?.displayName ?? '', logo: visit?.team?.logo ?? null },
+      time1:         { nome: translateCountry(mand?.team?.displayName ?? ''),  logo: mand?.team?.logo ?? null },
+      time2:         { nome: translateCountry(visit?.team?.displayName ?? ''), logo: visit?.team?.logo ?? null },
       fase:          COPA_FASE_TO_PT[event.season?.slug] ?? event.season?.slug ?? '',
       ida: {
-        mandante:        mand?.team?.displayName ?? '',
+        mandante:        translateCountry(mand?.team?.displayName ?? ''),
         logoMandante:    mand?.team?.logo ?? null,
-        visitante:       visit?.team?.displayName ?? '',
+        visitante:       translateCountry(visit?.team?.displayName ?? ''),
         logoVisitante:   visit?.team?.logo ?? null,
         data:            brt.toISOString().slice(0, 10),
         hora:            brt.toISOString().slice(11, 16),

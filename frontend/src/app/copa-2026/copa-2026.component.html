@@ -1,16 +1,45 @@
 <div class="copa-page">
 
-  <!-- ── Header Copa ───────────────────────────────────────────────────────── -->
+  <!-- ── Hero Copa ───────────────────────────────────────────────────────── -->
   <div class="copa-hero">
-    <div class="copa-hero-trophy">🏆</div>
-    <div class="copa-hero-info">
-      <h2 class="copa-hero-title">Copa do Mundo 2026</h2>
-      <p class="copa-hero-sub">EUA · Canadá · México | 11 Jun – 19 Jul 2026</p>
+    <div class="copa-hero-body">
+      <div class="copa-hero-trophy">🏆</div>
+      <div class="copa-hero-info">
+        <div class="copa-hero-label">FIFA World Cup™</div>
+        <h2 class="copa-hero-title">Copa do <span class="copa-hero-accent">Mundo</span> 2026</h2>
+        <p class="copa-hero-sub">EUA · Canadá · México &nbsp;|&nbsp; 11 Jun – 19 Jul 2026</p>
+      </div>
     </div>
+
     @if (!copaComecou()) {
-      <div class="copa-countdown">
-        <span class="copa-countdown-num">{{ diasParaCopa() }}</span>
-        <span class="copa-countdown-label">dias</span>
+      <div class="copa-countdown-wrap">
+        <p class="copa-countdown-label-top">Começa em</p>
+        <div class="copa-countdown-blocks">
+          <div class="copa-countdown-block">
+            <span class="copa-countdown-num">{{ regressiva().dias | number:'2.0-0' }}</span>
+            <span class="copa-countdown-unit">dias</span>
+          </div>
+          <span class="copa-countdown-sep">:</span>
+          <div class="copa-countdown-block">
+            <span class="copa-countdown-num">{{ regressiva().horas | number:'2.0-0' }}</span>
+            <span class="copa-countdown-unit">horas</span>
+          </div>
+          <span class="copa-countdown-sep">:</span>
+          <div class="copa-countdown-block">
+            <span class="copa-countdown-num">{{ regressiva().minutos | number:'2.0-0' }}</span>
+            <span class="copa-countdown-unit">min</span>
+          </div>
+          <span class="copa-countdown-sep">:</span>
+          <div class="copa-countdown-block copa-countdown-block--seg">
+            <span class="copa-countdown-num">{{ regressiva().segundos | number:'2.0-0' }}</span>
+            <span class="copa-countdown-unit">seg</span>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="copa-em-andamento">
+        <span class="ao-vivo-dot ao-vivo-dot--pulsando"></span>
+        Em andamento
       </div>
     }
   </div>
@@ -25,9 +54,9 @@
       <div class="copa-placares-grid">
         @for (p of placoresAoVivo(); track p.timeMandante + p.timeVisitante) {
           <div class="copa-placar-card">
-            <span class="copa-placar-time">{{ p.timeMandante }}</span>
+            <span class="copa-placar-time">{{ translateCountry(p.timeMandante) }}</span>
             <span class="copa-placar-score">{{ p.placarMandante }} – {{ p.placarVisitante }}</span>
-            <span class="copa-placar-time">{{ p.timeVisitante }}</span>
+            <span class="copa-placar-time">{{ translateCountry(p.timeVisitante) }}</span>
           </div>
         }
       </div>
@@ -76,9 +105,9 @@
                       <td class="col-time">
                         <div class="col-time-inner">
                           @if (entry.logo) {
-                            <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                            <img [src]="entry.logo" [alt]="translateCountry(entry.nome)" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
                           }
-                          <span class="classificacao-nome">{{ entry.nome }}</span>
+                          <span class="classificacao-nome">{{ translateCountry(entry.nome) }}</span>
                         </div>
                       </td>
                       <td class="col-num col-pts">{{ entry.pontos }}</td>
@@ -110,9 +139,9 @@
               <div class="mm-teams">
                 <div class="mm-team mm-team--left" [class.mm-team--winner]="c.vencedor === 'time1'">
                   @if (c.time1.logo) {
-                    <img [src]="c.time1.logo" [alt]="c.time1.nome" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
+                    <img [src]="c.time1.logo" [alt]="translateCountry(c.time1.nome)" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
                   }
-                  <span class="mm-team-name">{{ c.time1.nome }}</span>
+                  <span class="mm-team-name">{{ translateCountry(c.time1.nome) }}</span>
                 </div>
                 <div class="mm-center">
                   @if (c.ida?.placarMandante !== null && c.ida?.status === 'encerrado') {
@@ -125,9 +154,9 @@
                 </div>
                 <div class="mm-team mm-team--right" [class.mm-team--winner]="c.vencedor === 'time2'">
                   @if (c.time2.logo) {
-                    <img [src]="c.time2.logo" [alt]="c.time2.nome" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
+                    <img [src]="c.time2.logo" [alt]="translateCountry(c.time2.nome)" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
                   }
-                  <span class="mm-team-name">{{ c.time2.nome }}</span>
+                  <span class="mm-team-name">{{ translateCountry(c.time2.nome) }}</span>
                 </div>
               </div>
               @if (c.ida) {
@@ -146,7 +175,7 @@
               @if (c.vencedor) {
                 <div class="mm-classified">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                  {{ c.vencedor === 'time1' ? c.time1.nome : c.time2.nome }} classificado
+                  {{ translateCountry(c.vencedor === 'time1' ? c.time1.nome : c.time2.nome) }} classificado
                 </div>
               }
             </div>
@@ -184,9 +213,9 @@
             <div class="copa-jogo-confronto">
               <div class="copa-jogo-time">
                 @if (jogo.logoMandante) {
-                  <img [src]="jogo.logoMandante" [alt]="jogo.timeMandante" class="copa-jogo-logo" (error)="$any($event.target).style.display='none'">
+                  <img [src]="jogo.logoMandante" [alt]="translateCountry(jogo.timeMandante)" class="copa-jogo-logo" (error)="$any($event.target).style.display='none'">
                 }
-                <span class="copa-jogo-time-nome">{{ jogo.timeMandante }}</span>
+                <span class="copa-jogo-time-nome">{{ translateCountry(jogo.timeMandante) }}</span>
               </div>
               <div class="copa-jogo-placar">
                 @if (getPlacarJogo(jogo); as p) {
@@ -198,9 +227,9 @@
                 }
               </div>
               <div class="copa-jogo-time copa-jogo-time--right">
-                <span class="copa-jogo-time-nome">{{ jogo.timeVisitante }}</span>
+                <span class="copa-jogo-time-nome">{{ translateCountry(jogo.timeVisitante) }}</span>
                 @if (jogo.logoVisitante) {
-                  <img [src]="jogo.logoVisitante" [alt]="jogo.timeVisitante" class="copa-jogo-logo" (error)="$any($event.target).style.display='none'">
+                  <img [src]="jogo.logoVisitante" [alt]="translateCountry(jogo.timeVisitante)" class="copa-jogo-logo" (error)="$any($event.target).style.display='none'">
                 }
               </div>
             </div>
