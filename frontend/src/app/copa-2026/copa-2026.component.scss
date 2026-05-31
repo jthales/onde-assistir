@@ -147,15 +147,118 @@
   }
 }
 
+// ── Estilos de tabela de classificação (não herdados do app.scss por ViewEncapsulation)
+
+.classificacao {
+  width: 100%;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 12px 10px;
+  box-shadow: var(--shadow-sm);
+}
+
+.classificacao-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.classificacao-titulo {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-3);
+}
+
+.classificacao-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+
+  th {
+    color: var(--color-text-3);
+    font-weight: 600;
+    text-align: center;
+    padding: 0 0 0.4rem;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  td {
+    padding: 0.28rem 0;
+    text-align: center;
+    vertical-align: middle;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-2);
+  }
+
+  tr:first-child td { border-top: none; }
+}
+
+.classificacao-tabela--grupo {
+  table-layout: fixed;
+
+  .col-pos  { width: 24px; }
+  .col-time { width: auto; }
+  .col-num  { width: 36px; }
+}
+
+.col-pos {
+  width: 24px;
+  white-space: nowrap;
+  color: var(--color-text-3) !important;
+  font-size: 0.7rem !important;
+}
+
+.col-time {
+  text-align: left !important;
+  padding-left: 0.25rem;
+}
+
+.col-time-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.col-num { width: 36px; }
+
+.col-pts {
+  font-weight: 700;
+  color: var(--color-text) !important;
+}
+
+.classificacao-logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.classificacao-nome {
+  font-weight: 600;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 // Destaque para top-2 (classificados)
 .classificado {
-  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  td { background: color-mix(in srgb, var(--color-primary) 6%, transparent); }
 
-  td:first-child {
+  .col-pos {
     font-weight: 700;
-    color: var(--color-primary);
+    color: var(--color-primary) !important;
   }
 }
+
+.saldo-positivo { color: #16a34a !important; }
+.saldo-negativo { color: #dc2626 !important; }
 
 // ── Eliminatórias ─────────────────────────────────────────────────────────────
 
