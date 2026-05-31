@@ -156,7 +156,7 @@
                               @if (jogo.logoMandante) {
                                 <img [src]="jogo.logoMandante" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
                               }
-                              <span>{{ jogo.timeMandante }}</span>
+                              <span>{{ translateCountry(jogo.timeMandante) }}</span>
                             </div>
                             @if (placar && (placar.status === 'encerrado' || placar.status === 'em-andamento')) {
                               <span class="grupo-jogo-placar" [class.ao-vivo-score]="placar.status === 'em-andamento'">
@@ -166,7 +166,7 @@
                               <span class="grupo-jogo-vs">×</span>
                             }
                             <div class="grupo-jogo-time grupo-jogo-time--right">
-                              <span>{{ jogo.timeVisitante }}</span>
+                              <span>{{ translateCountry(jogo.timeVisitante) }}</span>
                               @if (jogo.logoVisitante) {
                                 <img [src]="jogo.logoVisitante" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
                               }
@@ -247,78 +247,5 @@
     }
   }
 
-  <!-- ── Próximos Jogos ────────────────────────────────────────────────────── -->
-  @if (jogos().length > 0) {
-    <section class="copa-jogos">
-      <div class="copa-section-header">
-        <h3 class="copa-section-titulo">Próximos Jogos</h3>
-      </div>
-      <div class="copa-jogos-lista">
-        @for (jogo of jogos(); track jogo.timeMandante + jogo.data) {
-          <div class="copa-jogo-card" [class.copa-jogo-card--ao-vivo]="eAoVivo(jogo)">
-            @if (eAoVivo(jogo)) {
-              <div class="barra-vivo"></div>
-            }
-            <div class="copa-jogo-top">
-              <span class="copa-jogo-campeonato">Copa do Mundo 2026</span>
-              <span class="copa-jogo-datahora">
-                @if (eAoVivo(jogo)) {
-                  <span class="ao-vivo-badge"><span class="ao-vivo-dot"></span>AO VIVO</span>
-                } @else {
-                  {{ formatarData(jogo.data) }}
-                  @if (jogo.hora && jogo.hora !== '00:00') {
-                    · {{ jogo.hora }}
-                  }
-                }
-              </span>
-            </div>
-            <div class="copa-jogo-confronto">
-              <div class="copa-jogo-time">
-                @if (jogo.logoMandante) {
-                  <img [src]="jogo.logoMandante" [alt]="translateCountry(jogo.timeMandante)" class="copa-jogo-logo" (error)="$any($event.target).style.display='none'">
-                }
-                <span class="copa-jogo-time-nome">{{ translateCountry(jogo.timeMandante) }}</span>
-              </div>
-              <div class="copa-jogo-placar">
-                @if (getPlacarJogo(jogo); as p) {
-                  <span class="copa-score-num">{{ p.placarMandante }}</span>
-                  <span class="copa-score-sep">–</span>
-                  <span class="copa-score-num">{{ p.placarVisitante }}</span>
-                } @else {
-                  <span class="copa-score-vs">vs</span>
-                }
-              </div>
-              <div class="copa-jogo-time copa-jogo-time--right">
-                <span class="copa-jogo-time-nome">{{ translateCountry(jogo.timeVisitante) }}</span>
-                @if (jogo.logoVisitante) {
-                  <img [src]="jogo.logoVisitante" [alt]="translateCountry(jogo.timeVisitante)" class="copa-jogo-logo" (error)="$any($event.target).style.display='none'">
-                }
-              </div>
-            </div>
-            @if (jogo.estadio) {
-              <div class="copa-jogo-estadio">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                {{ jogo.estadio }}
-              </div>
-            }
-            @if (jogo.canal.length > 0 || jogo.streaming.length > 0) {
-              <div class="copa-jogo-canais">
-                @for (c of jogo.canal; track c) {
-                  <span class="tag-tv">{{ c }}</span>
-                }
-                @for (s of jogo.streaming; track s) {
-                  <span class="tag-stream">{{ s }}</span>
-                }
-              </div>
-            }
-          </div>
-        }
-      </div>
-    </section>
-  } @else if (!loading() && copaComecou()) {
-    <div class="state-wrapper">
-      <p class="state-text">Nenhum jogo da Copa nos próximos dias.</p>
-    </div>
-  }
 
 </div>

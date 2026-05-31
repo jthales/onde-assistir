@@ -58,12 +58,11 @@ export class Copa2026Component implements OnInit, OnDestroy {
   readonly rodadasPorGrupo = computed(() => {
     const result = new Map<string, { rodada: number; jogos: Jogo[] }[]>();
     for (const [nome, jogos] of this.jogosPorGrupo()) {
-      const byDate = new Map<string, Jogo[]>();
-      for (const j of jogos) {
-        if (!byDate.has(j.data)) byDate.set(j.data, []);
-        byDate.get(j.data)!.push(j);
+      const rodadas: { rodada: number; jogos: Jogo[] }[] = [];
+      for (let i = 0; i < jogos.length; i += 2) {
+        rodadas.push({ rodada: Math.floor(i / 2) + 1, jogos: jogos.slice(i, i + 2) });
       }
-      result.set(nome, Array.from(byDate.keys()).sort().map((d, i) => ({ rodada: i + 1, jogos: byDate.get(d)! })));
+      result.set(nome, rodadas);
     }
     return result;
   });
