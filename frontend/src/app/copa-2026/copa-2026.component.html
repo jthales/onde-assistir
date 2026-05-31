@@ -135,12 +135,13 @@
                   </table>
                 </div>
 
-                <!-- Jogos por rodada -->
+                <!-- Rodada atual do grupo -->
                 <div class="grupo-jogos-painel">
-                  @for (rodada of (rodadasPorGrupo().get(grupo.nome) ?? []); track rodada.rodada) {
+                  @let rodadaAtual = rodadaAtualPorGrupo().get(grupo.nome);
+                  @if (rodadaAtual) {
                     <div class="grupo-rodada">
-                      <div class="grupo-rodada-label">{{ rodada.rodada }}ª Rodada</div>
-                      @for (jogo of rodada.jogos; track jogo.timeMandante + jogo.data) {
+                      <div class="grupo-rodada-label">{{ rodadaAtual.rodada }}ª Rodada</div>
+                      @for (jogo of rodadaAtual.jogos; track jogo.timeMandante + jogo.data) {
                         @let placar = getPlacarJogo(jogo);
                         <div class="grupo-jogo-card" [class.grupo-jogo-card--live]="placar?.status === 'em-andamento'">
                           <div class="grupo-jogo-meta">
@@ -174,8 +175,7 @@
                         </div>
                       }
                     </div>
-                  }
-                  @if ((rodadasPorGrupo().get(grupo.nome) ?? []).length === 0) {
+                  } @else {
                     <p class="grupo-sem-jogos">Jogos em breve</p>
                   }
                 </div>

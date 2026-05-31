@@ -17,3 +17,9 @@ body {
     color: #f1f5f9;
   }
 }
+
+/* Copa do Mundo 2026 — força white mode independente de preferência do SO */
+body.copa-light-mode {
+  background: #f0f2f5 !important;
+  color: #111827 !important;
+}

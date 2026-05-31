@@ -68,6 +68,24 @@ export class Copa2026Component implements OnInit, OnDestroy {
     return result;
   });
 
+  readonly rodadaAtualPorGrupo = computed(() => {
+    const result = new Map<string, { rodada: number; jogos: Jogo[] } | null>();
+    const placares = this.placares();
+    for (const [nome, rodadas] of this.rodadasPorGrupo()) {
+      if (rodadas.length === 0) { result.set(nome, null); continue; }
+      let atual = rodadas[rodadas.length - 1];
+      for (const rodada of rodadas) {
+        const todosEncerrados = rodada.jogos.every(j => {
+          const p = placares.get(`${j.timeMandante}|${j.timeVisitante}`);
+          return p?.status === 'encerrado';
+        });
+        if (!todosEncerrados) { atual = rodada; break; }
+      }
+      result.set(nome, atual);
+    }
+    return result;
+  });
+
   aproveitamento(entry: ClassificacaoEntry): number {
     if (entry.jogos === 0) return 0;
     return Math.round((entry.pontos / (entry.jogos * 3)) * 100);
@@ -76,6 +94,7 @@ export class Copa2026Component implements OnInit, OnDestroy {
   constructor(private copaSvc: Copa2026Service) {}
 
   ngOnInit(): void {
+    document.body.classList.add('copa-light-mode');
     this.carregarClassificacao();
     this.carregarJogos();
     this.carregarPlacares();
@@ -87,6 +106,7 @@ export class Copa2026Component implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    document.body.classList.remove('copa-light-mode');
     clearInterval(this.regressivaTimer);
     clearInterval(this.classificacaoInterval);
     clearInterval(this.jogosInterval);
