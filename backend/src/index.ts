@@ -30,12 +30,12 @@ app.use('/api/', rateLimit({
 app.use(copa2026Router);
 
 let jogosCache: { dados: Jogo[]; fetchedAt: number } | null = null;
-const JOGOS_CACHE_TTL_MS = 5 * 60_000;
+const JOGOS_CACHE_TTL_MS = 6 * 60 * 60_000; // 6h — jogos da semana mudam só via populate
 
 app.get('/api/jogos', async (_req, res) => {
   const agora = Date.now();
   if (jogosCache && agora - jogosCache.fetchedAt < JOGOS_CACHE_TTL_MS) {
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    res.setHeader('Cache-Control', 'public, s-maxage=21600, stale-while-revalidate=43200');
     res.json(jogosCache.dados);
     return;
   }
@@ -62,7 +62,7 @@ app.get('/api/jogos', async (_req, res) => {
     });
 
     jogosCache = { dados: jogos, fetchedAt: Date.now() };
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    res.setHeader('Cache-Control', 'public, s-maxage=21600, stale-while-revalidate=43200');
     res.json(jogos);
   } catch (error) {
     console.error('Erro ao buscar jogos do Firestore:', error);

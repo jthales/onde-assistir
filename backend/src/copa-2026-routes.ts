@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { translateCountry } from './country-names';
+import { db } from './firebase';
 
 const router = Router();
 
@@ -23,7 +24,7 @@ let copaClassifCache: { dados: any; fetchedAt: number } | null = null;
 const COPA_CLASSIF_TTL_MS = 5 * 60_000;
 
 let copaJogosCache: { dados: any[]; fetchedAt: number } | null = null;
-const COPA_JOGOS_TTL_MS = 30 * 60_000; // 30 min — schedule muda pouco
+const COPA_JOGOS_TTL_MS = 6 * 60 * 60_000; // 6h — jogos mudam raramente
 
 function fmt(d: Date) {
   return d.toISOString().slice(0, 10).replace(/-/g, '');
@@ -138,50 +139,43 @@ async function fetchEliminatorias(phaseSlug: string) {
   };
 }
 
-async function fetchCopaJogos(): Promise<any[]> {
-  const brtNow = new Date(Date.now() - 3 * 60 * 60 * 1000);
-  const fim    = new Date(brtNow.getTime() + 50 * 24 * 60 * 60 * 1000);
-  const fmtD   = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '');
-  const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${ESPN_COPA}/scoreboard?dates=${fmtD(brtNow)}-${fmtD(fim)}&limit=100`;
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error(`ESPN scoreboard ${resp.status}`);
-  const data: any = await resp.json();
-
-  return (data.events ?? []).map((event: any) => {
-    const comp  = event.competitions?.[0];
-    const mand  = (comp?.competitors ?? []).find((c: any) => c.homeAway === 'home');
-    const visit = (comp?.competitors ?? []).find((c: any) => c.homeAway === 'away');
-    const brt   = new Date(new Date(event.date).getTime() - 3 * 60 * 60 * 1000);
+async function fetchCopaJogosFirestore(): Promise<any[]> {
+  const snap = await db.collection('jogos')
+    .where('campeonato', '==', 'Copa do Mundo 2026')
+    .get();
+  return snap.docs.map(doc => {
+    const d = doc.data();
     return {
-      rodada:        0,
-      timeMandante:  translateCountry(mand?.team?.displayName  ?? ''),
-      timeVisitante: translateCountry(visit?.team?.displayName ?? ''),
-      logoMandante:  mand?.team?.logo  ?? '',
-      logoVisitante: visit?.team?.logo ?? '',
-      data:          brt.toISOString().slice(0, 10),
-      hora:          brt.toISOString().slice(11, 16),
-      canal:         [],
-      streaming:     [],
-      estadio:       comp?.venue?.fullName ?? '',
+      rodada:        d['rodada'] ?? 0,
+      timeMandante:  d['timeMandante'],
+      timeVisitante: d['timeVisitante'],
+      logoMandante:  d['logoMandante']  ?? '',
+      logoVisitante: d['logoVisitante'] ?? '',
+      data:          d['data'],
+      hora:          d['hora'],
+      canal:         d['canal']      ?? [],
+      streaming:     d['streaming']  ?? [],
+      estadio:       d['estadio']    ?? '',
       campeonato:    'Copa do Mundo 2026',
     };
-  });
+  }).sort((a, b) => a.data.localeCompare(b.data) || a.hora.localeCompare(b.hora));
 }
 
 router.get('/api/copa-2026/jogos', async (_req, res) => {
   const agora = Date.now();
   if (copaJogosCache && agora - copaJogosCache.fetchedAt < COPA_JOGOS_TTL_MS) {
-    res.setHeader('Cache-Control', 'public, s-maxage=1800, stale-while-revalidate=3600');
+    // edge cache de 6h garante ≤4 leituras/dia no Firestore
+    res.setHeader('Cache-Control', 'public, s-maxage=21600, stale-while-revalidate=43200');
     res.json(copaJogosCache.dados);
     return;
   }
   try {
-    const jogos = await fetchCopaJogos();
+    const jogos = await fetchCopaJogosFirestore();
     copaJogosCache = { dados: jogos, fetchedAt: agora };
-    res.setHeader('Cache-Control', 'public, s-maxage=1800, stale-while-revalidate=3600');
+    res.setHeader('Cache-Control', 'public, s-maxage=21600, stale-while-revalidate=43200');
     res.json(jogos);
   } catch (error) {
-    console.error('Erro ao buscar jogos Copa 2026:', error);
+    console.error('Erro ao buscar jogos Copa 2026 do Firestore:', error);
     if (copaJogosCache) { res.json(copaJogosCache.dados); return; }
     res.status(500).json({ error: 'Falha ao buscar jogos da Copa 2026' });
   }
