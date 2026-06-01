@@ -73,7 +73,7 @@ export class App implements OnInit, OnDestroy {
       || window.location.pathname.startsWith('/copa-2026');
   });
 
-  readonly isCopa2026Route = computed(() => window.location.pathname.startsWith('/copa-2026'));
+  readonly isCopa2026Route = signal(window.location.pathname.startsWith('/copa-2026'));
 
   readonly copaComecou = computed(() => new Date() >= new Date('2026-06-11T12:00:00-03:00'));
 
@@ -157,6 +157,7 @@ export class App implements OnInit, OnDestroy {
     'COPA SUL-AMERICANA':    'sul-americana',
     'CONMEBOL SULAMERICANA': 'sul-americana',
     'COPA DO BRASIL':        'copa-do-brasil',
+    'COPA DO MUNDO 2026':    'copa-2026',
   };
 
   private readonly CAMP_SLUG_LABEL: Record<string, string> = {
@@ -178,8 +179,19 @@ export class App implements OnInit, OnDestroy {
   navegarParaCampeonato(nomeCampeonato: string): void {
     const slug = this.slugifyCampeonato(nomeCampeonato);
     if (!slug) return;
+    if (slug === 'copa-2026') {
+      this.timeSelecionado.set('');
+      this.filtroAoVivo.set(false);
+      this.campeonatoSelecionado.set('');
+      this.noticias.set([]);
+      this.isCopa2026Route.set(true);
+      history.replaceState(null, '', '/copa-2026');
+      analyticsTrack('ver_copa_2026');
+      return;
+    }
     this.timeSelecionado.set('');
     this.filtroAoVivo.set(false);
+    this.isCopa2026Route.set(false);
     this.noticias.set([]);
     this.campeonatoSelecionado.set(slug);
     history.replaceState(null, '', `/campeonato/${slug}`);
@@ -190,6 +202,7 @@ export class App implements OnInit, OnDestroy {
 
   voltarParaHome(): void {
     this.campeonatoSelecionado.set('');
+    this.isCopa2026Route.set(false);
     this.classificacaoCampeonato.set(null);
     this.jogosCampeonato.set([]);
     this.noticiasCampeonato.set([]);

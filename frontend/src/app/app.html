@@ -15,7 +15,14 @@
   <header class="hero">
     <div class="hero-inner">
       <div class="hero-badge">2026</div>
-      @if (campeonatoSelecionado()) {
+      @if (isCopa2026Route()) {
+        <button class="btn-voltar" (click)="voltarParaHome()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          Voltar
+        </button>
+        <h1 class="hero-title">Copa do <span class="hero-title-accent">Mundo</span> 2026</h1>
+        <p class="hero-subtitle">Grupos · Classificação · Onde Assistir</p>
+      } @else if (campeonatoSelecionado()) {
         <button class="btn-voltar" (click)="voltarParaHome()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
           Voltar
