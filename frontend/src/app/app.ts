@@ -46,6 +46,7 @@ export class App implements OnInit, OnDestroy {
   error = signal<string | null>(null);
   timeSelecionado = signal<string>('');
   filtroAoVivo = signal(false);
+  filtroBrasil = signal(false);
   placares = signal<Map<string, Placar>>(new Map());
   odds = signal<Map<string, Odds>>(new Map());
   classificacao = signal<ClassificacaoEntry[]>([]);
@@ -361,9 +362,13 @@ export class App implements OnInit, OnDestroy {
   jogosFiltrados = computed(() => {
     const time = this.timeSelecionado();
     const aoVivo = this.filtroAoVivo();
+    const brasil = this.filtroBrasil();
     let jogos = time
       ? this.jogos().filter(j => j.timeMandante === time || j.timeVisitante === time)
       : this.jogos();
+    if (brasil) {
+      jogos = jogos.filter(j => j.timeMandante === 'Brasil' || j.timeVisitante === 'Brasil');
+    }
     if (aoVivo) {
       jogos = jogos.filter(j => this.eAoVivo(j));
     }
@@ -569,6 +574,7 @@ export class App implements OnInit, OnDestroy {
 
   selecionarTime(nome: string): void {
     if (this.filtroAoVivo()) this.filtroAoVivo.set(false);
+    if (this.filtroBrasil()) this.filtroBrasil.set(false);
     this.timeSelecionado.set(nome);
     history.replaceState(null, '', nome ? '/' + slugify(nome) : '/');
     this.atualizarMeta(nome);
@@ -822,6 +828,12 @@ export class App implements OnInit, OnDestroy {
       this.atualizarMeta('');
     }
     this.atualizarSportsEvents(this.jogosFiltrados());
+  }
+
+  toggleFiltroBrasil(): void {
+    const next = !this.filtroBrasil();
+    this.filtroBrasil.set(next);
+    if (next) this.timeSelecionado.set('');
   }
 
   async ativarNotificacoes(): Promise<void> {

@@ -390,6 +390,11 @@
     }
 
     <div class="filtros-bar">
+      @if (isCopaPeriod()) {
+        <button class="filtro-brasil-btn" [class.ativo]="filtroBrasil()" (click)="toggleFiltroBrasil()">
+          🇧🇷 Brasil
+        </button>
+      }
       @if (temJogoAoVivo() || filtroAoVivo()) {
         <button class="filtro-vivo-btn" [class.ativo]="filtroAoVivo()" (click)="toggleFiltroAoVivo()">
           <span class="ao-vivo-dot" [class.ao-vivo-dot--pulsando]="temJogoAoVivo()"></span>
