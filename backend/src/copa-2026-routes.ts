@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { translateCountry } from './country-names';
 import { db } from './firebase';
+import { espnScoreboardUrlForLeague } from './constants';
 
 const router = Router();
 
@@ -202,6 +203,77 @@ router.get('/api/copa-2026/classificacao', async (_req, res) => {
     console.error('Erro ao buscar classificação Copa 2026:', error);
     if (copaClassifCache) { res.json(copaClassifCache.dados); return; }
     res.status(500).json({ error: 'Falha ao buscar dados da Copa 2026' });
+  }
+});
+
+// ── Admin: limpar + repopulate Copa (uso único via curl/browser no Vercel) ────
+function slugify(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
+router.post('/api/admin/repopulate-copa', async (req, res) => {
+  const secret = req.headers['x-admin-secret'];
+  if (!process.env['ADMIN_SECRET'] || secret !== process.env['ADMIN_SECRET']) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  try {
+    // 1. Apagar todos os docs Copa existentes
+    const snap = await db.collection('jogos').where('campeonato', '==', 'Copa do Mundo 2026').get();
+    if (!snap.empty) {
+      const delBatch = db.batch();
+      snap.docs.forEach(d => delBatch.delete(d.ref));
+      await delBatch.commit();
+    }
+
+    // 2. Buscar fixtures da ESPN
+    const url = espnScoreboardUrlForLeague('fifa.world', 60) + '&limit=100';
+    const espnResp = await fetch(url);
+    if (!espnResp.ok) throw new Error(`ESPN ${espnResp.status}`);
+    const data: any = await espnResp.json();
+
+    const agora = new Date().toISOString();
+    const saveBatch = db.batch();
+    let count = 0;
+
+    for (const event of data.events ?? []) {
+      const comp = event.competitions?.[0];
+      if (!comp) continue;
+      const mand  = comp.competitors?.find((c: any) => c.homeAway === 'home');
+      const visit = comp.competitors?.find((c: any) => c.homeAway === 'away');
+      if (!mand || !visit) continue;
+      const statusState: string = event.status?.type?.state ?? 'pre';
+      const statusCompleted: boolean = event.status?.type?.completed === true;
+      if (statusCompleted || statusState === 'post') continue;
+
+      const brt = new Date(new Date(event.date).getTime() - 3 * 60 * 60 * 1000);
+      const timeMandante  = translateCountry(mand.team.displayName);
+      const timeVisitante = translateCountry(visit.team.displayName);
+      const dataStr = brt.toISOString().slice(0, 10);
+      const id = `copa26-${dataStr}-${slugify(timeMandante)}-${slugify(timeVisitante)}`;
+
+      saveBatch.set(db.collection('jogos').doc(id), {
+        rodada: 0, timeMandante, timeVisitante,
+        logoMandante:  mand.team.logo ?? '',
+        logoVisitante: visit.team.logo ?? '',
+        data: dataStr,
+        hora: brt.toISOString().slice(11, 16),
+        canal: [], streaming: ['CazéTV'],
+        estadio: comp.venue?.fullName ?? '',
+        campeonato: 'Copa do Mundo 2026',
+        lastUpdated: agora,
+      });
+      count++;
+    }
+
+    await saveBatch.commit();
+    copaJogosCache = null; // invalida cache em memória
+
+    res.json({ deleted: snap.size, inserted: count });
+  } catch (err: any) {
+    console.error('repopulate-copa error:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 

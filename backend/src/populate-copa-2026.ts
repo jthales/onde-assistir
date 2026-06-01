@@ -69,6 +69,15 @@ async function fetchCopaFixtures(): Promise<Array<Omit<Jogo, 'rodada'> & { rodad
   return fixtures;
 }
 
+async function limparCopaJogos(): Promise<void> {
+  const snap = await db.collection('jogos').where('campeonato', '==', CAMPEONATO_LABEL).get();
+  if (snap.empty) { console.log('  Nenhum documento Copa existente para remover.'); return; }
+  const batch = db.batch();
+  snap.docs.forEach(doc => batch.delete(doc.ref));
+  await batch.commit();
+  console.log(`  🗑  ${snap.size} documento(s) Copa removido(s) do Firestore.`);
+}
+
 async function runPopulate(): Promise<void> {
   console.log(`\n── Populate Copa do Mundo 2026${DRY_RUN ? ' (DRY-RUN)' : ''} ──\n`);
 
@@ -78,6 +87,11 @@ async function runPopulate(): Promise<void> {
   if (fixtures.length === 0) {
     console.log('  Nenhum jogo futuro encontrado — nada a salvar.');
     return;
+  }
+
+  if (!DRY_RUN) {
+    console.log('  Limpando jogos Copa existentes...');
+    await limparCopaJogos();
   }
 
   const jogosParaSalvar = fixtures.map(f => ({
