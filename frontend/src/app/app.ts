@@ -10,6 +10,7 @@ import { Jogo, Placar, Odds, ClassificacaoEntry, Noticia, ClassificacaoResponse,
 import { track } from '@vercel/analytics';
 import { teamInitials } from './team-logos';
 import { Copa2026Component } from './copa-2026/copa-2026.component';
+import { translateCountry } from './copa-2026/country-names';
 
 interface Regressiva { dias: number; horas: number; minutos: number; segundos: number }
 
@@ -701,6 +702,7 @@ export class App implements OnInit, OnDestroy {
   }
 
   getInitials = teamInitials;
+  readonly translateCountry = translateCountry;
 
   h3TextoJogo(jogo: Jogo): string {
     const data = this.formatarData(jogo.data);
