@@ -28,6 +28,37 @@
       } @else if (isCopaPeriod()) {
         <h1 class="hero-title">Copa do <span class="hero-title-accent">Mundo</span> 2026</h1>
         <p class="hero-subtitle">Onde assistir os jogos — EUA · Canadá · México</p>
+        @if (!copaComecou()) {
+          <div class="hero-countdown">
+            <p class="hero-countdown-label">Começa em</p>
+            <div class="hero-countdown-blocks">
+              <div class="hero-countdown-block">
+                <span class="hero-countdown-num">{{ regressiva().dias | number:'2.0-0' }}</span>
+                <span class="hero-countdown-unit">dias</span>
+              </div>
+              <span class="hero-countdown-sep">:</span>
+              <div class="hero-countdown-block">
+                <span class="hero-countdown-num">{{ regressiva().horas | number:'2.0-0' }}</span>
+                <span class="hero-countdown-unit">horas</span>
+              </div>
+              <span class="hero-countdown-sep">:</span>
+              <div class="hero-countdown-block">
+                <span class="hero-countdown-num">{{ regressiva().minutos | number:'2.0-0' }}</span>
+                <span class="hero-countdown-unit">min</span>
+              </div>
+              <span class="hero-countdown-sep">:</span>
+              <div class="hero-countdown-block hero-countdown-block--seg">
+                <span class="hero-countdown-num">{{ regressiva().segundos | number:'2.0-0' }}</span>
+                <span class="hero-countdown-unit">seg</span>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="hero-em-andamento">
+            <span class="ao-vivo-dot ao-vivo-dot--pulsando"></span>
+            Em andamento
+          </div>
+        }
       } @else {
         <h1 class="hero-title">Onde <span class="hero-title-accent">Assistir</span> Futebol Ao Vivo — TV e Streaming no Brasil</h1>
         <p class="hero-subtitle">Brasileirão, Libertadores e mais — TV e Streaming</p>
@@ -314,9 +345,9 @@
         }
       </div>
 
-    } @else if (isCopaPeriod() && !timeSelecionado()) {
+    } @else if (isCopa2026Route()) {
 
-      <!-- ── Copa do Mundo 2026 ─────────────────────────────────────────────── -->
+      <!-- ── Copa do Mundo 2026 — grupos e classificação ─────────────────── -->
       <app-copa-2026></app-copa-2026>
 
     } @else {

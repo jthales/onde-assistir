@@ -15,7 +15,7 @@ import { translateCountry } from './country-names';
 const DRY_RUN = process.argv.includes('--dry-run');
 const ESPN_COPA = 'fifa.world';
 const CAMPEONATO_LABEL = 'Copa do Mundo 2026';
-const JANELA_DIAS = 45;
+const JANELA_DIAS = 60;
 
 function slugify(s: string): string {
   return s.toLowerCase()
@@ -60,7 +60,7 @@ async function fetchCopaFixtures(): Promise<Array<Omit<Jogo, 'rodada'> & { rodad
       data:          brt.toISOString().slice(0, 10),
       hora:          brt.toISOString().slice(11, 16),
       canal:         [],
-      streaming:     [],
+      streaming:     ['CazéTV'],
       estadio:       comp.venue?.fullName ?? '',
       campeonato:    CAMPEONATO_LABEL,
     });

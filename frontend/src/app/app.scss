@@ -159,6 +159,82 @@ body {
   @media (min-width: 768px) { font-size: 1rem; }
 }
 
+// ── Countdown Copa no hero da home ───────────────────────────────────────────
+
+.hero-countdown {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.hero-countdown-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.hero-countdown-blocks {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.hero-countdown-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,223,0,0.4);
+  border-radius: 8px;
+  padding: 8px 12px 5px;
+  min-width: 54px;
+
+  &--seg { border-color: rgba(255,223,0,0.15); }
+}
+
+.hero-countdown-num {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #FFDF00;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.hero-countdown-unit {
+  font-size: 0.55rem;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 3px;
+}
+
+.hero-countdown-sep {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: rgba(255,223,0,0.5);
+  margin-bottom: 14px;
+}
+
+.hero-em-andamento {
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #FFDF00;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 .descricao-seo {
   margin: 0.75rem auto 0;
   max-width: 680px;

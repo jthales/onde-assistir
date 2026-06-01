@@ -11,6 +11,8 @@ import { track } from '@vercel/analytics';
 import { teamInitials } from './team-logos';
 import { Copa2026Component } from './copa-2026/copa-2026.component';
 
+interface Regressiva { dias: number; horas: number; minutos: number; segundos: number }
+
 function slugify(s: string): string {
   return s.toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -67,14 +69,32 @@ export class App implements OnInit, OnDestroy {
 
   readonly isCopaPeriod = computed(() => {
     const agora = new Date();
-    const isDatePeriod = agora >= new Date('2026-06-01T00:00:00') && agora <= new Date('2026-07-22T23:59:59');
-    return isDatePeriod || window.location.pathname.startsWith('/copa-2026');
+    return (agora >= new Date('2026-06-01T00:00:00') && agora <= new Date('2026-07-22T23:59:59'))
+      || window.location.pathname.startsWith('/copa-2026');
   });
+
+  readonly isCopa2026Route = computed(() => window.location.pathname.startsWith('/copa-2026'));
+
+  readonly copaComecou = computed(() => new Date() >= new Date('2026-06-11T12:00:00-03:00'));
+
+  readonly regressiva = signal<Regressiva>(this.calcularRegressiva());
+
+  private calcularRegressiva(): Regressiva {
+    const inicio = new Date('2026-06-11T12:00:00-03:00');
+    const diff = Math.max(0, inicio.getTime() - Date.now());
+    return {
+      dias:     Math.floor(diff / 86_400_000),
+      horas:    Math.floor((diff % 86_400_000) / 3_600_000),
+      minutos:  Math.floor((diff % 3_600_000) / 60_000),
+      segundos: Math.floor((diff % 60_000) / 1000),
+    };
+  }
 
   private pollingInterval?: ReturnType<typeof setInterval>;
   private oddsInterval?: ReturnType<typeof setInterval>;
   private classificacaoInterval?: ReturnType<typeof setInterval>;
   private campeonatoClassifInterval?: ReturnType<typeof setInterval>;
+  private regressivaTimer?: ReturnType<typeof setInterval>;
   private notifToastTimer?: ReturnType<typeof setTimeout>;
   private golToastTimer?: ReturnType<typeof setTimeout>;
   private prevGoalCounts = new Map<string, number>();
@@ -417,10 +437,12 @@ export class App implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    document.body.classList.add('copa-light-mode');
     document.addEventListener('touchstart', this.onTouchStart, { passive: true });
     document.addEventListener('touchmove', this.onTouchMove, { passive: false });
     document.addEventListener('touchend', this.onTouchEnd, { passive: true });
 
+    this.regressivaTimer = setInterval(() => this.regressiva.set(this.calcularRegressiva()), 1000);
     this.carregarDados();
   }
 
@@ -653,10 +675,12 @@ export class App implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    document.body.classList.remove('copa-light-mode');
     clearInterval(this.pollingInterval);
     clearInterval(this.oddsInterval);
     clearInterval(this.classificacaoInterval);
     clearInterval(this.campeonatoClassifInterval);
+    clearInterval(this.regressivaTimer);
     clearTimeout(this.golToastTimer);
     document.removeEventListener('touchstart', this.onTouchStart);
     document.removeEventListener('touchmove', this.onTouchMove);
