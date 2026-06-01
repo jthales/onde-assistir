@@ -1,5 +1,15 @@
 {
   "outputDirectory": "dist/frontend/browser",
+  "headers": [
+    {
+      "source": "/ngsw.json",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
+    },
+    {
+      "source": "/ngsw-worker.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
+    }
+  ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "https://onde-assistir-k8rm.vercel.app/sitemap.xml" },
     { "source": "/(.*)", "destination": "/index.html" }
