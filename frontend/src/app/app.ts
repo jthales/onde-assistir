@@ -6,11 +6,12 @@ import { filter } from 'rxjs/operators';
 import { interval, forkJoin } from 'rxjs';
 import { JogosService } from './services/jogos.service';
 import { PushNotificacaoService } from './services/push-notificacao.service';
-import { Jogo, Placar, Odds, ClassificacaoEntry, Noticia, ClassificacaoResponse, JogoCampeonato } from './models/jogo';
+import { Jogo, Placar, Odds, ClassificacaoEntry, Noticia, ClassificacaoResponse, JogoCampeonato, GrupoClassificacao } from './models/jogo';
 import { track } from '@vercel/analytics';
 import { teamInitials } from './team-logos';
 import { Copa2026Component } from './copa-2026/copa-2026.component';
 import { translateCountry } from './copa-2026/country-names';
+import { Copa2026Service } from './services/copa-2026.service';
 
 interface Regressiva { dias: number; horas: number; minutos: number; segundos: number }
 
@@ -64,6 +65,7 @@ export class App implements OnInit, OnDestroy {
 
   campeonatoSelecionado = signal<string>('');
   classificacaoCampeonato = signal<ClassificacaoResponse | null>(null);
+  copaGrupos = signal<GrupoClassificacao[]>([]);
   jogosCampeonato = signal<JogoCampeonato[]>([]);
   noticiasCampeonato = signal<Noticia[]>([]);
   loadingCampeonato = signal(false);
@@ -441,6 +443,7 @@ export class App implements OnInit, OnDestroy {
   constructor(
     private jogosService: JogosService,
     private pushService: PushNotificacaoService,
+    private copa2026Service: Copa2026Service,
     private meta: Meta,
     private titleService: Title,
     private el: ElementRef,
@@ -458,6 +461,11 @@ export class App implements OnInit, OnDestroy {
 
     this.regressivaTimer = setInterval(() => this.regressiva.set(this.calcularRegressiva()), 1000);
     this.carregarDados();
+    if (this.isCopaPeriod()) {
+      this.copa2026Service.getClassificacao().subscribe({
+        next: (r) => { if (r.tipo === 'grupos') this.copaGrupos.set(r.grupos); },
+      });
+    }
   }
 
   private carregarDados(): void {
@@ -915,8 +923,7 @@ export class App implements OnInit, OnDestroy {
   textoBotaoNotificacao(): string {
     const sel = this.timeSelecionado();
     if (sel) return this.notifAtivaParaTimeAtual() ? 'Notificações ativas' : 'Notificar gols';
-    const n = this.timesComNotificacao().length;
-    return n > 0 ? `Seguindo ${n} time${n > 1 ? 's' : ''}` : 'Gols';
+    return 'Gols';
   }
 
   tituloBotaoNotificacao(): string {

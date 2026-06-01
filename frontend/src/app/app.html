@@ -66,6 +66,12 @@
             Em andamento
           </div>
         }
+        @if (timesComNotificacao().length > 0) {
+          <div class="hero-seguindo">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Seguindo {{ timesComNotificacao().length }} time{{ timesComNotificacao().length > 1 ? 's' : '' }}
+          </div>
+        }
       } @else {
         <h1 class="hero-title">Onde <span class="hero-title-accent">Assistir</span> Futebol Ao Vivo — TV e Streaming no Brasil</h1>
         <p class="hero-subtitle">Brasileirão, Libertadores e mais — TV e Streaming</p>
@@ -644,7 +650,49 @@
         }
         </div>
 
-        @if (classificacaoProvisoria().length > 0) {
+        @if (isCopaPeriod() && copaGrupos().length > 0) {
+          <aside class="classificacao copa-grupos-sidebar">
+            <h2 class="classificacao-titulo" style="margin-bottom:0.75rem">Fase de Grupos</h2>
+            @for (grupo of copaGrupos(); track grupo.nome) {
+              <div class="copa-grupo-bloco">
+                <div class="copa-grupo-nome">{{ grupo.nome }}</div>
+                <table class="classificacao-tabela">
+                  <thead>
+                    <tr>
+                      <th class="col-pos">#</th>
+                      <th class="col-time">Seleção</th>
+                      <th class="col-num" title="Pontos">Pts</th>
+                      <th class="col-num" title="Jogos">J</th>
+                      <th class="col-num" title="Vitórias">V</th>
+                      <th class="col-num" title="Empates">E</th>
+                      <th class="col-num" title="Saldo de Gols">SG</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (entry of grupo.times; track entry.nome; let i = $index) {
+                      <tr [class.copa-grupo-classificado]="i < 2">
+                        <td class="col-pos">{{ i + 1 }}</td>
+                        <td class="col-time">
+                          <div class="col-time-inner">
+                            @if (entry.logo) {
+                              <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                            }
+                            <span class="classificacao-nome">{{ entry.nome }}</span>
+                          </div>
+                        </td>
+                        <td class="col-num col-pts">{{ entry.pontos }}</td>
+                        <td class="col-num">{{ entry.jogos }}</td>
+                        <td class="col-num">{{ entry.vitorias }}</td>
+                        <td class="col-num">{{ entry.empates }}</td>
+                        <td class="col-num" [class.saldo-positivo]="entry.saldo > 0" [class.saldo-negativo]="entry.saldo < 0">{{ entry.saldo > 0 ? '+' : '' }}{{ entry.saldo }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </aside>
+        } @else if (!isCopaPeriod() && classificacaoProvisoria().length > 0) {
           <aside class="classificacao">
             <div class="classificacao-header">
               <h2 class="classificacao-titulo">Brasileirão Série A</h2>
