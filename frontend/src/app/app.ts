@@ -997,6 +997,7 @@ export class App implements OnInit, OnDestroy {
   }
 
   mostrarOndeAssistir(jogo: Jogo): boolean {
+    if (jogo.canal.length > 0 || jogo.streaming.length > 0) return true;
     const brtHoje = new Date(new Date().getTime() - 3 * 60 * 60 * 1000);
     const limite = new Date(brtHoje);
     limite.setDate(limite.getDate() + 3);
