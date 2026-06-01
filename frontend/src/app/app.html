@@ -360,6 +360,7 @@
     } @else {
 
     <!-- ── Homepage ─────────────────────────────────────────────────────────── -->
+    @if (!isCopaPeriod()) {
     <div class="times-picker">
       <button class="time-chip time-chip--todos" [class.ativo]="timeSelecionado() === ''" (click)="selecionarTime('')">
         Todos os times
@@ -380,6 +381,7 @@
         }
       </div>
     </div>
+    }
 
     <div class="filtros-bar">
       @if (temJogoAoVivo() || filtroAoVivo()) {
