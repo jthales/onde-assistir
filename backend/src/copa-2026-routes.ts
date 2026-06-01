@@ -24,7 +24,7 @@ let copaClassifCache: { dados: any; fetchedAt: number } | null = null;
 const COPA_CLASSIF_TTL_MS = 5 * 60_000;
 
 let copaJogosCache: { dados: any[]; fetchedAt: number } | null = null;
-const COPA_JOGOS_TTL_MS = 6 * 60 * 60_000; // 6h — jogos mudam raramente
+const COPA_JOGOS_TTL_MS = 2 * 60 * 60_000; // 2h
 
 function fmt(d: Date) {
   return d.toISOString().slice(0, 10).replace(/-/g, '');
@@ -165,14 +165,14 @@ router.get('/api/copa-2026/jogos', async (_req, res) => {
   const agora = Date.now();
   if (copaJogosCache && agora - copaJogosCache.fetchedAt < COPA_JOGOS_TTL_MS) {
     // edge cache de 6h garante ≤4 leituras/dia no Firestore
-    res.setHeader('Cache-Control', 'public, s-maxage=21600, stale-while-revalidate=43200');
+    res.setHeader('Cache-Control', 'public, s-maxage=7200, stale-while-revalidate=14400');
     res.json(copaJogosCache.dados);
     return;
   }
   try {
     const jogos = await fetchCopaJogosFirestore();
     copaJogosCache = { dados: jogos, fetchedAt: agora };
-    res.setHeader('Cache-Control', 'public, s-maxage=21600, stale-while-revalidate=43200');
+    res.setHeader('Cache-Control', 'public, s-maxage=7200, stale-while-revalidate=14400');
     res.json(jogos);
   } catch (error) {
     console.error('Erro ao buscar jogos Copa 2026 do Firestore:', error);
