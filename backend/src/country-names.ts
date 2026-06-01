@@ -3,10 +3,10 @@ export const COUNTRY_NAMES_PT: Record<string, string> = {
   'Mexico': 'México',
   'South Africa': 'África do Sul',
   'South Korea': 'Coreia do Sul',
-  'Czechia': 'Tchéquia',
+  'Czechia': 'Rep. Tcheca',
   // Grupo B
   'Canada': 'Canadá',
-  'Bosnia-Herzegovina': 'Bósnia e Herzegovina',
+  'Bosnia-Herzegovina': 'Bósnia',
   'Qatar': 'Catar',
   'Switzerland': 'Suíça',
   // Grupo C
@@ -51,7 +51,7 @@ export const COUNTRY_NAMES_PT: Record<string, string> = {
   'Jordan': 'Jordânia',
   // Grupo K
   'Portugal': 'Portugal',
-  'Congo DR': 'Rep. Dem. do Congo',
+  'Congo DR': 'RD Congo',
   'Uzbekistan': 'Uzbequistão',
   'Colombia': 'Colômbia',
   // Grupo L
