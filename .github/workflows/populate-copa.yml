@@ -15,7 +15,7 @@ jobs:
         id: periodo
         run: |
           TODAY=$(date -u +%Y-%m-%d)
-          if [[ "$TODAY" < "2026-06-11" || "$TODAY" > "2026-07-20" ]]; then
+          if [[ "$TODAY" < "2026-06-02" || "$TODAY" > "2026-07-20" ]]; then
             echo "Fora do período da Copa ($TODAY). Encerrando."
             echo "skip=true" >> $GITHUB_OUTPUT
           else
