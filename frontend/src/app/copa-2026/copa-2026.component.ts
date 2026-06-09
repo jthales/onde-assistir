@@ -85,6 +85,13 @@ export class Copa2026Component implements OnInit, OnDestroy {
     return result;
   });
 
+  readonly temJogosAgrupados = computed(() => {
+    for (const jogos of this.jogosPorGrupo().values()) {
+      if (jogos.length > 0) return true;
+    }
+    return false;
+  });
+
   aproveitamento(entry: ClassificacaoEntry): number {
     if (entry.jogos === 0) return 0;
     return Math.round((entry.pontos / (entry.jogos * 3)) * 100);

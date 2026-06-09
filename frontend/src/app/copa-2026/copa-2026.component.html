@@ -82,6 +82,47 @@
         <div class="copa-section-header">
           <h3 class="copa-section-titulo">Fase de Grupos</h3>
         </div>
+
+        <!-- Fallback: jogos não mapeados para grupos (ESPN standings sem dados) -->
+        @if (!temJogosAgrupados() && jogos().length > 0) {
+          <div class="copa-proximos-jogos">
+            <h4 class="copa-proximos-titulo">Próximos Jogos</h4>
+            @for (jogo of jogos(); track jogo.timeMandante + jogo.data) {
+              @let placar = getPlacarJogo(jogo);
+              <div class="grupo-jogo-card" [class.grupo-jogo-card--live]="placar?.status === 'em-andamento'">
+                <div class="grupo-jogo-meta">
+                  @if (jogo.estadio) {
+                    <span>{{ jogo.estadio }}</span>
+                    <span class="grupo-meta-sep">·</span>
+                  }
+                  <span>{{ formatarData(jogo.data) }} · {{ jogo.hora }}</span>
+                </div>
+                <div class="grupo-jogo-confronto">
+                  <div class="grupo-jogo-time">
+                    @if (jogo.logoMandante) {
+                      <img [src]="jogo.logoMandante" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                    }
+                    <span>{{ translateCountry(jogo.timeMandante) }}</span>
+                  </div>
+                  @if (placar && (placar.status === 'encerrado' || placar.status === 'em-andamento')) {
+                    <span class="grupo-jogo-placar" [class.ao-vivo-score]="placar.status === 'em-andamento'">
+                      {{ placar.placarMandante }} – {{ placar.placarVisitante }}
+                    </span>
+                  } @else {
+                    <span class="grupo-jogo-vs">×</span>
+                  }
+                  <div class="grupo-jogo-time">
+                    @if (jogo.logoVisitante) {
+                      <img [src]="jogo.logoVisitante" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                    }
+                    <span>{{ translateCountry(jogo.timeVisitante) }}</span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
         <div class="copa-grupos-lista">
           @for (grupo of classif.grupos; track grupo.nome) {
             <div class="grupo-bloco">
@@ -206,10 +247,10 @@
                   <span class="mm-team-name">{{ translateCountry(c.time1.nome) }}</span>
                 </div>
                 <div class="mm-center">
-                  @if (c.ida?.placarMandante !== null && c.ida?.status === 'encerrado') {
-                    <span class="mm-score">{{ c.ida?.placarMandante }} – {{ c.ida?.placarVisitante }}</span>
-                  } @else if (c.ida?.status === 'em-andamento') {
-                    <span class="mm-score ao-vivo-score">{{ c.ida?.placarMandante }} – {{ c.ida?.placarVisitante }}</span>
+                  @if (c.ida && c.ida.placarMandante !== null && c.ida.status === 'encerrado') {
+                    <span class="mm-score">{{ c.ida.placarMandante }} – {{ c.ida.placarVisitante }}</span>
+                  } @else if (c.ida && c.ida.status === 'em-andamento') {
+                    <span class="mm-score ao-vivo-score">{{ c.ida.placarMandante }} – {{ c.ida.placarVisitante }}</span>
                   } @else {
                     <span class="mm-vs">vs</span>
                   }

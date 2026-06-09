@@ -248,6 +248,22 @@
   box-shadow: none;
 }
 
+.copa-proximos-jogos {
+  padding: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.copa-proximos-titulo {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--copa-text-muted, #666);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
 // Lista vertical de grupos com standings + jogos ao lado
 .copa-grupos-lista {
   display: flex;
