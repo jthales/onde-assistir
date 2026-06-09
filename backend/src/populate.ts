@@ -225,9 +225,6 @@ async function clearCollection(ref: admin.firestore.CollectionReference): Promis
 async function runPopulate(): Promise<void> {
   if (DRY_RUN) {
     console.log('🔍 DRY-RUN ativo — nenhuma alteração será feita no banco de dados.\n');
-  } else {
-    console.log('Limpando coleção jogos...');
-    await clearCollection(db.collection('jogos'));
   }
 
   console.log('\n── ESPN ──');
@@ -239,7 +236,15 @@ async function runPopulate(): Promise<void> {
   const resumoCamp = Object.entries(porCampeonato).map(([c, n]) => `${n} ${c}`).join(' | ');
   console.log(`Total: ${fixtures.length} jogos — ${resumoCamp}`);
 
-  if (fixtures.length === 0) throw new Error('Nenhum jogo encontrado na ESPN');
+  if (fixtures.length === 0) {
+    console.log('ℹ️  Nenhum jogo encontrado na ESPN (possível pausa das ligas). Banco de dados mantido sem alterações.');
+    return;
+  }
+
+  if (!DRY_RUN) {
+    console.log('Limpando coleção jogos...');
+    await clearCollection(db.collection('jogos'));
+  }
 
   // Data de hoje em BRT (UTC-3) — usada para priorizar FutebolExpert
   const hoje = new Date(Date.now() - 3 * 60 * 60 * 1000);
