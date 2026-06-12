@@ -85,6 +85,11 @@ async function runPopulate(): Promise<void> {
   // Não apaga jogos existentes — apenas faz upsert para preservar resultados de rodadas passadas
   // e dados de canal/streaming já preenchidos pelo scraper.
 
+  // Pre-fetch existing doc IDs to avoid overwriting canal/streaming set by the scraper
+  const existingSnap = await db.collection('jogos').where('campeonato', '==', CAMPEONATO_LABEL).get();
+  const existingIds = new Set(existingSnap.docs.map(d => d.id));
+  console.log(`  Jogos já existentes no Firestore: ${existingIds.size}`);
+
   const jogosParaSalvar = fixtures.map(f => ({
     id: jogoId(f.data, f.timeMandante, f.timeVisitante),
     ...f,
@@ -101,8 +106,14 @@ async function runPopulate(): Promise<void> {
   } else {
     const batch = db.batch();
     for (const jogo of jogosParaSalvar) {
-      const { id, ...jogoSemId } = jogo;
-      batch.set(db.collection('jogos').doc(id), jogoSemId, { merge: true });
+      const { id, canal, streaming, ...jogoBase } = jogo;
+      // Only set default canal/streaming for NEW docs; existing ones preserve scraper data
+      const docData: Record<string, unknown> = { ...jogoBase };
+      if (!existingIds.has(id)) {
+        docData['canal'] = canal;
+        docData['streaming'] = streaming;
+      }
+      batch.set(db.collection('jogos').doc(id), docData, { merge: true });
     }
     await batch.commit();
     console.log(`\n✅ ${jogosParaSalvar.length} jogo(s) salvos no Firestore (coleção 'jogos')`);

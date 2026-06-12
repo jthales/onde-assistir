@@ -87,60 +87,50 @@ function parsearJogos(html: string): JogoCanais[] {
   const $ = cheerio.load(html);
   const jogos: JogoCanais[] = [];
 
-  // Estratégia 1: cards de jogo com classe contendo "jogo", "match", "game", "card"
-  const seletoresCard = [
-    '.jogo', '.match', '.game-card', '.card-jogo', '.fixture',
-    '[class*="jogo"]', '[class*="match"]', '[class*="fixture"]', '[class*="game"]',
-  ];
+  // Estrutura do futebolexpert: tabela com colunas Data | Horário | Confronto | Onde assistir | Fase
+  // Extrair por índice de célula para não confundir nomes de times com canais
+  $('table tbody tr, table tr').each((_, row) => {
+    const cells = $(row).find('td');
+    if (cells.length < 4) return;
 
-  for (const sel of seletoresCard) {
-    const els = $(sel);
-    if (els.length === 0) continue;
+    // Coluna 2: Confronto (ex: "Catar x Suíça")
+    const confronto = cells.eq(2).text().trim();
+    const vsMatch = confronto.match(/^([A-Za-zÀ-ú\s.'()-]+?)\s+[xX×]\s+([A-Za-zÀ-ú\s.'()-]+)$/);
+    if (!vsMatch) return;
 
-    console.log(`  [parse] Seletor "${sel}" encontrou ${els.length} elemento(s)`);
+    const mandante = vsMatch[1].trim();
+    const visitante = vsMatch[2].trim();
+    if (mandante.length < 2 || visitante.length < 2) return;
 
-    els.each((_, el) => {
-      const texto = $(el).text();
-      // Procura padrão "Time A x Time B" ou "Time A vs Time B"
-      const matchVs = texto.match(/(.+?)\s+[xX×vs]+\s+(.+)/);
-      if (!matchVs) return;
+    // Coluna 3: Onde assistir — extrair canais de <a>, <img alt>, ou texto
+    const ondeCell = cells.eq(3);
+    const canais: string[] = [];
 
-      const canaisTexto = $(el).find('[class*="canal"], [class*="channel"], [class*="transmiss"], [class*="onde"]').text();
-      const canais = canaisTexto.split(/[,|\/\n]+/).map(c => c.trim()).filter(Boolean);
+    ondeCell.find('a').each((_, a) => {
+      const t = $(a).text().trim();
+      if (t.length > 1) canais.push(t);
+    });
 
-      jogos.push({
-        timeMandante:  matchVs[1].trim(),
-        timeVisitante: matchVs[2].split('\n')[0].trim(),
-        canais,
+    if (canais.length === 0) {
+      ondeCell.find('img').each((_, img) => {
+        const alt = ($(img).attr('alt') ?? $(img).attr('title') ?? '').trim();
+        if (alt.length > 1) canais.push(alt);
       });
-    });
+    }
 
-    if (jogos.length > 0) break;
-  }
+    if (canais.length === 0) {
+      ondeCell.text().trim().split(/[,|\n\/]+/).forEach(c => {
+        const t = c.trim();
+        if (t.length > 1) canais.push(t);
+      });
+    }
 
-  if (jogos.length === 0) {
-    // Estratégia 2: linhas de tabela com times
-    $('tr, li').each((_, el) => {
-      const texto = $(el).text();
-      const matchVs = texto.match(/([A-Za-zÀ-ú\s]+?)\s+[xX×]\s+([A-Za-zÀ-ú\s]+)/);
-      if (!matchVs) return;
-
-      const mandante = matchVs[1].trim();
-      const visitante = matchVs[2].trim();
-      // Filtra linhas que parecem ser cabeçalhos (menos de 2 chars por nome)
-      if (mandante.length < 3 || visitante.length < 3) return;
-
-      // Canais: texto restante após os times
-      const resto = texto.replace(matchVs[0], '');
-      const canais = resto.split(/[,|\/\n]+/).map(c => c.trim()).filter(c => c.length > 1);
-
-      jogos.push({ timeMandante: mandante, timeVisitante: visitante, canais });
-    });
-  }
+    console.log(`  [parse] ${mandante} x ${visitante} → [${canais.join(', ') || 'sem canais'}]`);
+    jogos.push({ timeMandante: mandante, timeVisitante: visitante, canais });
+  });
 
   if (jogos.length === 0) {
-    console.warn('  [parse] Nenhum jogo encontrado com os seletores tentados.');
-    // Log dos primeiros 3000 chars do HTML para debug
+    console.warn('  [parse] Nenhum jogo encontrado — verificar estrutura HTML.');
     console.log('  [debug] Primeiros 3000 chars do HTML:');
     console.log(html.slice(0, 3000));
   }
