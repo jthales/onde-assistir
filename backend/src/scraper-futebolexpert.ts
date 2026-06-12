@@ -107,8 +107,10 @@ function parsearJogos(html: string): JogoCanais[] {
     const canais: string[] = [];
 
     ondeCell.find('a').each((_, a) => {
-      const t = $(a).text().trim();
-      if (t.length > 1) canais.push(t);
+      $(a).text().trim().split(/,\s*/).forEach(part => {
+        const p = part.trim();
+        if (p.length > 1) canais.push(p);
+      });
     });
 
     if (canais.length === 0) {

@@ -115,11 +115,10 @@ async function runPopulate(): Promise<void> {
 
       // Preserve scraper-set channels; only use default when:
       // - doc is new (no existing), OR
-      // - doc still has the old default ['CazéTV'] only (scraper hasn't run yet)
+      // - doc has 0 or 1 streaming item (old default or bad comma-joined format)
       const isOldDefault = existing &&
         existing.canal.length === 0 &&
-        existing.streaming.length === 1 &&
-        existing.streaming[0] === 'CazéTV';
+        existing.streaming.length <= 1;
 
       const docData: Record<string, unknown> = {
         ...jogoBase,
