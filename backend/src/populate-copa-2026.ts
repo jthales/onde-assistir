@@ -8,14 +8,12 @@
 import 'dotenv/config';
 import * as fs from 'fs';
 import { db } from './firebase';
-import { espnScoreboardUrlForLeague } from './constants';
+import { espnCopaUrl } from './constants';
 import { Jogo } from './types';
 import { translateCountry } from './country-names';
 
 const DRY_RUN = process.argv.includes('--dry-run');
-const ESPN_COPA = 'fifa.world';
 const CAMPEONATO_LABEL = 'Copa do Mundo 2026';
-const JANELA_DIAS = 60;
 
 function slugify(s: string): string {
   return s.toLowerCase()
@@ -29,7 +27,7 @@ function jogoId(data: string, mandante: string, visitante: string): string {
 }
 
 async function fetchCopaFixtures(): Promise<Array<Omit<Jogo, 'rodada'> & { rodada: number }>> {
-  const url = espnScoreboardUrlForLeague(ESPN_COPA, JANELA_DIAS) + '&limit=100';
+  const url = espnCopaUrl();
   const resp = await fetch(url);
   if (!resp.ok) throw new Error(`ESPN API error: ${resp.status}`);
   const data: any = await resp.json();
@@ -43,11 +41,6 @@ async function fetchCopaFixtures(): Promise<Array<Omit<Jogo, 'rodada'> & { rodad
     const mand = comp.competitors?.find((c: any) => c.homeAway === 'home');
     const visit = comp.competitors?.find((c: any) => c.homeAway === 'away');
     if (!mand || !visit) continue;
-
-    // Ignora jogos já encerrados
-    const statusState: string = event.status?.type?.state ?? 'pre';
-    const statusCompleted: boolean = event.status?.type?.completed === true;
-    if (statusCompleted || statusState === 'post') continue;
 
     const brt = new Date(new Date(event.date).getTime() - 3 * 60 * 60 * 1000);
 
@@ -85,7 +78,7 @@ async function runPopulate(): Promise<void> {
   console.log(`  Jogos encontrados (ESPN): ${fixtures.length}`);
 
   if (fixtures.length === 0) {
-    console.log('  Nenhum jogo futuro encontrado — nada a salvar.');
+    console.log('  Nenhum jogo encontrado — nada a salvar.');
     return;
   }
 

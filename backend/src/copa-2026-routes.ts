@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { translateCountry } from './country-names';
 import { db } from './firebase';
-import { espnScoreboardUrlForLeague } from './constants';
+import { espnCopaUrl } from './constants';
 
 const router = Router();
 
@@ -227,8 +227,8 @@ router.post('/api/admin/repopulate-copa', async (req, res) => {
       await delBatch.commit();
     }
 
-    // 2. Buscar fixtures da ESPN
-    const url = espnScoreboardUrlForLeague('fifa.world', 60) + '&limit=100';
+    // 2. Buscar fixtures da ESPN (período completo da Copa: 11 Jun–19 Jul)
+    const url = espnCopaUrl();
     const espnResp = await fetch(url);
     if (!espnResp.ok) throw new Error(`ESPN ${espnResp.status}`);
     const data: any = await espnResp.json();
@@ -243,9 +243,6 @@ router.post('/api/admin/repopulate-copa', async (req, res) => {
       const mand  = comp.competitors?.find((c: any) => c.homeAway === 'home');
       const visit = comp.competitors?.find((c: any) => c.homeAway === 'away');
       if (!mand || !visit) continue;
-      const statusState: string = event.status?.type?.state ?? 'pre';
-      const statusCompleted: boolean = event.status?.type?.completed === true;
-      if (statusCompleted || statusState === 'post') continue;
 
       const brt = new Date(new Date(event.date).getTime() - 3 * 60 * 60 * 1000);
       const timeMandante  = translateCountry(mand.team.displayName);

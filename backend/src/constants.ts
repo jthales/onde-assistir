@@ -9,6 +9,11 @@ export function espnScoreboardUrl(): string {
   return espnScoreboardUrlForLeague(ESPN_LEAGUES.brasileirao, 7);
 }
 
+/** URL fixa cobrindo todos os 104 jogos da Copa 2026 (fase de grupos até final). */
+export function espnCopaUrl(): string {
+  return 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719&limit=300';
+}
+
 export function espnScoreboardUrlForLeague(leagueId: string, janelaDias = 14): string {
   const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '');
   // Usar data BRT (UTC-3) para não perder jogos do dia após as 21h (quando UTC vira dia seguinte)

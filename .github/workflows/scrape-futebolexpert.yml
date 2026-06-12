@@ -1,0 +1,73 @@
+name: 📺 Scrape FutebolExpert (Copa 2026)
+
+on:
+  schedule:
+    # 2x ao dia: 10h e 13h UTC (07h e 10h BRT)
+    - cron: '0 10,13 * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📅 Verificar período da Copa
+        id: periodo
+        run: |
+          TODAY=$(date -u +%Y-%m-%d)
+          if [[ "$TODAY" < "2026-06-12" || "$TODAY" > "2026-07-20" ]]; then
+            echo "Fora do período da Copa ($TODAY). Encerrando."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "Dentro do período da Copa ($TODAY). Executando."
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📥 Baixando o código
+        if: steps.periodo.outputs.skip == 'false'
+        uses: actions/checkout@v4
+
+      - name: 🟢 Configurando Node.js v20
+        if: steps.periodo.outputs.skip == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: 📦 Instalando dependências
+        if: steps.periodo.outputs.skip == 'false'
+        working-directory: backend
+        run: npm ci
+
+      - name: 📺 Scraping FutebolExpert canais
+        if: steps.periodo.outputs.skip == 'false'
+        working-directory: backend
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+        run: |
+          echo "Iniciando scrape FutebolExpert — $(date '+%d/%m/%Y %H:%M:%S UTC')"
+          npm run scrape:futebolexpert 2>&1 | tee ../scrape-futebolexpert.log
+          exit ${PIPESTATUS[0]}
+
+      - name: 📄 Salvar log como artifact
+        if: steps.periodo.outputs.skip == 'false' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scrape-futebolexpert-log-${{ github.run_number }}
+          path: scrape-futebolexpert.log
+          retention-days: 7
+
+      - name: 📋 Step Summary
+        if: always()
+        run: |
+          echo "## FutebolExpert Scrape — $(date '+%d/%m/%Y %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+          if [ -f scrape-futebolexpert.log ]; then
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            grep -E "(──|atualizado|✅|⚠|❌|Erro|Resultado)" scrape-futebolexpert.log || echo "(sem linhas de resumo)"
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Execução ignorada (fora do período da Copa)." >> $GITHUB_STEP_SUMMARY
+          fi
