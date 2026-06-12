@@ -53,7 +53,7 @@ async function fetchCopaFixtures(): Promise<Array<Omit<Jogo, 'rodada'> & { rodad
       data:          brt.toISOString().slice(0, 10),
       hora:          brt.toISOString().slice(11, 16),
       canal:         [],
-      streaming:     ['CazéTV'],
+      streaming:     ['CazéTV', 'Prime Video'],
       estadio:       comp.venue?.fullName ?? '',
       campeonato:    CAMPEONATO_LABEL,
     });
@@ -85,10 +85,14 @@ async function runPopulate(): Promise<void> {
   // Não apaga jogos existentes — apenas faz upsert para preservar resultados de rodadas passadas
   // e dados de canal/streaming já preenchidos pelo scraper.
 
-  // Pre-fetch existing doc IDs to avoid overwriting canal/streaming set by the scraper
+  // Pre-fetch existing docs to preserve channel data set by the scraper
   const existingSnap = await db.collection('jogos').where('campeonato', '==', CAMPEONATO_LABEL).get();
-  const existingIds = new Set(existingSnap.docs.map(d => d.id));
-  console.log(`  Jogos já existentes no Firestore: ${existingIds.size}`);
+  const existingDocs = new Map<string, { canal: string[]; streaming: string[] }>();
+  for (const doc of existingSnap.docs) {
+    const d = doc.data();
+    existingDocs.set(doc.id, { canal: d['canal'] ?? [], streaming: d['streaming'] ?? [] });
+  }
+  console.log(`  Jogos já existentes no Firestore: ${existingDocs.size}`);
 
   const jogosParaSalvar = fixtures.map(f => ({
     id: jogoId(f.data, f.timeMandante, f.timeVisitante),
@@ -106,13 +110,22 @@ async function runPopulate(): Promise<void> {
   } else {
     const batch = db.batch();
     for (const jogo of jogosParaSalvar) {
-      const { id, canal, streaming, ...jogoBase } = jogo;
-      // Only set default canal/streaming for NEW docs; existing ones preserve scraper data
-      const docData: Record<string, unknown> = { ...jogoBase };
-      if (!existingIds.has(id)) {
-        docData['canal'] = canal;
-        docData['streaming'] = streaming;
-      }
+      const { id, canal: defaultCanal, streaming: defaultStreaming, ...jogoBase } = jogo;
+      const existing = existingDocs.get(id);
+
+      // Preserve scraper-set channels; only use default when:
+      // - doc is new (no existing), OR
+      // - doc still has the old default ['CazéTV'] only (scraper hasn't run yet)
+      const isOldDefault = existing &&
+        existing.canal.length === 0 &&
+        existing.streaming.length === 1 &&
+        existing.streaming[0] === 'CazéTV';
+
+      const docData: Record<string, unknown> = {
+        ...jogoBase,
+        canal:     (existing && !isOldDefault) ? existing.canal     : defaultCanal,
+        streaming: (existing && !isOldDefault) ? existing.streaming : defaultStreaming,
+      };
       batch.set(db.collection('jogos').doc(id), docData, { merge: true });
     }
     await batch.commit();

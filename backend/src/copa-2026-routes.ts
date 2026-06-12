@@ -256,7 +256,7 @@ router.post('/api/admin/repopulate-copa', async (req, res) => {
         logoVisitante: visit.team.logo ?? '',
         data: dataStr,
         hora: brt.toISOString().slice(11, 16),
-        canal: [], streaming: ['CazéTV'],
+        canal: [], streaming: ['CazéTV', 'Prime Video'],
         estadio: comp.venue?.fullName ?? '',
         campeonato: 'Copa do Mundo 2026',
         lastUpdated: agora,
