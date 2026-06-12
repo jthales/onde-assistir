@@ -1,54 +1,61 @@
 /**
  * Scraper do FutebolExpert para obter canais de transmissão dos jogos da Copa 2026.
+ * Usa Puppeteer para renderizar o JavaScript da página e obter todos os jogos.
  * Uso: npx ts-node src/scraper-futebolexpert.ts
- *
- * Busca a página /onde-assistir/copa-do-mundo/todos-os-canais, extrai jogos + canais
- * e atualiza os campos `canal` e `streaming` nos documentos Firestore da coleção `jogos`.
  */
 import 'dotenv/config';
 import * as cheerio from 'cheerio';
+import puppeteer from 'puppeteer';
 import { db } from './firebase';
 
 const URL_FUTEBOLEXPERT = 'https://www.futebolexpert.com.br/onde-assistir/copa-do-mundo/todos-os-canais';
 
-// Canais de streaming conhecidos (resto vai para `canal`)
-const STREAMING_KEYWORDS = [
-  'cazétv', 'cazé', 'youtube', 'disney+', 'disney plus', 'max', 'hbo max',
-  'paramount+', 'paramount plus', 'amazon', 'prime video', 'apple tv', 'dazn',
-  'fubo', 'peacock', 'tubi', 'star+', 'star plus', 'espn+',
-];
-
+// Normaliza nome do canal para comparação e classificação
 function normalizar(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
 }
 
-// Variantes conhecidas de nomes de times para facilitar o matching
-const ALIASES: Record<string, string> = {
-  'estados unidos': 'estados unidos',
-  'eua': 'estados unidos',
-  'usa': 'estados unidos',
-  'coreia': 'coreia do sul',
-  'republica tcheca': 'rep. tcheca',
-  'rep tcheca': 'rep. tcheca',
-  'czech republic': 'rep. tcheca',
-  'africa do sul': 'africa do sul',
-  'africa': 'africa do sul',
-  'gra-bretanha': 'gra-bretanha',
-  'gra bretanha': 'gra-bretanha',
-  'gran bretanha': 'gra-bretanha',
-  'nova zelandia': 'nova zelandia',
-  'arabia saudita': 'arabia saudita',
+// Mapa de variações de nome do site → nome canônico usado no app
+const CANAL_NOME_MAP: Record<string, string> = {
+  'tv globo':                 'Globo',
+  'globo':                    'Globo',
+  'sbt':                      'SBT',
+  'sportv':                   'SporTV',
+  'sporttv':                  'SporTV',
+  'sportv 2':                 'SporTV 2',
+  'sportv 3':                 'SporTV 3',
+  'nsports':                  'Nsports',
+  'band':                     'Band',
+  'record':                   'Record',
+  'record tv':                'Record',
+  'ge tv':                    'Ge TV',
+  'ge tv (no globoplay)':     'Ge TV',
+  'globoplay':                'Globoplay',
+  'prime video':              'Prime Video',
+  'amazon prime video':       'Prime Video',
+  'cazetv':                   'CazéTV',
+  'caze tv':                  'CazéTV',
+  'cazé tv':                  'CazéTV',
+  'cazétv':                   'CazéTV',
+  'disney+':                  'Disney+',
+  'dazn':                     'DAZN',
+  'paramount+':               'Paramount+',
+  'espn':                     'ESPN',
+  'espn brasil':              'ESPN',
 };
 
-function resolverNome(raw: string): string {
-  const n = normalizar(raw);
-  return ALIASES[n] ?? n;
+function normalizarNomeCanal(raw: string): string {
+  const key = normalizar(raw);
+  return CANAL_NOME_MAP[key] ?? raw.trim();
 }
+
+// Canais que são streaming (resto vai para `canal` = TV)
+const STREAMING_KEYWORDS = [
+  'cazétv', 'cazé', 'cazetv', 'youtube', 'disney+', 'disney plus', 'max', 'hbo max',
+  'paramount+', 'paramount plus', 'amazon', 'prime video', 'apple tv', 'dazn',
+  'fubo', 'peacock', 'tubi', 'star+', 'star plus', 'espn+',
+  'globoplay', 'ge tv', 'nsports',
+];
 
 function isStreaming(canal: string): boolean {
   const n = normalizar(canal);
@@ -58,11 +65,38 @@ function isStreaming(canal: string): boolean {
 function classificarCanais(canais: string[]): { canal: string[]; streaming: string[] } {
   const canal: string[] = [];
   const streaming: string[] = [];
-  for (const c of canais) {
-    if (isStreaming(c)) streaming.push(c);
-    else canal.push(c);
+  for (const raw of canais) {
+    const nome = normalizarNomeCanal(raw);
+    if (isStreaming(nome)) streaming.push(nome);
+    else canal.push(nome);
   }
   return { canal, streaming };
+}
+
+// Aliases de nomes de times do site → nome normalizado no Firestore
+const ALIASES: Record<string, string> = {
+  'estados unidos': 'estados unidos',
+  'eua':            'estados unidos',
+  'usa':            'estados unidos',
+  'coreia do sul':  'coreia do sul',
+  'coreia':         'coreia do sul',
+  'republica tcheca': 'rep. tcheca',
+  'rep tcheca':     'rep. tcheca',
+  'czech republic': 'rep. tcheca',
+  'africa do sul':  'africa do sul',
+  'nova zelandia':  'nova zelandia',
+  'arabia saudita': 'arabia saudita',
+  // Nomes longos que o site usa mas Firestore usa forma curta
+  'bosnia e herzegovina': 'bosnia',
+  'bosnia-herzegovina':   'bosnia',
+  'rd congo':             'rd congo',
+  'republica democratica do congo': 'rd congo',
+  'uzbesquistao':         'uzbesquistao',
+};
+
+function resolverNome(raw: string): string {
+  const n = normalizar(raw);
+  return ALIASES[n] ?? n;
 }
 
 interface JogoCanais {
@@ -72,37 +106,41 @@ interface JogoCanais {
 }
 
 async function fetchHtml(): Promise<string> {
-  const resp = await fetch(URL_FUTEBOLEXPERT, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Language': 'pt-BR,pt;q=0.9',
-    },
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
   });
-  if (!resp.ok) throw new Error(`HTTP ${resp.status} ao acessar FutebolExpert`);
-  return resp.text();
+  try {
+    const page = await browser.newPage();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36');
+    await page.goto(URL_FUTEBOLEXPERT, { waitUntil: 'networkidle2', timeout: 40_000 });
+    // Aguarda as linhas da tabela carregarem
+    await page.waitForSelector('table tbody tr', { timeout: 15_000 }).catch(() => {});
+    return await page.content();
+  } finally {
+    await browser.close();
+  }
 }
 
 function parsearJogos(html: string): JogoCanais[] {
   const $ = cheerio.load(html);
   const jogos: JogoCanais[] = [];
 
-  // Estrutura do futebolexpert: tabela com colunas Data | Horário | Confronto | Onde assistir | Fase
-  // Extrair por índice de célula para não confundir nomes de times com canais
+  // Estrutura: tabela com colunas Data | Horário | Confronto | Onde assistir | Fase
   $('table tbody tr, table tr').each((_, row) => {
     const cells = $(row).find('td');
     if (cells.length < 4) return;
 
-    // Coluna 2: Confronto (ex: "Catar x Suíça")
+    // Coluna 2: Confronto (ex: "Brasil x Haiti")
     const confronto = cells.eq(2).text().trim();
-    const vsMatch = confronto.match(/^([A-Za-zÀ-ú\s.'()-]+?)\s+[xX×]\s+([A-Za-zÀ-ú\s.'()-]+)$/);
+    const vsMatch = confronto.match(/^([A-Za-zÀ-ú\s.'()\-]+?)\s+[xX×]\s+([A-Za-zÀ-ú\s.'()\-]+)$/);
     if (!vsMatch) return;
 
     const mandante = vsMatch[1].trim();
     const visitante = vsMatch[2].trim();
     if (mandante.length < 2 || visitante.length < 2) return;
 
-    // Coluna 3: Onde assistir — extrair canais de <a>, <img alt>, ou texto
+    // Coluna 3: Onde assistir — tentar <a>, depois <img alt>, depois texto
     const ondeCell = cells.eq(3);
     const canais: string[] = [];
 
@@ -121,7 +159,7 @@ function parsearJogos(html: string): JogoCanais[] {
     }
 
     if (canais.length === 0) {
-      ondeCell.text().trim().split(/[,|\n\/]+/).forEach(c => {
+      ondeCell.text().trim().split(/,\s*/).forEach(c => {
         const t = c.trim();
         if (t.length > 1) canais.push(t);
       });
@@ -175,12 +213,12 @@ export async function scrapeCanaisFutebolExpert(): Promise<{ atualizados: number
   for (const jogo of jogosExtraidos) {
     const mandNorm  = resolverNome(jogo.timeMandante);
     const visitNorm = resolverNome(jogo.timeVisitante);
-    const chave = `${mandNorm}|${visitNorm}`;
+    const chave    = `${mandNorm}|${visitNorm}`;
     const chaveInv = `${visitNorm}|${mandNorm}`;
 
     const doc = jogosPorNome.get(chave) ?? jogosPorNome.get(chaveInv);
     if (!doc) {
-      console.warn(`  ⚠ Sem match Firestore: "${jogo.timeMandante}" x "${jogo.timeVisitante}"`);
+      console.warn(`  ⚠ Sem match Firestore: "${jogo.timeMandante}" x "${jogo.timeVisitante}" (norm: "${mandNorm}" | "${visitNorm}")`);
       erros++;
       continue;
     }
