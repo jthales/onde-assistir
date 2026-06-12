@@ -92,36 +92,42 @@ export class Copa2026Component implements OnInit, OnDestroy {
     return false;
   });
 
-  readonly rodadaOverride = signal<number | null>(null);
+  readonly rodadasOverridePorGrupo = signal<Map<string, number>>(new Map());
 
-  readonly rodadaAtualGlobal = computed(() => {
-    let min = 1;
-    let found = false;
-    for (const [, rodada] of this.rodadaAtualPorGrupo()) {
-      if (rodada) {
-        min = found ? Math.min(min, rodada.rodada) : rodada.rodada;
-        found = true;
-      }
-    }
-    return found ? min : 1;
-  });
-
-  readonly rodadaGlobalSelecionada = computed(() => this.rodadaOverride() ?? this.rodadaAtualGlobal());
-
-  readonly totalRodadas = computed(() => {
-    let max = 0;
-    for (const rodadas of this.rodadasPorGrupo().values()) {
-      max = Math.max(max, rodadas.length);
-    }
-    return max || 3;
-  });
-
-  getRodadasArray(): number[] {
-    return Array.from({ length: this.totalRodadas() }, (_, i) => i + 1);
+  getRodadaGrupo(grupoNome: string): number {
+    const override = this.rodadasOverridePorGrupo().get(grupoNome);
+    if (override != null) return override;
+    return this.rodadaAtualPorGrupo().get(grupoNome)?.rodada ?? 1;
   }
 
-  selecionarRodada(n: number): void {
-    this.rodadaOverride.set(n);
+  getRodadaAtualGrupo(grupoNome: string): { rodada: number; jogos: Jogo[] } | undefined {
+    return (this.rodadasPorGrupo().get(grupoNome) ?? [])[this.getRodadaGrupo(grupoNome) - 1];
+  }
+
+  temRodadaAnterior(grupoNome: string): boolean {
+    return this.getRodadaGrupo(grupoNome) > 1;
+  }
+
+  temProximaRodada(grupoNome: string): boolean {
+    const total = (this.rodadasPorGrupo().get(grupoNome) ?? []).length;
+    return this.getRodadaGrupo(grupoNome) < total;
+  }
+
+  irRodadaAnterior(grupoNome: string): void {
+    const atual = this.getRodadaGrupo(grupoNome);
+    if (atual <= 1) return;
+    const mapa = new Map(this.rodadasOverridePorGrupo());
+    mapa.set(grupoNome, atual - 1);
+    this.rodadasOverridePorGrupo.set(mapa);
+  }
+
+  irProximaRodada(grupoNome: string): void {
+    const total = (this.rodadasPorGrupo().get(grupoNome) ?? []).length;
+    const atual = this.getRodadaGrupo(grupoNome);
+    if (atual >= total) return;
+    const mapa = new Map(this.rodadasOverridePorGrupo());
+    mapa.set(grupoNome, atual + 1);
+    this.rodadasOverridePorGrupo.set(mapa);
   }
 
   aproveitamento(entry: ClassificacaoEntry): number {

@@ -86,13 +86,6 @@
       <section class="copa-classificacao">
         <div class="copa-section-header">
           <h3 class="copa-section-titulo">Fase de Grupos</h3>
-          <div class="copa-rodada-nav">
-            @for (n of getRodadasArray(); track n) {
-              <button class="copa-rodada-btn" [class.ativo]="rodadaGlobalSelecionada() === n" (click)="selecionarRodada(n)">
-                {{ n }}ª Rodada
-              </button>
-            }
-          </div>
         </div>
 
         <!-- Fallback: jogos não mapeados para grupos (ESPN standings sem dados) -->
@@ -188,9 +181,14 @@
                   </table>
                 </div>
 
-                <!-- Rodada selecionada do grupo -->
+                <!-- Rodada por grupo com navegação ‹ › -->
                 <div class="grupo-jogos-painel">
-                  @let rodadaAtual = (rodadasPorGrupo().get(grupo.nome) ?? [])[rodadaGlobalSelecionada() - 1];
+                  <div class="grupo-rodada-header">
+                    <button class="grupo-rodada-nav-btn" (click)="irRodadaAnterior(grupo.nome)" [disabled]="!temRodadaAnterior(grupo.nome)">&#8249;</button>
+                    <span class="grupo-rodada-titulo">{{ getRodadaGrupo(grupo.nome) }}ª Rodada</span>
+                    <button class="grupo-rodada-nav-btn" (click)="irProximaRodada(grupo.nome)" [disabled]="!temProximaRodada(grupo.nome)">&#8250;</button>
+                  </div>
+                  @let rodadaAtual = getRodadaAtualGrupo(grupo.nome);
                   @if (rodadaAtual) {
                     <div class="grupo-rodada">
                       @for (jogo of rodadaAtual.jogos; track jogo.timeMandante + jogo.data) {

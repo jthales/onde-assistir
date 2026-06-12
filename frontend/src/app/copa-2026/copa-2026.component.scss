@@ -208,39 +208,8 @@
 .copa-section-header {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 10px 12px;
+  gap: 8px;
   margin-bottom: 14px;
-}
-
-.copa-rodada-nav {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.copa-rodada-btn {
-  padding: 5px 14px;
-  border-radius: 20px;
-  border: 1.5px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-2);
-  font-size: 0.78rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-
-  &.ativo {
-    background: var(--color-primary);
-    border-color: var(--color-primary);
-    color: #fff;
-    font-weight: 600;
-  }
-
-  &:hover:not(.ativo) {
-    border-color: var(--color-primary);
-    color: var(--color-primary);
-  }
 }
 
 .copa-section-titulo {
@@ -399,9 +368,54 @@
 .grupo-jogos-painel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   padding: 10px 12px;
   background: color-mix(in srgb, var(--color-bg) 35%, var(--color-surface));
+}
+
+.grupo-rodada-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+.grupo-rodada-titulo {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-3);
+  flex: 1;
+  text-align: center;
+}
+
+.grupo-rodada-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-2);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
 }
 
 .grupo-rodada {
