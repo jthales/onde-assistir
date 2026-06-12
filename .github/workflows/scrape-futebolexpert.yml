@@ -52,6 +52,20 @@ jobs:
           npm run scrape:futebolexpert 2>&1 | tee ../scrape-futebolexpert.log
           exit ${PIPESTATUS[0]}
 
+      - name: 🔄 Invalidar cache do servidor após scrape
+        if: steps.periodo.outputs.skip == 'false'
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+        run: |
+          if [ -n "$BACKEND_URL" ] && [ -n "$ADMIN_SECRET" ]; then
+            curl -s -X POST "$BACKEND_URL/api/admin/invalidar-cache-copa" \
+              -H "x-admin-secret: $ADMIN_SECRET" \
+              -H "Content-Type: application/json" || echo "Cache bust falhou (servidor pode estar offline)"
+          else
+            echo "BACKEND_URL ou ADMIN_SECRET não configurados — pulando cache bust"
+          fi
+
       - name: 📄 Salvar log como artifact
         if: steps.periodo.outputs.skip == 'false' && always()
         uses: actions/upload-artifact@v4

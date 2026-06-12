@@ -90,8 +90,11 @@ const ALIASES: Record<string, string> = {
   'bosnia e herzegovina': 'bosnia',
   'bosnia-herzegovina':   'bosnia',
   'rd congo':             'rd congo',
+  'r. d. congo':          'rd congo',
   'republica democratica do congo': 'rd congo',
   'uzbesquistao':         'uzbesquistao',
+  // Curaçau (PT-BR do site) vs Curaçao (ESPN/Firestore)
+  'curacau':              'curacao',
 };
 
 function resolverNome(raw: string): string {
