@@ -36,10 +36,15 @@
           </div>
         </div>
       </div>
-    } @else {
+    } @else if (temJogosAoVivo()) {
       <div class="copa-em-andamento">
         <span class="ao-vivo-dot ao-vivo-dot--pulsando"></span>
         Em andamento
+      </div>
+    } @else {
+      <div class="copa-aguardando">
+        <span class="copa-aguardando-dot"></span>
+        Aguardando jogos
       </div>
     }
   </div>
@@ -81,6 +86,13 @@
       <section class="copa-classificacao">
         <div class="copa-section-header">
           <h3 class="copa-section-titulo">Fase de Grupos</h3>
+          <div class="copa-rodada-nav">
+            @for (n of getRodadasArray(); track n) {
+              <button class="copa-rodada-btn" [class.ativo]="rodadaGlobalSelecionada() === n" (click)="selecionarRodada(n)">
+                {{ n }}ª Rodada
+              </button>
+            }
+          </div>
         </div>
 
         <!-- Fallback: jogos não mapeados para grupos (ESPN standings sem dados) -->
@@ -176,12 +188,11 @@
                   </table>
                 </div>
 
-                <!-- Rodada atual do grupo -->
+                <!-- Rodada selecionada do grupo -->
                 <div class="grupo-jogos-painel">
-                  @let rodadaAtual = rodadaAtualPorGrupo().get(grupo.nome);
+                  @let rodadaAtual = (rodadasPorGrupo().get(grupo.nome) ?? [])[rodadaGlobalSelecionada() - 1];
                   @if (rodadaAtual) {
                     <div class="grupo-rodada">
-                      <div class="grupo-rodada-label">{{ rodadaAtual.rodada }}ª Rodada</div>
                       @for (jogo of rodadaAtual.jogos; track jogo.timeMandante + jogo.data) {
                         @let placar = getPlacarJogo(jogo);
                         <div class="grupo-jogo-card" [class.grupo-jogo-card--live]="placar?.status === 'em-andamento'">

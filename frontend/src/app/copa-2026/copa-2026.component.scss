@@ -178,6 +178,25 @@
   letter-spacing: 0.06em;
 }
 
+.copa-aguardando {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.copa-aguardando-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+}
+
 @media (max-width: 480px) {
   .copa-hero-title { font-size: 1.2rem; }
   .copa-countdown-block { min-width: 46px; padding: 6px 8px 5px; }
@@ -189,8 +208,39 @@
 .copa-section-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 10px 12px;
   margin-bottom: 14px;
+}
+
+.copa-rodada-nav {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.copa-rodada-btn {
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-2);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+
+  &.ativo {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  &:hover:not(.ativo) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
 }
 
 .copa-section-titulo {

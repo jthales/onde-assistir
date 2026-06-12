@@ -92,6 +92,38 @@ export class Copa2026Component implements OnInit, OnDestroy {
     return false;
   });
 
+  readonly rodadaOverride = signal<number | null>(null);
+
+  readonly rodadaAtualGlobal = computed(() => {
+    let min = 1;
+    let found = false;
+    for (const [, rodada] of this.rodadaAtualPorGrupo()) {
+      if (rodada) {
+        min = found ? Math.min(min, rodada.rodada) : rodada.rodada;
+        found = true;
+      }
+    }
+    return found ? min : 1;
+  });
+
+  readonly rodadaGlobalSelecionada = computed(() => this.rodadaOverride() ?? this.rodadaAtualGlobal());
+
+  readonly totalRodadas = computed(() => {
+    let max = 0;
+    for (const rodadas of this.rodadasPorGrupo().values()) {
+      max = Math.max(max, rodadas.length);
+    }
+    return max || 3;
+  });
+
+  getRodadasArray(): number[] {
+    return Array.from({ length: this.totalRodadas() }, (_, i) => i + 1);
+  }
+
+  selecionarRodada(n: number): void {
+    this.rodadaOverride.set(n);
+  }
+
   aproveitamento(entry: ClassificacaoEntry): number {
     if (entry.jogos === 0) return 0;
     return Math.round((entry.pontos / (entry.jogos * 3)) * 100);
