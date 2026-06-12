@@ -82,10 +82,8 @@ async function runPopulate(): Promise<void> {
     return;
   }
 
-  if (!DRY_RUN) {
-    console.log('  Limpando jogos Copa existentes...');
-    await limparCopaJogos();
-  }
+  // Não apaga jogos existentes — apenas faz upsert para preservar resultados de rodadas passadas
+  // e dados de canal/streaming já preenchidos pelo scraper.
 
   const jogosParaSalvar = fixtures.map(f => ({
     id: jogoId(f.data, f.timeMandante, f.timeVisitante),

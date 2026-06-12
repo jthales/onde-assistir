@@ -52,6 +52,13 @@ jobs:
           npm run populate:copa 2>&1 | tee ../populate-copa.log
           exit ${PIPESTATUS[0]}
 
+      - name: 🔄 Invalidar cache do servidor após populate
+        if: steps.periodo.outputs.skip == 'false' && secrets.BACKEND_URL != '' && secrets.ADMIN_SECRET != ''
+        run: |
+          curl -s -X POST "${{ secrets.BACKEND_URL }}/api/admin/invalidar-cache-copa" \
+            -H "x-admin-secret: ${{ secrets.ADMIN_SECRET }}" \
+            -H "Content-Type: application/json" || echo "Cache bust falhou (servidor pode estar offline)"
+
       - name: 📄 Salvar log como artifact
         if: steps.periodo.outputs.skip == 'false' && always()
         uses: actions/upload-artifact@v4
