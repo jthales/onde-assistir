@@ -1,27 +1,4 @@
 // Copa do Mundo 2026 — Component Styles
-// Força white mode independente da preferência do SO
-:host {
-  --color-bg:            #f0f2f5;
-  --color-surface:       #ffffff;
-  --color-primary:       #1d6f42;
-  --color-primary-dark:  #0a2e1a;
-  --color-primary-light: #25a05e;
-  --color-primary-muted: rgba(29,111,66,0.12);
-  --color-text:          #111827;
-  --color-text-2:        #374151;
-  --color-text-3:        #6b7280;
-  --color-text-4:        #9ca3af;
-  --color-border:        #e5e7eb;
-  --color-border-light:  #f1f3f5;
-  --color-live:          #dc2626;
-  --color-tv:            #1d4ed8;
-  --color-tv-bg:         #dbeafe;
-  --color-stream:        #6d28d9;
-  --color-stream-bg:     #ede9fe;
-  --shadow-sm:  0 1px 4px rgba(0,0,0,.08);
-  --shadow-md:  0 2px 12px rgba(0,0,0,.07);
-  --shadow-lg:  0 6px 20px rgba(0,0,0,.10);
-}
 
 .copa-page {
   display: flex;

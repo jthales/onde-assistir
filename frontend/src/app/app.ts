@@ -459,7 +459,6 @@ export class App implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    document.body.classList.add('copa-light-mode');
     document.addEventListener('touchstart', this.onTouchStart, { passive: true });
     document.addEventListener('touchmove', this.onTouchMove, { passive: false });
     document.addEventListener('touchend', this.onTouchEnd, { passive: true });
@@ -703,7 +702,6 @@ export class App implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    document.body.classList.remove('copa-light-mode');
     clearInterval(this.pollingInterval);
     clearInterval(this.oddsInterval);
     clearInterval(this.classificacaoInterval);

@@ -138,7 +138,6 @@ export class Copa2026Component implements OnInit, OnDestroy {
   constructor(private copaSvc: Copa2026Service) {}
 
   ngOnInit(): void {
-    document.body.classList.add('copa-light-mode');
     this.carregarClassificacao();
     this.carregarJogos();
     this.carregarPlacares();
@@ -150,7 +149,6 @@ export class Copa2026Component implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    document.body.classList.remove('copa-light-mode');
     clearInterval(this.regressivaTimer);
     clearInterval(this.classificacaoInterval);
     clearInterval(this.jogosInterval);
