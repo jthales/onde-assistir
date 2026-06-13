@@ -459,7 +459,7 @@
                 @if (jogo.campeonato) {
                   <button class="campeonato-badge campeonato-badge--btn"
                           (click)="navegarParaCampeonato(jogo.campeonato); $event.stopPropagation()">
-                    {{ jogo.campeonato }}
+                    {{ jogo.campeonato === 'Copa do Mundo 2026' ? 'Copa do Mundo' : jogo.campeonato }}
                   </button>
                 }
               </div>
