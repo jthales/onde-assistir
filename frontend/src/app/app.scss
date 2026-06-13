@@ -1200,7 +1200,7 @@ body {
 }
 
 .copa-grupo-classificado td {
-  background: #f0fdf4;
+  background: var(--color-primary-muted);
   &:first-child { border-left: 2px solid var(--color-primary); }
 }
 
