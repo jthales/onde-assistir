@@ -866,27 +866,61 @@ body {
 
 // ── Footer ───────────────────────────────────────────────────────────────────
 
-.ai-disclaimer {
-  @include flex(0.5rem, $justify: center);
-  flex-wrap: wrap;
-  padding: 0.85rem 1rem;
-  background: #fffbeb;
-  border-top: 1px solid #fde68a;
-  color: #92400e;
-  font-size: 0.8rem;
-  font-weight: 500;
+.site-footer {
+  background: var(--color-primary-dark);
+  border-top: 3px solid var(--color-primary);
+  padding: 2rem 1rem;
   margin-top: auto;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+}
 
-  &-sep { opacity: 0.5; }
+.site-footer-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: center;
+}
 
-  &-link {
-    color: #92400e;
+.site-footer-brand {
+  @include flex(0.4rem, center, center);
+  margin-bottom: 0.25rem;
+}
+
+.site-footer-ball { font-size: 1.15rem; }
+
+.site-footer-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.site-footer-links {
+  @include flex(0.5rem, center, center);
+  flex-wrap: wrap;
+}
+
+.site-footer-dot { opacity: 0.35; }
+
+.site-footer-link {
+  color: rgba(255, 255, 255, 0.55);
+  text-decoration: none;
+  transition: color 0.15s;
+  &:hover { color: #fff; }
+  &--accent {
+    color: var(--color-primary-light);
     font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-    &:hover { opacity: 0.7; }
+    &:hover { color: #fff; }
   }
 }
+
+.site-footer-copy { color: rgba(255, 255, 255, 0.45); }
+
+.site-footer-dev { color: rgba(255, 255, 255, 0.5); }
 
 // ── Filtros bar ───────────────────────────────────────────────────────────────
 
@@ -1906,14 +1940,6 @@ body {
   .notif-toast {
     background: #166534;
     color: #fff;
-  }
-
-  // AI disclaimer footer
-  .ai-disclaimer {
-    background: #1a1000;
-    border-top-color: #6b4f00;
-    color: #fbbf24;
-    &-link { color: #fbbf24; }
   }
 
   // PWA Update banner

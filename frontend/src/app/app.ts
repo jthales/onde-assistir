@@ -64,6 +64,8 @@ export class App implements OnInit, OnDestroy {
   isPulling = signal(false);
   isRefreshing = signal(false);
 
+  readonly currentYear = new Date().getFullYear();
+
   campeonatoSelecionado = signal<string>('');
   classificacaoCampeonato = signal<ClassificacaoResponse | null>(null);
   copaGrupos = signal<GrupoClassificacao[]>([]);
