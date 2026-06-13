@@ -11,10 +11,63 @@ body {
   color: #111827;
 }
 
+/* ── Design Tokens (globais, disponíveis em todos os componentes) ─────────── */
+
+:root {
+  --color-bg:           #f0f2f5;
+  --color-surface:      #ffffff;
+  --color-primary:      #1d6f42;
+  --color-primary-dark: #0a2e1a;
+  --color-primary-light:#25a05e;
+  --color-primary-muted:rgba(29,111,66,0.12);
+  --color-text:         #111827;
+  --color-text-2:       #374151;
+  --color-text-3:       #6b7280;
+  --color-text-4:       #9ca3af;
+  --color-border:       #e5e7eb;
+  --color-border-light: #f1f3f5;
+  --color-live:         #dc2626;
+  --color-tv:           #1d4ed8;
+  --color-tv-bg:        #dbeafe;
+  --color-stream:       #6d28d9;
+  --color-stream-bg:    #ede9fe;
+  --shadow-sm:  0 1px 4px rgba(0,0,0,.08);
+  --shadow-md:  0 2px 12px rgba(0,0,0,.07);
+  --shadow-lg:  0 6px 20px rgba(0,0,0,.10);
+  --shadow-xl:  0 4px 16px rgba(0,0,0,.14);
+  --radius-sm:  6px;
+  --radius-md:  12px;
+  --radius-lg:  16px;
+  --radius-pill:999px;
+}
+
 @media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg:           #0f172a;
+    --color-surface:      #1e293b;
+    --color-primary:      #22c55e;
+    --color-primary-dark: #15803d;
+    --color-primary-light:#4ade80;
+    --color-primary-muted:rgba(34,197,94,0.15);
+    --color-text:         #f1f5f9;
+    --color-text-2:       #cbd5e1;
+    --color-text-3:       #94a3b8;
+    --color-text-4:       #64748b;
+    --color-border:       #334155;
+    --color-border-light: #253347;
+    --color-live:         #ef4444;
+    --color-tv:           #60a5fa;
+    --color-tv-bg:        #1e3a5f;
+    --color-stream:       #a78bfa;
+    --color-stream-bg:    #2e1065;
+    --shadow-sm:  0 1px 4px rgba(0,0,0,.35);
+    --shadow-md:  0 2px 12px rgba(0,0,0,.45);
+    --shadow-lg:  0 6px 20px rgba(0,0,0,.55);
+    --shadow-xl:  0 4px 16px rgba(0,0,0,.55);
+  }
+
   body {
     background: #0f172a;
     color: #f1f5f9;
   }
 }
-
