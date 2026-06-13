@@ -268,9 +268,10 @@
 }
 
 .grupo-bloco {
+  background: var(--color-surface);
   border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   border: 1px solid var(--color-border);
 }
 
