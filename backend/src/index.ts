@@ -4,7 +4,7 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { Jogo } from './types';
 import { db } from './firebase';
-import { espnScoreboardUrlForLeague, ESPN_LEAGUES, TEAM_NAME_MAP, TEAM_ESPN_ID_MAP, LIGA_SLUG_TO_ESPN, LIGA_SLUG_LABEL } from './constants';
+import { espnScoreboardUrlForLeague, espnCopaUrl, ESPN_LEAGUES, TEAM_NAME_MAP, TEAM_ESPN_ID_MAP, LIGA_SLUG_TO_ESPN, LIGA_SLUG_LABEL } from './constants';
 import copa2026Router from './copa-2026-routes';
 const app = express();
 const PORT = process.env['PORT'] ?? 3000;
@@ -293,7 +293,7 @@ app.get('/api/placar', async (_req, res) => {
       fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.libertadores, 1)).then(r => r.json()),
       fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.sudamericana, 1)).then(r => r.json()),
       fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.copadobrasil, 1)).then(r => r.json()),
-      fetch(espnScoreboardUrlForLeague('fifa.world', 1)).then(r => r.json()),
+      fetch(espnCopaUrl()).then(r => r.json()),
     ]);
     const allEvents = [
       ...(dataBra.events ?? []),
