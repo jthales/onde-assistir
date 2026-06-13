@@ -86,6 +86,11 @@
       <section class="copa-classificacao">
         <div class="copa-section-header">
           <h3 class="copa-section-titulo">Fase de Grupos</h3>
+          @if (temClassificacaoProvisoria()) {
+            <span class="classificacao-ao-vivo-badge">
+              <span class="ao-vivo-dot"></span>Ao vivo
+            </span>
+          }
         </div>
 
         <!-- Fallback: jogos não mapeados para grupos (ESPN standings sem dados) -->
@@ -129,7 +134,7 @@
         }
 
         <div class="copa-grupos-lista">
-          @for (grupo of classif.grupos; track grupo.nome) {
+          @for (grupo of (classificacaoProvisoria()?.grupos ?? classif.grupos); track grupo.nome) {
             <div class="grupo-bloco">
               <div class="grupo-bloco-topo">{{ grupo.nome }}</div>
               <div class="grupo-bloco-corpo">
@@ -154,7 +159,7 @@
                     </thead>
                     <tbody>
                       @for (entry of grupo.times; track entry.nome) {
-                        <tr [class.classificado]="$index < 2">
+                        <tr [class.classificado]="$index < 2" [class.entry-provisorio]="entry.provisorio">
                           <td class="col-pos">{{ $index + 1 }}</td>
                           <td class="col-sele">
                             <div class="col-time-inner">

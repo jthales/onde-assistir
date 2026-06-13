@@ -588,12 +588,19 @@
 
 // Destaque para top-2 (classificados)
 .classificado {
-  td { background: color-mix(in srgb, var(--color-primary) 6%, transparent); }
+  td { background: var(--color-primary-muted); }
+  td:first-child { border-left: 3px solid var(--color-primary); }
 
   .col-pos {
     font-weight: 700;
     color: var(--color-primary) !important;
   }
+}
+
+// Linha com jogo em andamento (standings provisórios)
+.entry-provisorio {
+  td { background: rgba(217, 119, 6, 0.10); }
+  .col-pts { color: #d97706 !important; font-weight: 800 !important; }
 }
 
 .saldo-positivo { color: #16a34a !important; }
