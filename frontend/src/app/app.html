@@ -651,8 +651,15 @@
 
         @if (isCopaPeriod() && copaGrupos().length > 0) {
           <aside class="classificacao copa-grupos-sidebar">
-            <h2 class="classificacao-titulo" style="margin-bottom:0.75rem">Fase de Grupos</h2>
-            @for (grupo of copaGrupos(); track grupo.nome) {
+            <div class="classificacao-header">
+              <h2 class="classificacao-titulo">Fase de Grupos</h2>
+              @if (temCopaProvisorio()) {
+                <span class="classificacao-ao-vivo-badge">
+                  <span class="ao-vivo-dot"></span>Ao vivo
+                </span>
+              }
+            </div>
+            @for (grupo of copaGruposProvisorio(); track grupo.nome) {
               <div class="copa-grupo-bloco">
                 <div class="copa-grupo-nome">{{ grupo.nome }}</div>
                 <table class="classificacao-tabela">
@@ -669,7 +676,7 @@
                   </thead>
                   <tbody>
                     @for (entry of grupo.times; track entry.nome; let i = $index) {
-                      <tr [class.copa-grupo-classificado]="i < 2">
+                      <tr [class.copa-grupo-classificado]="i < 2" [class.classificacao-linha--ao-vivo]="entry.provisorio">
                         <td class="col-pos">{{ i + 1 }}</td>
                         <td class="col-time">
                           <div class="col-time-inner">

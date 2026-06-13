@@ -436,6 +436,53 @@ export class App implements OnInit, OnDestroy {
 
   temClassificacaoProvisoria = computed(() => this.classificacaoProvisoria().some(e => e.provisorio));
 
+  copaGruposProvisorio = computed(() => {
+    const base = this.copaGrupos();
+    if (base.length === 0) return base;
+
+    const aoVivo = Array.from(this.placares().values()).filter(p => p.status === 'em-andamento');
+    if (aoVivo.length === 0) return base;
+
+    const grupos = base.map(g => ({ ...g, times: g.times.map(t => ({ ...t })) }));
+
+    for (const placar of aoVivo) {
+      if (placar.placarMandante === null || placar.placarVisitante === null) continue;
+      for (const grupo of grupos) {
+        const mandante = grupo.times.find(t => t.nome === placar.timeMandante);
+        const visitante = grupo.times.find(t => t.nome === placar.timeVisitante);
+        if (!mandante || !visitante) continue;
+
+        mandante.provisorio = true;
+        visitante.provisorio = true;
+        mandante.jogos += 1;
+        visitante.jogos += 1;
+        mandante.gols += placar.placarMandante;
+        mandante.golsSofridos += placar.placarVisitante;
+        mandante.saldo += placar.placarMandante - placar.placarVisitante;
+        visitante.gols += placar.placarVisitante;
+        visitante.golsSofridos += placar.placarMandante;
+        visitante.saldo += placar.placarVisitante - placar.placarMandante;
+
+        if (placar.placarMandante > placar.placarVisitante) {
+          mandante.vitorias += 1; mandante.pontos += 3;
+          visitante.derrotas += 1;
+        } else if (placar.placarMandante < placar.placarVisitante) {
+          visitante.vitorias += 1; visitante.pontos += 3;
+          mandante.derrotas += 1;
+        } else {
+          mandante.empates += 1; mandante.pontos += 1;
+          visitante.empates += 1; visitante.pontos += 1;
+        }
+
+        grupo.times.sort((a, b) => b.pontos - a.pontos || b.saldo - a.saldo || b.gols - a.gols);
+      }
+    }
+
+    return grupos;
+  });
+
+  temCopaProvisorio = computed(() => this.copaGruposProvisorio().some(g => g.times.some(t => t.provisorio)));
+
   private podeTerPlacar(jogo: Jogo): boolean {
     if (!jogo.hora || jogo.hora === '00:00') return false;
     const inicio = new Date(`${jogo.data}T${jogo.hora}:00-03:00`);
@@ -752,7 +799,7 @@ export class App implements OnInit, OnDestroy {
   }
 
   private atualizarPlacar(): void {
-    const temAtivo = this.jogos().some(j => this.eAoVivo(j) || this.podeTerPlacar(j));
+    const temAtivo = this.isCopaPeriod() || this.jogos().some(j => this.eAoVivo(j) || this.podeTerPlacar(j));
     if (!temAtivo || this.isLoadingPlacar) return;
     this.isLoadingPlacar = true;
     this.jogosService.getPlacar().subscribe({
