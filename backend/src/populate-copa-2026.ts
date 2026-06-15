@@ -139,8 +139,8 @@ async function runPopulate(): Promise<void> {
 }
 
 runPopulate()
-  .then(() => { process.exitCode = 0; })
+  .then(() => { process.exit(0); })
   .catch((err) => {
     console.error('Erro no populate-copa-2026:', err);
-    process.exitCode = 1;
+    process.exit(1);
   });

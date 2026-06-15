@@ -253,8 +253,8 @@ export async function scrapeCanaisFutebolExpert(): Promise<{ atualizados: number
 
 // Execução standalone
 scrapeCanaisFutebolExpert()
-  .then(() => { process.exitCode = 0; })
+  .then(() => { process.exit(0); })
   .catch(err => {
     console.error('Erro no scraper:', err);
-    process.exitCode = 1;
+    process.exit(1);
   });
