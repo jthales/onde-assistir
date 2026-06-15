@@ -3,7 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { Jogo } from './types';
-import { db } from './firebase';
+import { messaging } from './firebase';
+import { getDb } from './mongodb';
 import { espnScoreboardUrlForLeague, espnCopaUrl, ESPN_LEAGUES, TEAM_NAME_MAP, TEAM_ESPN_ID_MAP, LIGA_SLUG_TO_ESPN, LIGA_SLUG_LABEL } from './constants';
 import copa2026Router from './copa-2026-routes';
 const app = express();
@@ -42,24 +43,22 @@ app.get('/api/jogos', async (_req, res) => {
 
   try {
     const hojeStr = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const snap = await db.collection('jogos').where('data', '>=', hojeStr).get();
+    const mdb = await getDb();
+    const docs = await mdb.collection('jogos').find({ data: { $gte: hojeStr } }).toArray();
 
-    const jogos: Jogo[] = snap.empty ? [] : snap.docs.map((doc) => {
-      const d = doc.data();
-      return {
-        rodada: d['rodada'],
-        timeMandante: d['timeMandante'],
-        timeVisitante: d['timeVisitante'],
-        logoMandante: d['logoMandante'] ?? '',
-        logoVisitante: d['logoVisitante'] ?? '',
-        data: d['data'],
-        hora: d['hora'],
-        canal: d['canal'] ?? [],
-        streaming: d['streaming'] ?? [],
-        estadio: d['estadio'] ?? '',
-        campeonato: d['campeonato'] ?? '',
-      };
-    });
+    const jogos: Jogo[] = docs.map((d) => ({
+      rodada: d['rodada'],
+      timeMandante: d['timeMandante'],
+      timeVisitante: d['timeVisitante'],
+      logoMandante: d['logoMandante'] ?? '',
+      logoVisitante: d['logoVisitante'] ?? '',
+      data: d['data'],
+      hora: d['hora'],
+      canal: d['canal'] ?? [],
+      streaming: d['streaming'] ?? [],
+      estadio: d['estadio'] ?? '',
+      campeonato: d['campeonato'] ?? '',
+    }));
 
     jogosCache = { dados: jogos, fetchedAt: Date.now() };
     res.setHeader('Cache-Control', 'public, s-maxage=21600, stale-while-revalidate=43200');
@@ -76,12 +75,12 @@ app.get('/api/jogos', async (_req, res) => {
 app.post('/api/test-push', async (req, res) => {
   const { titulo, corpo } = req.body ?? {};
   try {
-    const admin = await import('firebase-admin');
-    const snap = await db.collection('subscricoes').get();
-    if (snap.empty) { res.json({ ok: true, enviados: 0, msg: 'Nenhum assinante cadastrado' }); return; }
-    const tokens = snap.docs.map(d => d.data()['fcmToken'] as string).filter(Boolean);
+    const mdb = await getDb();
+    const subscDocs = await mdb.collection('subscricoes').find().toArray();
+    if (subscDocs.length === 0) { res.json({ ok: true, enviados: 0, msg: 'Nenhum assinante cadastrado' }); return; }
+    const tokens = subscDocs.map(d => d['fcmToken'] as string).filter(Boolean);
     if (tokens.length === 0) { res.json({ ok: true, enviados: 0 }); return; }
-    const result = await admin.messaging().sendEachForMulticast({
+    const result = await messaging.sendEachForMulticast({
       tokens,
       notification: {
         title: titulo ?? '⚽ GOL! (teste)',
@@ -108,12 +107,12 @@ app.post('/api/subscricao', async (req, res) => {
     return;
   }
   try {
-    await db.collection('subscricoes').doc(fcmToken).set({
-      fcmToken,
-      times: times ?? [],
-      jogos: jogos ?? [],
-      updatedAt: new Date(),
-    });
+    const mdb = await getDb();
+    await mdb.collection('subscricoes').updateOne(
+      { _id: fcmToken } as any,
+      { $set: { fcmToken, times: times ?? [], jogos: jogos ?? [], updatedAt: new Date() } },
+      { upsert: true },
+    );
     res.json({ ok: true });
   } catch (e) {
     console.error('Erro ao salvar subscrição:', e);
@@ -124,7 +123,8 @@ app.post('/api/subscricao', async (req, res) => {
 app.delete('/api/subscricao/:token', async (req, res) => {
   const token = req.params['token'];
   try {
-    await db.collection('subscricoes').doc(token).delete();
+    const mdb = await getDb();
+    await mdb.collection('subscricoes').deleteOne({ _id: token } as any);
     res.json({ ok: true });
   } catch (e) {
     console.error('Erro ao remover subscrição:', e);
@@ -137,9 +137,6 @@ const estadoPlacarMemoria = new Map<string, { mandante: number; visitante: numbe
 let estadoPlacarInicializado = false;
 
 async function dispararNotificacoesGol(placares: any[]): Promise<void> {
-  const admin = await import('firebase-admin');
-  const messaging = admin.messaging();
-
   for (const p of placares) {
     if (p.status !== 'em-andamento') continue;
     if (p.placarMandante == null || p.placarVisitante == null) continue;
@@ -156,36 +153,38 @@ async function dispararNotificacoesGol(placares: any[]): Promise<void> {
 
     if (!estadoPlacarInicializado || !prev || totalNovo <= totalPrev) continue;
 
-    // Detectou gol — deduplicar via Firestore antes de enviar (protege contra múltiplas instâncias/reinicializações)
+    // Detectou gol — deduplicar via MongoDB antes de enviar (protege contra múltiplas instâncias/reinicializações)
     const golKey = `${key}_${p.placarMandante}x${p.placarVisitante}`;
+    let golJaExistia: any;
     try {
-      const golRef = db.collection('gols-notificados').doc(golKey);
-      await db.runTransaction(async (tx) => {
-        const snap = await tx.get(golRef);
-        if (snap.exists) throw new Error('already-sent');
-        tx.set(golRef, { sentAt: new Date().toISOString(), placar: `${p.placarMandante}x${p.placarVisitante}` });
-      });
-    } catch (e: any) {
-      if (e.message === 'already-sent') {
-        console.log(`[FCM] Gol ${golKey} já notificado, ignorando duplicata`);
-        continue;
-      }
+      const mdbGol = await getDb();
+      golJaExistia = await mdbGol.collection('gols-notificados').findOneAndUpdate(
+        { _id: golKey } as any,
+        { $setOnInsert: { sentAt: new Date().toISOString(), placar: `${p.placarMandante}x${p.placarVisitante}` } } as any,
+        { upsert: true, returnDocument: 'before' },
+      );
+    } catch (e) {
       console.error('[FCM] Erro na deduplicação, pulando notificação para evitar duplicata:', e);
+      continue;
+    }
+    if (golJaExistia !== null) {
+      console.log(`[FCM] Gol ${golKey} já notificado, ignorando duplicata`);
       continue;
     }
 
     // Buscar assinantes relevantes
     const jogoKey = key;
     try {
-      const snap = await db.collection('subscricoes').get();
+      const mdbSub = await getDb();
+      const subscDocs = await mdbSub.collection('subscricoes').find().toArray();
       const tokens: string[] = [];
-      for (const doc of snap.docs) {
-        const sub = doc.data();
+      for (const doc of subscDocs) {
+        const sub = doc;
         const relevante =
           (sub['times'] as string[])?.includes(p.timeMandante) ||
           (sub['times'] as string[])?.includes(p.timeVisitante) ||
           (sub['jogos'] as string[])?.includes(jogoKey);
-        if (relevante && sub['fcmToken']) tokens.push(sub['fcmToken']);
+        if (relevante && sub['fcmToken']) tokens.push(sub['fcmToken'] as string);
       }
       const uniqueTokens = [...new Set(tokens)];
       if (uniqueTokens.length === 0) continue;
@@ -212,7 +211,7 @@ async function dispararNotificacoesGol(placares: any[]): Promise<void> {
         .map((r: any, i: number) => (!r.success ? uniqueTokens[i] : null))
         .filter(Boolean) as string[];
       for (const t of tokensInvalidos) {
-        db.collection('subscricoes').doc(t).delete().catch(() => {});
+        getDb().then(mdb => mdb.collection('subscricoes').deleteOne({ _id: t } as any)).catch(() => {});
       }
     } catch (e) {
       console.error('Erro ao enviar FCM para gol:', e);
@@ -253,11 +252,12 @@ const jogosJaSalvos = new Set<string>();
 async function getSavedResultados(): Promise<any[]> {
   if (Date.now() - resultadosCacheTime < RESULTADOS_TTL_MS) return resultadosCache;
   try {
-    const snap = await db.collection('resultados').get();
-    resultadosCache = snap.docs.map(d => d.data());
+    const mdb = await getDb();
+    const docs = await mdb.collection('resultados').find().toArray();
+    resultadosCache = docs.map(({ _id, ...rest }) => rest);
     resultadosCacheTime = Date.now();
   } catch (e) {
-    console.error('Erro ao ler resultados do Firestore:', e);
+    console.error('Erro ao ler resultados do MongoDB:', e);
   }
   return resultadosCache;
 }
@@ -267,10 +267,12 @@ async function salvarResultado(placar: any): Promise<void> {
   if (jogosJaSalvos.has(id)) return;
   jogosJaSalvos.add(id);
   try {
-    await db.collection('resultados').doc(id).set({
-      ...placar,
-      savedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    });
+    const mdb = await getDb();
+    await mdb.collection('resultados').updateOne(
+      { _id: id } as any,
+      { $set: { ...placar, savedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString() } },
+      { upsert: true },
+    );
     resultadosCacheTime = 0; // invalida cache para próxima leitura
   } catch (e) {
     jogosJaSalvos.delete(id); // permite retry em caso de falha
@@ -814,23 +816,21 @@ app.get('/og', async (req, res) => {
 
   try {
     const hojeStrOg = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const snap = await db.collection('jogos').where('data', '>=', hojeStrOg).get();
-    const jogos: Jogo[] = snap.docs.map(doc => {
-      const d = doc.data();
-      return {
-        rodada: d['rodada'],
-        timeMandante: d['timeMandante'],
-        timeVisitante: d['timeVisitante'],
-        logoMandante: d['logoMandante'] ?? '',
-        logoVisitante: d['logoVisitante'] ?? '',
-        data: d['data'],
-        hora: d['hora'],
-        canal: d['canal'] ?? [],
-        streaming: d['streaming'] ?? [],
-        estadio: d['estadio'] ?? '',
-        campeonato: d['campeonato'] ?? '',
-      };
-    });
+    const mdbOg = await getDb();
+    const ogDocs = await mdbOg.collection('jogos').find({ data: { $gte: hojeStrOg } }).toArray();
+    const jogos: Jogo[] = ogDocs.map(d => ({
+      rodada: d['rodada'],
+      timeMandante: d['timeMandante'],
+      timeVisitante: d['timeVisitante'],
+      logoMandante: d['logoMandante'] ?? '',
+      logoVisitante: d['logoVisitante'] ?? '',
+      data: d['data'],
+      hora: d['hora'],
+      canal: d['canal'] ?? [],
+      streaming: d['streaming'] ?? [],
+      estadio: d['estadio'] ?? '',
+      campeonato: d['campeonato'] ?? '',
+    }));
 
     const now = new Date();
 
@@ -946,10 +946,10 @@ app.get('/api/noticias/:timeSlug', async (req, res) => {
 
 app.get('/sitemap.xml', async (_req, res) => {
   try {
-    const snap = await db.collection('jogos').get();
+    const mdbSitemap = await getDb();
+    const sitemapDocs = await mdbSitemap.collection('jogos').find().toArray();
     const times = new Set<string>();
-    snap.docs.forEach(doc => {
-      const d = doc.data();
+    sitemapDocs.forEach(d => {
       if (d['timeMandante']) times.add(slugifyFull(d['timeMandante']));
       if (d['timeVisitante']) times.add(slugifyFull(d['timeVisitante']));
     });

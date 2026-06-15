@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { translateCountry } from './country-names';
-import { db } from './firebase';
+import { getDb } from './mongodb';
 import { espnCopaUrl } from './constants';
 
 const router = Router();
@@ -140,26 +140,22 @@ async function fetchEliminatorias(phaseSlug: string) {
   };
 }
 
-async function fetchCopaJogosFirestore(): Promise<any[]> {
-  const snap = await db.collection('jogos')
-    .where('campeonato', '==', 'Copa do Mundo 2026')
-    .get();
-  return snap.docs.map(doc => {
-    const d = doc.data();
-    return {
-      rodada:        d['rodada'] ?? 0,
-      timeMandante:  d['timeMandante'],
-      timeVisitante: d['timeVisitante'],
-      logoMandante:  d['logoMandante']  ?? '',
-      logoVisitante: d['logoVisitante'] ?? '',
-      data:          d['data'],
-      hora:          d['hora'],
-      canal:         d['canal']      ?? [],
-      streaming:     d['streaming']  ?? [],
-      estadio:       d['estadio']    ?? '',
-      campeonato:    'Copa do Mundo 2026',
-    };
-  }).sort((a, b) => a.data.localeCompare(b.data) || a.hora.localeCompare(b.hora));
+async function fetchCopaJogosMongo(): Promise<any[]> {
+  const mdb = await getDb();
+  const docs = await mdb.collection('jogos').find({ campeonato: 'Copa do Mundo 2026' }).toArray();
+  return docs.map(d => ({
+    rodada:        d['rodada'] ?? 0,
+    timeMandante:  d['timeMandante'],
+    timeVisitante: d['timeVisitante'],
+    logoMandante:  d['logoMandante']  ?? '',
+    logoVisitante: d['logoVisitante'] ?? '',
+    data:          d['data'],
+    hora:          d['hora'],
+    canal:         d['canal']      ?? [],
+    streaming:     d['streaming']  ?? [],
+    estadio:       d['estadio']    ?? '',
+    campeonato:    'Copa do Mundo 2026',
+  })).sort((a, b) => a.data.localeCompare(b.data) || a.hora.localeCompare(b.hora));
 }
 
 router.get('/api/copa-2026/jogos', async (_req, res) => {
@@ -171,12 +167,12 @@ router.get('/api/copa-2026/jogos', async (_req, res) => {
     return;
   }
   try {
-    const jogos = await fetchCopaJogosFirestore();
+    const jogos = await fetchCopaJogosMongo();
     copaJogosCache = { dados: jogos, fetchedAt: agora };
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=300');
     res.json(jogos);
   } catch (error) {
-    console.error('Erro ao buscar jogos Copa 2026 do Firestore:', error);
+    console.error('Erro ao buscar jogos Copa 2026 do MongoDB:', error);
     if (copaJogosCache) { res.json(copaJogosCache.dados); return; }
     res.status(500).json({ error: 'Falha ao buscar jogos da Copa 2026' });
   }
@@ -219,13 +215,10 @@ router.post('/api/admin/repopulate-copa', async (req, res) => {
   }
 
   try {
+    const mdb = await getDb();
+
     // 1. Apagar todos os docs Copa existentes
-    const snap = await db.collection('jogos').where('campeonato', '==', 'Copa do Mundo 2026').get();
-    if (!snap.empty) {
-      const delBatch = db.batch();
-      snap.docs.forEach(d => delBatch.delete(d.ref));
-      await delBatch.commit();
-    }
+    const delResult = await mdb.collection('jogos').deleteMany({ campeonato: 'Copa do Mundo 2026' });
 
     // 2. Buscar fixtures da ESPN (período completo da Copa: 11 Jun–19 Jul)
     const url = espnCopaUrl();
@@ -234,8 +227,7 @@ router.post('/api/admin/repopulate-copa', async (req, res) => {
     const data: any = await espnResp.json();
 
     const agora = new Date().toISOString();
-    const saveBatch = db.batch();
-    let count = 0;
+    const bulkOps: any[] = [];
 
     for (const event of data.events ?? []) {
       const comp = event.competitions?.[0];
@@ -250,24 +242,31 @@ router.post('/api/admin/repopulate-copa', async (req, res) => {
       const dataStr = brt.toISOString().slice(0, 10);
       const id = `copa26-${dataStr}-${slugify(timeMandante)}-${slugify(timeVisitante)}`;
 
-      saveBatch.set(db.collection('jogos').doc(id), {
-        rodada: 0, timeMandante, timeVisitante,
-        logoMandante:  mand.team.logo ?? '',
-        logoVisitante: visit.team.logo ?? '',
-        data: dataStr,
-        hora: brt.toISOString().slice(11, 16),
-        canal: [], streaming: ['CazéTV', 'Prime Video'],
-        estadio: comp.venue?.fullName ?? '',
-        campeonato: 'Copa do Mundo 2026',
-        lastUpdated: agora,
+      bulkOps.push({
+        updateOne: {
+          filter: { _id: id } as any,
+          update: {
+            $set: {
+              rodada: 0, timeMandante, timeVisitante,
+              logoMandante:  mand.team.logo ?? '',
+              logoVisitante: visit.team.logo ?? '',
+              data: dataStr,
+              hora: brt.toISOString().slice(11, 16),
+              canal: [], streaming: ['CazéTV', 'Prime Video'],
+              estadio: comp.venue?.fullName ?? '',
+              campeonato: 'Copa do Mundo 2026',
+              lastUpdated: agora,
+            },
+          },
+          upsert: true,
+        },
       });
-      count++;
     }
 
-    await saveBatch.commit();
+    if (bulkOps.length > 0) await mdb.collection('jogos').bulkWrite(bulkOps);
     copaJogosCache = null; // invalida cache em memória
 
-    res.json({ deleted: snap.size, inserted: count });
+    res.json({ deleted: delResult.deletedCount, inserted: bulkOps.length });
   } catch (err: any) {
     console.error('repopulate-copa error:', err);
     res.status(500).json({ error: err.message });

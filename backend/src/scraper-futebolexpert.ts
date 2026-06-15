@@ -6,7 +6,7 @@
 import 'dotenv/config';
 import * as cheerio from 'cheerio';
 import puppeteer from 'puppeteer';
-import { db } from './firebase';
+import { getDb } from './mongodb';
 
 const URL_FUTEBOLEXPERT = 'https://www.futebolexpert.com.br/onde-assistir/copa-do-mundo/todos-os-canais';
 
@@ -181,13 +181,13 @@ function parsearJogos(html: string): JogoCanais[] {
   return jogos;
 }
 
-async function buscarJogosFirestore(): Promise<Map<string, { id: string; canal: string[]; streaming: string[] }>> {
-  const snap = await db.collection('jogos').where('campeonato', '==', 'Copa do Mundo 2026').get();
+async function buscarJogosMongo(): Promise<Map<string, { id: string; canal: string[]; streaming: string[] }>> {
+  const mdb = await getDb();
+  const docs = await mdb.collection('jogos').find({ campeonato: 'Copa do Mundo 2026' }).toArray();
   const mapa = new Map<string, { id: string; canal: string[]; streaming: string[] }>();
-  for (const doc of snap.docs) {
-    const d = doc.data();
-    const chave = `${resolverNome(d.timeMandante)}|${resolverNome(d.timeVisitante)}`;
-    mapa.set(chave, { id: doc.id, canal: d.canal ?? [], streaming: d.streaming ?? [] });
+  for (const doc of docs) {
+    const chave = `${resolverNome(doc['timeMandante'])}|${resolverNome(doc['timeVisitante'])}`;
+    mapa.set(chave, { id: doc['_id'] as unknown as string, canal: doc['canal'] ?? [], streaming: doc['streaming'] ?? [] });
   }
   return mapa;
 }
@@ -206,10 +206,10 @@ export async function scrapeCanaisFutebolExpert(): Promise<{ atualizados: number
     return { atualizados: 0, erros: 0 };
   }
 
-  const jogosPorNome = await buscarJogosFirestore();
-  console.log(`  Jogos no Firestore (Copa 2026): ${jogosPorNome.size}`);
+  const jogosPorNome = await buscarJogosMongo();
+  console.log(`  Jogos no MongoDB (Copa 2026): ${jogosPorNome.size}`);
 
-  const batch = db.batch();
+  const bulkOps: any[] = [];
   let atualizados = 0;
   let erros = 0;
 
@@ -221,7 +221,7 @@ export async function scrapeCanaisFutebolExpert(): Promise<{ atualizados: number
 
     const doc = jogosPorNome.get(chave) ?? jogosPorNome.get(chaveInv);
     if (!doc) {
-      console.warn(`  ⚠ Sem match Firestore: "${jogo.timeMandante}" x "${jogo.timeVisitante}" (norm: "${mandNorm}" | "${visitNorm}")`);
+      console.warn(`  ⚠ Sem match MongoDB: "${jogo.timeMandante}" x "${jogo.timeVisitante}" (norm: "${mandNorm}" | "${visitNorm}")`);
       erros++;
       continue;
     }
@@ -232,12 +232,20 @@ export async function scrapeCanaisFutebolExpert(): Promise<{ atualizados: number
     }
 
     const { canal, streaming } = classificarCanais(jogo.canais);
-    batch.update(db.collection('jogos').doc(doc.id), { canal, streaming });
+    bulkOps.push({
+      updateOne: {
+        filter: { _id: doc.id } as any,
+        update: { $set: { canal, streaming } },
+      },
+    });
     atualizados++;
     console.log(`  ✅ ${jogo.timeMandante} x ${jogo.timeVisitante} → canal: [${canal}] | streaming: [${streaming}]`);
   }
 
-  if (atualizados > 0) await batch.commit();
+  if (atualizados > 0) {
+    const mdb = await getDb();
+    await mdb.collection('jogos').bulkWrite(bulkOps);
+  }
 
   console.log(`\n  Resultado: ${atualizados} atualizado(s), ${erros} erro(s) de matching`);
   return { atualizados, erros };

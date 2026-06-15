@@ -7,10 +7,9 @@
  */
 import 'dotenv/config';
 import * as fs from 'fs';
-import * as admin from 'firebase-admin';
 import { GoogleGenAI } from '@google/genai';
 import { Jogo } from './types';
-import { db } from './firebase';
+import { getDb } from './mongodb';
 import { espnScoreboardUrlForLeague, ESPN_LEAGUES, TEAM_NAME_MAP } from './constants';
 import { buscarDadosRodada, buscarOndeAssistir, buscarFutebolExpert, buscarFutebolExpertCampeonato } from './scraper';
 
@@ -213,15 +212,6 @@ function jogoId(date: string, mandante: string, visitante: string): string {
   return `${date}-${slug(mandante)}-${slug(visitante)}`;
 }
 
-async function clearCollection(ref: admin.firestore.CollectionReference): Promise<void> {
-  const snap = await ref.limit(100).get();
-  if (snap.empty) return;
-  const batch = db.batch();
-  snap.docs.forEach((doc) => batch.delete(doc.ref));
-  await batch.commit();
-  await clearCollection(ref);
-}
-
 async function runPopulate(): Promise<void> {
   if (DRY_RUN) {
     console.log('🔍 DRY-RUN ativo — nenhuma alteração será feita no banco de dados.\n');
@@ -243,7 +233,8 @@ async function runPopulate(): Promise<void> {
 
   if (!DRY_RUN) {
     console.log('Limpando coleção jogos...');
-    await clearCollection(db.collection('jogos'));
+    const mdb = await getDb();
+    await mdb.collection('jogos').deleteMany({});
   }
 
   // Data de hoje em BRT (UTC-3) — usada para priorizar FutebolExpert
@@ -395,16 +386,23 @@ async function runPopulate(): Promise<void> {
     fs.writeFileSync(outPath, JSON.stringify(jogosParaSalvar, null, 2), 'utf-8');
     console.log(`\n📄 Dry-run: ${total} jogo(s) escritos em ${outPath} (banco não alterado)`);
   } else {
-    const batch = db.batch();
-    for (const jogo of jogosParaSalvar) {
-      const { fonte: _fonte, ...jogoSemFonte } = jogo;
-      batch.set(db.collection('jogos').doc(jogo.id), jogoSemFonte, { merge: true });
-    }
-    batch.set(db.collection('meta').doc('lastUpdated'), {
-      timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-      totalJogos: total,
+    const mdb = await getDb();
+    const bulkOps = jogosParaSalvar.map(jogo => {
+      const { fonte: _fonte, id: jogoId, ...jogoData } = jogo;
+      return {
+        updateOne: {
+          filter: { _id: jogoId } as any,
+          update: { $set: jogoData },
+          upsert: true,
+        },
+      };
     });
-    await batch.commit();
+    await mdb.collection('jogos').bulkWrite(bulkOps);
+    await mdb.collection('meta').updateOne(
+      { _id: 'lastUpdated' } as any,
+      { $set: { timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), totalJogos: total } },
+      { upsert: true },
+    );
   }
 
   // Resumo dos jogos encontrados via FutebolExpert

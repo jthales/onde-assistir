@@ -7,7 +7,7 @@
  */
 import 'dotenv/config';
 import * as fs from 'fs';
-import { db } from './firebase';
+import { getDb } from './mongodb';
 import { espnCopaUrl } from './constants';
 import { Jogo } from './types';
 import { translateCountry } from './country-names';
@@ -63,12 +63,10 @@ async function fetchCopaFixtures(): Promise<Array<Omit<Jogo, 'rodada'> & { rodad
 }
 
 async function limparCopaJogos(): Promise<void> {
-  const snap = await db.collection('jogos').where('campeonato', '==', CAMPEONATO_LABEL).get();
-  if (snap.empty) { console.log('  Nenhum documento Copa existente para remover.'); return; }
-  const batch = db.batch();
-  snap.docs.forEach(doc => batch.delete(doc.ref));
-  await batch.commit();
-  console.log(`  🗑  ${snap.size} documento(s) Copa removido(s) do Firestore.`);
+  const mdb = await getDb();
+  const result = await mdb.collection('jogos').deleteMany({ campeonato: CAMPEONATO_LABEL });
+  if (result.deletedCount === 0) { console.log('  Nenhum documento Copa existente para remover.'); return; }
+  console.log(`  🗑  ${result.deletedCount} documento(s) Copa removido(s) do MongoDB.`);
 }
 
 async function runPopulate(): Promise<void> {
@@ -86,13 +84,13 @@ async function runPopulate(): Promise<void> {
   // e dados de canal/streaming já preenchidos pelo scraper.
 
   // Pre-fetch existing docs to preserve channel data set by the scraper
-  const existingSnap = await db.collection('jogos').where('campeonato', '==', CAMPEONATO_LABEL).get();
+  const mdb = await getDb();
+  const existingArr = await mdb.collection('jogos').find({ campeonato: CAMPEONATO_LABEL }).toArray();
   const existingDocs = new Map<string, { canal: string[]; streaming: string[] }>();
-  for (const doc of existingSnap.docs) {
-    const d = doc.data();
-    existingDocs.set(doc.id, { canal: d['canal'] ?? [], streaming: d['streaming'] ?? [] });
+  for (const doc of existingArr) {
+    existingDocs.set(doc['_id'] as unknown as string, { canal: doc['canal'] ?? [], streaming: doc['streaming'] ?? [] });
   }
-  console.log(`  Jogos já existentes no Firestore: ${existingDocs.size}`);
+  console.log(`  Jogos já existentes no MongoDB: ${existingDocs.size}`);
 
   const jogosParaSalvar = fixtures.map(f => ({
     id: jogoId(f.data, f.timeMandante, f.timeVisitante),
@@ -108,8 +106,7 @@ async function runPopulate(): Promise<void> {
       console.log(`   ${j.data} ${j.hora} — ${j.timeMandante} x ${j.timeVisitante} (${j.estadio})`);
     }
   } else {
-    const batch = db.batch();
-    for (const jogo of jogosParaSalvar) {
+    const bulkOps = jogosParaSalvar.map(jogo => {
       const { id, canal: defaultCanal, streaming: defaultStreaming, ...jogoBase } = jogo;
       const existing = existingDocs.get(id);
 
@@ -125,10 +122,16 @@ async function runPopulate(): Promise<void> {
         canal:     (existing && !isOldDefault) ? existing.canal     : defaultCanal,
         streaming: (existing && !isOldDefault) ? existing.streaming : defaultStreaming,
       };
-      batch.set(db.collection('jogos').doc(id), docData, { merge: true });
-    }
-    await batch.commit();
-    console.log(`\n✅ ${jogosParaSalvar.length} jogo(s) salvos no Firestore (coleção 'jogos')`);
+      return {
+        updateOne: {
+          filter: { _id: id } as any,
+          update: { $set: docData },
+          upsert: true,
+        },
+      };
+    });
+    await mdb.collection('jogos').bulkWrite(bulkOps);
+    console.log(`\n✅ ${jogosParaSalvar.length} jogo(s) salvos no MongoDB (coleção 'jogos')`);
     for (const j of jogosParaSalvar) {
       console.log(`   ${j.data} ${j.hora} — ${j.timeMandante} x ${j.timeVisitante}`);
     }
