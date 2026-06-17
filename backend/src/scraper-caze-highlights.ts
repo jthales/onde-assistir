@@ -46,9 +46,32 @@ function normalizar(s: string): string {
 }
 
 const TEAM_ALIASES: Record<string, string[]> = {
+  // Rep. Tcheca: ESPN usa "Rep. Tcheca", CazéTV usa "Tchéquia"
   'tchequia':         ['rep. tcheca', 'republica tcheca'],
   'rep. tcheca':      ['tchequia', 'republica tcheca'],
   'republica tcheca': ['tchequia', 'rep. tcheca'],
+
+  // Irã: normalizar("Irã") → "ira", mas CazéTV pode usar "IRAN" → "iran"
+  'ira':  ['iran'],
+  'iran': ['ira'],
+
+  // Holanda: ESPN usa "Holanda", FIFA/CazéTV pode usar "Países Baixos"
+  'holanda':      ['paises baixos', 'netherlands', 'países baixos'],
+  'paises baixos': ['holanda'],
+
+  // Gana: banco usa "Gana" (pt-BR), CazéTV pode usar "Ghana" (inglês)
+  'gana':  ['ghana'],
+  'ghana': ['gana'],
+
+  // RD Congo: variações comuns
+  'rd congo':                   ['congo', 'rep. democratica do congo', 'republica democratica do congo', 'republica dem. do congo'],
+  'congo':                      ['rd congo', 'rep. democratica do congo'],
+  'rep. democratica do congo':  ['rd congo', 'congo'],
+
+  // Bósnia: banco usa "Bósnia", CazéTV pode usar "Bósnia-Herzegovina"
+  'bosnia':              ['bosnia-herzegovina', 'bosnia e herzegovina', 'bosnia herzegovina'],
+  'bosnia-herzegovina':  ['bosnia'],
+  'bosnia e herzegovina':['bosnia'],
 };
 
 function nomesCoincide(a: string, b: string): boolean {
