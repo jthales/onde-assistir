@@ -8,6 +8,12 @@
  * lockupViewModel (2024+): richItemRenderer.content.lockupViewModel.contentId / .metadata...title.content
  */
 import 'dotenv/config';
+
+// Dev local (Windows + antivírus que intercepta TLS): desativa verificação SSL
+if (process.env['ALLOW_INSECURE_TLS'] === 'true') {
+  process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
+}
+
 import { getDb } from './mongodb';
 
 const CAZE_VIDEOS_URL = 'https://www.youtube.com/@CazeTV/videos';
