@@ -23,7 +23,8 @@ const DEBUG = process.argv.includes('--debug');
 const HIGHLIGHT_REGEX =
   /MELHORES MOMENTOS[:\s]+(.+?)\s+\d+(?:\s*\(\d+\))?\s*[xX]\s*(?:\(\d+\)\s*)?\d+\s+(.+?)\s*\|/i;
 
-const IS_COPA = /COPA DO MUNDO/i;
+// Apenas Copa 2026 — evita capturar highlights de Copas anteriores (2018, 2022...)
+const IS_COPA = /COPA DO MUNDO.*2026|2026.*COPA DO MUNDO/i;
 
 interface VideoItem {
   videoId: string;
@@ -45,14 +46,22 @@ function normalizar(s: string): string {
     .trim();
 }
 
+// Aliases para nomes que CazéTV usa de forma diferente do ESPN/DB
+const TEAM_ALIASES: Record<string, string[]> = {
+  'tchequia':       ['rep. tcheca', 'republica tcheca'],
+  'rep. tcheca':    ['tchequia', 'republica tcheca'],
+  'republica tcheca': ['tchequia', 'rep. tcheca'],
+};
+
 function nomesCoincide(a: string, b: string): boolean {
   const n1 = normalizar(a);
   const n2 = normalizar(b);
   if (n1 === n2) return true;
-  // includes só com nomes longos o suficiente para evitar falso-positivo
   if (n1.length >= 4 && n2.includes(n1)) return true;
   if (n2.length >= 4 && n1.includes(n2)) return true;
-  return false;
+  const alt1 = TEAM_ALIASES[n1] ?? [];
+  const alt2 = TEAM_ALIASES[n2] ?? [];
+  return alt1.includes(n2) || alt2.includes(n1);
 }
 
 // ── Parsear lista de vídeos do ytInitialData / continuação ─────────────────────
@@ -208,17 +217,38 @@ async function scrapeYouTubeHighlights(): Promise<Highlight[]> {
   }
 
   // Carregar mais batches via API (sem Puppeteer)
+  // Para quando 3 batches consecutivos não tiverem nenhum highlight Copa — evita varrer o canal inteiro
+  const MAX_BATCHES = 25;
+  const PARAR_APOS_VAZIOS = 3;
   let batchNum = 2;
-  while (contToken && batchNum <= 5) {
-    console.log(`Carregando batch ${batchNum}...`);
+  let batchesVaziosCopa = 0;
+
+  while (contToken && batchNum <= MAX_BATCHES && batchesVaziosCopa < PARAR_APOS_VAZIOS) {
     const more = await carregarMaisVideos(contToken, apiKey, visitorData);
+
+    const highlightsCopa = more.videos.filter(v =>
+      IS_COPA.test(v.title) && HIGHLIGHT_REGEX.test(v.title)
+    ).length;
+
+    console.log(`Batch ${batchNum}: ${more.videos.length} vídeos, ${highlightsCopa} highlights Copa`);
+
     allVideos = allVideos.concat(more.videos);
     contToken = more.continuationToken;
     batchNum++;
-    await new Promise(r => setTimeout(r, 800));
+
+    if (highlightsCopa === 0) {
+      batchesVaziosCopa++;
+    } else {
+      batchesVaziosCopa = 0;
+    }
+
+    await new Promise(r => setTimeout(r, 600));
   }
 
-  console.log(`Total analisado: ${allVideos.length} vídeos`);
+  const motivo = !contToken ? 'sem mais conteúdo'
+    : batchesVaziosCopa >= PARAR_APOS_VAZIOS ? `${PARAR_APOS_VAZIOS} batches sem highlights Copa`
+    : `limite de ${MAX_BATCHES} batches`;
+  console.log(`\nTotal analisado: ${allVideos.length} vídeos em ${batchNum - 1} batches (parou: ${motivo})`);
 
   if (DEBUG) {
     console.log('\n── Todos os títulos encontrados ──');
