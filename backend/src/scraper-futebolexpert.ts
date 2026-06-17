@@ -138,7 +138,7 @@ async function fetchHtml(): Promise<string> {
 
 const VS_REGEX = /^([A-Za-zÀ-ú\s.'()\-]+?)\s+[xX×]\s+([A-Za-zÀ-ú\s.'()\-]+)$/;
 
-function extrairCanaisDaCell($: cheerio.CheerioAPI, cell: cheerio.Element): string[] {
+function extrairCanaisDaCell($: cheerio.CheerioAPI, cell: cheerio.AnyNode): string[] {
   const canais: string[] = [];
   const $cell = $(cell);
 
@@ -221,7 +221,7 @@ function parsearPorCards($: cheerio.CheerioAPI): JogoCanais[] {
 
     // Procura canais no elemento pai/irmãos
     const $parent = $el.closest('[class]').parent();
-    const canais = extrairCanaisDaCell($, $parent.get(0) as cheerio.Element);
+    const canais = extrairCanaisDaCell($, $parent.get(0) as cheerio.AnyNode);
 
     console.log(`  [cards] ${mandante} x ${visitante} → [${canais.join(', ') || 'sem canais'}]`);
     jogos.push({ timeMandante: mandante, timeVisitante: visitante, canais });
