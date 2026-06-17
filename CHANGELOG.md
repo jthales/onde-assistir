@@ -6,6 +6,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.0.2] — 2026-06-17
+
+### Corrigido
+
+- **Scraper CazéTV no CI**: GitHub Actions recebe menos vídeos que o ambiente local porque o Puppeteer em modo headless é detectado pelo YouTube como bot (IPs do Azure) e serve uma página diferente. Solução: scraper reescrito para usar `fetch` direto — `ytInitialData` é server-side rendered no HTML e não exige browser. Isso elimina totalmente a detecção de bot e garante os mesmos resultados em CI e localmente.
+- **Workflow mais rápido**: adicionado `PUPPETEER_SKIP_DOWNLOAD=true` no `npm ci` do workflow `scrape-caze-highlights.yml` — o scraper de highlights não usa mais Chrome, economizando ~1min por execução.
+
+---
+
 ## [1.0.1] — 2026-06-17
 
 ### Corrigido

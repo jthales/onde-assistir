@@ -1,29 +1,22 @@
 /**
- * Scraper do canal CazéTV no YouTube para obter links dos melhores momentos dos jogos da Copa 2026.
- * O canal publica vídeos com títulos como:
- *   "MELHORES MOMENTOS: ÁUSTRIA 3 X 1 JORDÂNIA | COPA DO MUNDO FIFA™ 2026 | ..."
+ * Scraper do canal CazéTV no YouTube para melhores momentos da Copa 2026.
  *
- * O YouTube usa "lockupViewModel" desde 2024 — o path correto é:
- *   richItemRenderer.content.lockupViewModel.contentId  (videoId)
- *   richItemRenderer.content.lockupViewModel.metadata.lockupMetadataViewModel.title.content
+ * Usa fetch direto em vez de Puppeteer — ytInitialData é server-side rendered no HTML,
+ * então não precisamos de browser. Evita bot detection em ambientes CI.
  *
- * Uso:
- *   npx ts-node src/scraper-caze-highlights.ts          # modo normal
- *   npx ts-node src/scraper-caze-highlights.ts --debug  # loga todos os títulos encontrados
+ * Título esperado: "MELHORES MOMENTOS: ÁUSTRIA 3 X 1 JORDÂNIA | COPA DO MUNDO FIFA™ 2026 | ..."
+ * lockupViewModel (2024+): richItemRenderer.content.lockupViewModel.contentId / .metadata...title.content
  */
 import 'dotenv/config';
-import puppeteer from 'puppeteer';
 import { getDb } from './mongodb';
 
 const CAZE_VIDEOS_URL = 'https://www.youtube.com/@CazeTV/videos';
+const DEFAULT_API_KEY = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
 const DEBUG = process.argv.includes('--debug');
 
-// Captura "MELHORES MOMENTOS: TIME1 SCORE TIME2 |"
-// Aceita: "3 X 1", "0 x 0", "0 (5) X (3) 0" (pênaltis)
 const HIGHLIGHT_REGEX =
   /MELHORES MOMENTOS[:\s]+(.+?)\s+\d+(?:\s*\(\d+\))?\s*[xX]\s*(?:\(\d+\)\s*)?\d+\s+(.+?)\s*\|/i;
 
-// Apenas Copa 2026 — evita capturar highlights de Copas anteriores (2018, 2022...)
 const IS_COPA = /COPA DO MUNDO.*2026|2026.*COPA DO MUNDO/i;
 
 interface VideoItem {
@@ -46,10 +39,9 @@ function normalizar(s: string): string {
     .trim();
 }
 
-// Aliases para nomes que CazéTV usa de forma diferente do ESPN/DB
 const TEAM_ALIASES: Record<string, string[]> = {
-  'tchequia':       ['rep. tcheca', 'republica tcheca'],
-  'rep. tcheca':    ['tchequia', 'republica tcheca'],
+  'tchequia':         ['rep. tcheca', 'republica tcheca'],
+  'rep. tcheca':      ['tchequia', 'republica tcheca'],
   'republica tcheca': ['tchequia', 'rep. tcheca'],
 };
 
@@ -64,26 +56,94 @@ function nomesCoincide(a: string, b: string): boolean {
   return alt1.includes(n2) || alt2.includes(n1);
 }
 
-// ── Parsear lista de vídeos do ytInitialData / continuação ─────────────────────
+// ── Extrai JSON de HTML rastreando profundidade de chaves ─────────────────────
+// Mais robusto que regex para objetos grandes com caracteres especiais.
+
+function extractJsonFromHtml(html: string, marker: string): any {
+  const idx = html.indexOf(marker);
+  if (idx === -1) return null;
+
+  let i = idx + marker.length;
+  let depth = 0;
+  let inStr = false;
+  let escape = false;
+  const start = i;
+
+  for (; i < html.length; i++) {
+    const ch = html[i];
+    if (escape) { escape = false; continue; }
+    if (inStr) {
+      if (ch === '\\') escape = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') { inStr = true; continue; }
+    if (ch === '{') depth++;
+    if (ch === '}') { depth--; if (depth === 0) { i++; break; } }
+  }
+
+  try {
+    return JSON.parse(html.slice(start, i));
+  } catch {
+    return null;
+  }
+}
+
+// ── Busca a página do canal com fetch (sem Puppeteer) ─────────────────────────
+
+async function fetchChannelHtml(): Promise<string> {
+  const resp = await fetch(CAZE_VIDEOS_URL, {
+    headers: {
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      // SOCS: bypass do diálogo de consentimento GDPR do YouTube
+      'Cookie': 'SOCS=CAESEwgDEgk2NDE3MTUyMTYaAmVuIAEaBgiAgI2nBg; GPS=1',
+    },
+  });
+
+  if (!resp.ok) throw new Error(`HTTP ${resp.status} ao buscar canal CazéTV`);
+
+  const html = await resp.text();
+
+  if (!html.includes('ytInitialData')) {
+    const title = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1] ?? '(sem título)';
+    const isConsent =
+      html.includes('consent.youtube.com') ||
+      html.includes('consentRequired') ||
+      html.includes('SOCS');
+    throw new Error(
+      `ytInitialData não encontrado no HTML.\n` +
+      `  Título da página: "${title}"\n` +
+      `  Parece página de consentimento: ${isConsent}\n` +
+      `  Primeiros 300 chars: ${html.slice(0, 300)}`
+    );
+  }
+
+  return html;
+}
+
+// ── Parse de lista de vídeos do ytInitialData / resposta de continuação ───────
 
 function extrairVideosEToken(contents: any[]): { videos: VideoItem[]; continuationToken: string | null } {
   const videos: VideoItem[] = [];
   let continuationToken: string | null = null;
 
   for (const item of contents ?? []) {
-    // Formato novo (2024+): lockupViewModel
+    // Formato atual (2024+): lockupViewModel
     const lvm = item?.richItemRenderer?.content?.lockupViewModel
-              ?? item?.gridVideoRenderer; // fallback antigo
+              ?? item?.gridVideoRenderer;
 
     if (lvm?.contentId) {
       const title =
-        lvm.metadata?.lockupMetadataViewModel?.title?.content // lockupViewModel
-        ?? lvm.title?.runs?.map((r: any) => r.text).join('') // videoRenderer antigo
+        lvm.metadata?.lockupMetadataViewModel?.title?.content
+        ?? lvm.title?.runs?.map((r: any) => r.text).join('')
         ?? lvm.title?.simpleText
         ?? '';
       if (title) videos.push({ videoId: lvm.contentId, title });
     } else {
-      // Também tentar videoRenderer antigo dentro de richItemRenderer
+      // Fallback: videoRenderer (formato anterior)
       const vr = item?.richItemRenderer?.content?.videoRenderer;
       if (vr?.videoId) {
         const title = vr.title?.runs?.map((r: any) => r.text).join('') ?? vr.title?.simpleText ?? '';
@@ -91,7 +151,7 @@ function extrairVideosEToken(contents: any[]): { videos: VideoItem[]; continuati
       }
     }
 
-    // Token de continuação
+    // Token de paginação
     const tok =
       item?.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token
       ?? item?.continuationItemRenderer?.button?.buttonRenderer?.command?.continuationCommand?.token;
@@ -124,7 +184,7 @@ function parsearYtInitialData(ytData: any): { videos: VideoItem[]; continuationT
   return { videos: [], continuationToken: null };
 }
 
-// ── Carregar mais vídeos via Innertube browse API ──────────────────────────────
+// ── Paginação via Innertube browse API ────────────────────────────────────────
 
 async function carregarMaisVideos(
   continuationToken: string,
@@ -168,56 +228,25 @@ async function carregarMaisVideos(
   }
 }
 
-// ── Puppeteer: carregar página e extrair dados ─────────────────────────────────
+// ── Scraper principal ─────────────────────────────────────────────────────────
 
 async function scrapeYouTubeHighlights(): Promise<Highlight[]> {
-  console.log(`Abrindo ${CAZE_VIDEOS_URL}...`);
+  console.log(`Buscando ${CAZE_VIDEOS_URL}...`);
 
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-  });
+  const html = await fetchChannelHtml();
 
-  let allVideos: VideoItem[] = [];
-  let contToken: string | null = null;
-  let apiKey = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
-  let visitorData = '';
+  const ytData = extractJsonFromHtml(html, 'var ytInitialData = ');
+  if (!ytData) throw new Error('Falha ao parsear ytInitialData do HTML');
 
-  try {
-    const page = await browser.newPage();
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
-    );
-    await page.setViewport({ width: 1280, height: 900 });
+  const apiKey = html.match(/"INNERTUBE_API_KEY":"([^"]+)"/)?.[1] ?? DEFAULT_API_KEY;
+  const visitorData = html.match(/"VISITOR_DATA":"([^"]+)"/)?.[1] ?? '';
 
-    await page.goto(CAZE_VIDEOS_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    await new Promise(r => setTimeout(r, 4_000));
+  const parsed = parsearYtInitialData(ytData);
+  let allVideos: VideoItem[] = parsed.videos;
+  let contToken = parsed.continuationToken;
 
-    const { ytData, ytApiKey, ytVisitorData } = await page.evaluate(() => ({
-      ytData: (window as any).ytInitialData,
-      ytApiKey: (window as any).ytcfg?.data_?.INNERTUBE_API_KEY ?? null,
-      ytVisitorData: (window as any).ytcfg?.data_?.VISITOR_DATA ?? '',
-    }));
+  console.log(`Batch inicial: ${allVideos.length} vídeos`);
 
-    if (!ytData) {
-      const title = await page.title();
-      throw new Error(`ytInitialData não encontrado. Título da página: "${title}"`);
-    }
-
-    if (ytApiKey) apiKey = ytApiKey;
-    visitorData = ytVisitorData;
-
-    const parsed = parsearYtInitialData(ytData);
-    allVideos = parsed.videos;
-    contToken = parsed.continuationToken;
-
-    console.log(`Batch inicial: ${allVideos.length} vídeos`);
-  } finally {
-    await browser.close();
-  }
-
-  // Carregar mais batches via API (sem Puppeteer)
-  // Para quando 3 batches consecutivos não tiverem nenhum highlight Copa — evita varrer o canal inteiro
   const MAX_BATCHES = 25;
   const PARAR_APOS_VAZIOS = 3;
   let batchNum = 2;
@@ -236,17 +265,16 @@ async function scrapeYouTubeHighlights(): Promise<Highlight[]> {
     contToken = more.continuationToken;
     batchNum++;
 
-    if (highlightsCopa === 0) {
-      batchesVaziosCopa++;
-    } else {
-      batchesVaziosCopa = 0;
-    }
+    if (highlightsCopa === 0) batchesVaziosCopa++;
+    else batchesVaziosCopa = 0;
 
     await new Promise(r => setTimeout(r, 600));
   }
 
-  const motivo = !contToken ? 'sem mais conteúdo'
-    : batchesVaziosCopa >= PARAR_APOS_VAZIOS ? `${PARAR_APOS_VAZIOS} batches sem highlights Copa`
+  const motivo = !contToken
+    ? 'sem mais conteúdo'
+    : batchesVaziosCopa >= PARAR_APOS_VAZIOS
+    ? `${PARAR_APOS_VAZIOS} batches sem highlights Copa`
     : `limite de ${MAX_BATCHES} batches`;
   console.log(`\nTotal analisado: ${allVideos.length} vídeos em ${batchNum - 1} batches (parou: ${motivo})`);
 
@@ -256,14 +284,13 @@ async function scrapeYouTubeHighlights(): Promise<Highlight[]> {
     console.log('──────────────────────────────────\n');
   }
 
-  // Filtrar highlights Copa 2026
   const highlights: Highlight[] = [];
   for (const v of allVideos) {
     if (!IS_COPA.test(v.title)) continue;
 
     const match = v.title.match(HIGHLIGHT_REGEX);
     if (!match) {
-      if (DEBUG) console.log(`  ℹ️ Copa sem match de times: "${v.title}"`);
+      if (DEBUG) console.log(`  ℹ️  Copa sem match de times: "${v.title}"`);
       continue;
     }
 
@@ -303,7 +330,7 @@ async function salvarHighlights(highlights: Highlight[]): Promise<void> {
       const mandante = jogo['timeMandante'] as string;
       const visitante = jogo['timeVisitante'] as string;
 
-      const normal = nomesCoincide(h.team1, mandante) && nomesCoincide(h.team2, visitante);
+      const normal    = nomesCoincide(h.team1, mandante)  && nomesCoincide(h.team2, visitante);
       const invertido = nomesCoincide(h.team1, visitante) && nomesCoincide(h.team2, mandante);
 
       if (normal || invertido) {
