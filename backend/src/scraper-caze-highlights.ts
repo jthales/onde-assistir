@@ -15,15 +15,22 @@ if (process.env['ALLOW_INSECURE_TLS'] === 'true') {
 }
 
 import { getDb } from './mongodb';
+import { COUNTRY_NAMES_PT } from './country-names';
 
 const CAZE_VIDEOS_URL = 'https://www.youtube.com/@CazeTV/videos';
 const DEFAULT_API_KEY = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
 const DEBUG = process.argv.includes('--debug');
 
+// Português: "MELHORES MOMENTOS: ÁUSTRIA 3 X 1 JORDÂNIA |"
 const HIGHLIGHT_REGEX =
   /MELHORES MOMENTOS[:\s]+(.+?)\s+\d+(?:\s*\(\d+\))?\s*[xX]\s*(?:\(\d+\)\s*)?\d+\s+(.+?)\s*\|/i;
 
-const IS_COPA = /COPA DO MUNDO.*2026|2026.*COPA DO MUNDO/i;
+// Inglês: "HIGHLIGHTS: GERMANY 7-1 CURACAO |" ou "HIGHLIGHTS: IRAN 2 X 2 NEW ZEALAND |"
+const HIGHLIGHT_REGEX_EN =
+  /^HIGHLIGHTS:\s+(.+?)\s+\d+(?:\s*-\s*|\s+[xX]\s+)\d+\s+(.+?)\s*\|/i;
+
+// Copa 2026 — filtra por formato português OU inglês; exclui Copas anteriores e amistosos
+const IS_COPA = /(?:COPA DO MUNDO|FIFA WORLD CUP).*2026|2026.*(?:COPA DO MUNDO|FIFA WORLD CUP)/i;
 
 interface VideoItem {
   videoId: string;
@@ -73,6 +80,30 @@ const TEAM_ALIASES: Record<string, string[]> = {
   'bosnia-herzegovina':  ['bosnia'],
   'bosnia e herzegovina':['bosnia'],
 };
+
+// Traduz nomes em inglês (usados nos títulos HIGHLIGHTS: do CazéTV) para o PT do nosso banco.
+// Construído a partir de COUNTRY_NAMES_PT + extras específicos do CazéTV.
+const EN_TO_PT_MAP: Record<string, string> = {};
+for (const [en, pt] of Object.entries(COUNTRY_NAMES_PT)) {
+  EN_TO_PT_MAP[normalizar(en)] = pt;
+}
+Object.assign(EN_TO_PT_MAP, {
+  'turkey':                           'Turquia',      // ESPN usa "Türkiye"
+  'curacao':                          'Curaçao',      // sem cedilha
+  'bosnia and herzegovina':           'Bósnia',
+  'bosnia':                           'Bósnia',
+  'czech republic':                   'Rep. Tcheca',
+  'ivory coast':                      'Costa do Marfim',
+  'dr congo':                         'RD Congo',
+  'democratic republic of the congo': 'RD Congo',
+  'usa':                              'Estados Unidos',
+  'ghana':                            'Gana',
+  'turkiye':                          'Turquia',
+});
+
+function traduzirTimeEN(name: string): string {
+  return EN_TO_PT_MAP[normalizar(name)] ?? name;
+}
 
 function nomesCoincide(a: string, b: string): boolean {
   const n1 = normalizar(a);
@@ -285,7 +316,7 @@ async function scrapeYouTubeHighlights(): Promise<Highlight[]> {
     const more = await carregarMaisVideos(contToken, apiKey, visitorData);
 
     const highlightsCopa = more.videos.filter(v =>
-      IS_COPA.test(v.title) && HIGHLIGHT_REGEX.test(v.title)
+      IS_COPA.test(v.title) && (HIGHLIGHT_REGEX.test(v.title) || HIGHLIGHT_REGEX_EN.test(v.title))
     ).length;
 
     console.log(`Batch ${batchNum}: ${more.videos.length} vídeos, ${highlightsCopa} highlights Copa`);
@@ -317,8 +348,21 @@ async function scrapeYouTubeHighlights(): Promise<Highlight[]> {
   for (const v of allVideos) {
     if (!IS_COPA.test(v.title)) continue;
 
-    const match = v.title.match(HIGHLIGHT_REGEX);
-    if (!match) {
+    const ptMatch = v.title.match(HIGHLIGHT_REGEX);
+    const enMatch = ptMatch ? null : v.title.match(HIGHLIGHT_REGEX_EN);
+
+    let team1: string | undefined;
+    let team2: string | undefined;
+
+    if (ptMatch) {
+      team1 = ptMatch[1].trim();
+      team2 = ptMatch[2].trim();
+    } else if (enMatch) {
+      team1 = traduzirTimeEN(enMatch[1].trim());
+      team2 = traduzirTimeEN(enMatch[2].trim());
+    }
+
+    if (!team1 || !team2) {
       if (DEBUG) console.log(`  ℹ️  Copa sem match de times: "${v.title}"`);
       continue;
     }
@@ -326,8 +370,8 @@ async function scrapeYouTubeHighlights(): Promise<Highlight[]> {
     highlights.push({
       title: v.title,
       url: `https://www.youtube.com/watch?v=${v.videoId}`,
-      team1: match[1].trim(),
-      team2: match[2].trim(),
+      team1,
+      team2,
     });
     console.log(`  🎬 Highlight: "${v.title}"`);
   }
