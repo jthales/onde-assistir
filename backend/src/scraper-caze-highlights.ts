@@ -2,31 +2,32 @@
  * Scraper do canal CazéTV no YouTube para obter links dos melhores momentos dos jogos da Copa 2026.
  * O canal publica vídeos com títulos como:
  *   "MELHORES MOMENTOS: ÁUSTRIA 3 X 1 JORDÂNIA | COPA DO MUNDO FIFA™ 2026 | ..."
- * O scraper faz scroll incremental para contornar o infinite scroll do YouTube.
- * Uso: npx ts-node src/scraper-caze-highlights.ts
+ *
+ * O YouTube usa "lockupViewModel" desde 2024 — o path correto é:
+ *   richItemRenderer.content.lockupViewModel.contentId  (videoId)
+ *   richItemRenderer.content.lockupViewModel.metadata.lockupMetadataViewModel.title.content
+ *
+ * Uso:
+ *   npx ts-node src/scraper-caze-highlights.ts          # modo normal
+ *   npx ts-node src/scraper-caze-highlights.ts --debug  # loga todos os títulos encontrados
  */
 import 'dotenv/config';
 import puppeteer from 'puppeteer';
 import { getDb } from './mongodb';
 
 const CAZE_VIDEOS_URL = 'https://www.youtube.com/@CazeTV/videos';
+const DEBUG = process.argv.includes('--debug');
 
-// Captura: "MELHORES MOMENTOS: TIME1 N X N TIME2 | ... COPA DO MUNDO ..."
+// Captura "MELHORES MOMENTOS: TIME1 SCORE TIME2 |"
+// Aceita: "3 X 1", "0 x 0", "0 (5) X (3) 0" (pênaltis)
 const HIGHLIGHT_REGEX =
-  /MELHORES MOMENTOS:\s*(.+?)\s+\d+\s*[Xx]\s*\d+\s+(.+?)\s*\|.*COPA DO MUNDO/i;
+  /MELHORES MOMENTOS[:\s]+(.+?)\s+\d+(?:\s*\(\d+\))?\s*[xX]\s*(?:\(\d+\)\s*)?\d+\s+(.+?)\s*\|/i;
 
-function normalizar(s: string): string {
-  return s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim();
-}
+const IS_COPA = /COPA DO MUNDO/i;
 
-function nomesCoincide(extraido: string, dbName: string): boolean {
-  const n1 = normalizar(extraido);
-  const n2 = normalizar(dbName);
-  return n1 === n2 || n1.includes(n2) || n2.includes(n1);
+interface VideoItem {
+  videoId: string;
+  title: string;
 }
 
 interface Highlight {
@@ -36,6 +37,130 @@ interface Highlight {
   team2: string;
 }
 
+function normalizar(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function nomesCoincide(a: string, b: string): boolean {
+  const n1 = normalizar(a);
+  const n2 = normalizar(b);
+  if (n1 === n2) return true;
+  // includes só com nomes longos o suficiente para evitar falso-positivo
+  if (n1.length >= 4 && n2.includes(n1)) return true;
+  if (n2.length >= 4 && n1.includes(n2)) return true;
+  return false;
+}
+
+// ── Parsear lista de vídeos do ytInitialData / continuação ─────────────────────
+
+function extrairVideosEToken(contents: any[]): { videos: VideoItem[]; continuationToken: string | null } {
+  const videos: VideoItem[] = [];
+  let continuationToken: string | null = null;
+
+  for (const item of contents ?? []) {
+    // Formato novo (2024+): lockupViewModel
+    const lvm = item?.richItemRenderer?.content?.lockupViewModel
+              ?? item?.gridVideoRenderer; // fallback antigo
+
+    if (lvm?.contentId) {
+      const title =
+        lvm.metadata?.lockupMetadataViewModel?.title?.content // lockupViewModel
+        ?? lvm.title?.runs?.map((r: any) => r.text).join('') // videoRenderer antigo
+        ?? lvm.title?.simpleText
+        ?? '';
+      if (title) videos.push({ videoId: lvm.contentId, title });
+    } else {
+      // Também tentar videoRenderer antigo dentro de richItemRenderer
+      const vr = item?.richItemRenderer?.content?.videoRenderer;
+      if (vr?.videoId) {
+        const title = vr.title?.runs?.map((r: any) => r.text).join('') ?? vr.title?.simpleText ?? '';
+        if (title) videos.push({ videoId: vr.videoId, title });
+      }
+    }
+
+    // Token de continuação
+    const tok =
+      item?.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token
+      ?? item?.continuationItemRenderer?.button?.buttonRenderer?.command?.continuationCommand?.token;
+    if (tok) continuationToken = tok;
+  }
+
+  return { videos, continuationToken };
+}
+
+function parsearYtInitialData(ytData: any): { videos: VideoItem[]; continuationToken: string | null } {
+  try {
+    const tabs: any[] = ytData?.contents?.twoColumnBrowseResultsRenderer?.tabs ?? [];
+
+    for (const tab of tabs) {
+      const contents = tab?.tabRenderer?.content?.richGridRenderer?.contents;
+      if (contents?.length) return extrairVideosEToken(contents);
+
+      // Layout antigo: sectionListRenderer > gridRenderer
+      const slr = tab?.tabRenderer?.content?.sectionListRenderer?.contents;
+      if (slr) {
+        for (const sec of slr) {
+          const items = sec?.itemSectionRenderer?.contents?.[0]?.gridRenderer?.items;
+          if (items?.length) return extrairVideosEToken(items);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Erro ao parsear ytInitialData:', err);
+  }
+  return { videos: [], continuationToken: null };
+}
+
+// ── Carregar mais vídeos via Innertube browse API ──────────────────────────────
+
+async function carregarMaisVideos(
+  continuationToken: string,
+  apiKey: string,
+  visitorData: string
+): Promise<{ videos: VideoItem[]; continuationToken: string | null }> {
+  try {
+    const resp = await fetch(`https://www.youtube.com/youtubei/v1/browse?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'X-YouTube-Client-Name': '1',
+        'X-YouTube-Client-Version': '2.20240617.01.00',
+      },
+      body: JSON.stringify({
+        continuation: continuationToken,
+        context: {
+          client: {
+            clientName: 'WEB',
+            clientVersion: '2.20240617.01.00',
+            visitorData: visitorData || undefined,
+          },
+        },
+      }),
+    });
+
+    if (!resp.ok) {
+      console.warn(`Innertube browse retornou ${resp.status}`);
+      return { videos: [], continuationToken: null };
+    }
+
+    const data: any = await resp.json();
+    const items: any[] =
+      data?.onResponseReceivedActions?.[0]?.appendContinuationItemsAction?.continuationItems ?? [];
+
+    return extrairVideosEToken(items);
+  } catch (err) {
+    console.warn('Erro na API de continuação:', err);
+    return { videos: [], continuationToken: null };
+  }
+}
+
+// ── Puppeteer: carregar página e extrair dados ─────────────────────────────────
+
 async function scrapeYouTubeHighlights(): Promise<Highlight[]> {
   console.log(`Abrindo ${CAZE_VIDEOS_URL}...`);
 
@@ -44,6 +169,11 @@ async function scrapeYouTubeHighlights(): Promise<Highlight[]> {
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
   });
 
+  let allVideos: VideoItem[] = [];
+  let contToken: string | null = null;
+  let apiKey = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
+  let visitorData = '';
+
   try {
     const page = await browser.newPage();
     await page.setUserAgent(
@@ -51,68 +181,75 @@ async function scrapeYouTubeHighlights(): Promise<Highlight[]> {
     );
     await page.setViewport({ width: 1280, height: 900 });
 
-    await page.goto(CAZE_VIDEOS_URL, { waitUntil: 'networkidle2', timeout: 60_000 });
+    await page.goto(CAZE_VIDEOS_URL, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    await new Promise(r => setTimeout(r, 4_000));
 
-    // Aguarda carregamento inicial dos vídeos
-    await page.waitForSelector('ytd-rich-item-renderer', { timeout: 30_000 });
+    const { ytData, ytApiKey, ytVisitorData } = await page.evaluate(() => ({
+      ytData: (window as any).ytInitialData,
+      ytApiKey: (window as any).ytcfg?.data_?.INNERTUBE_API_KEY ?? null,
+      ytVisitorData: (window as any).ytcfg?.data_?.VISITOR_DATA ?? '',
+    }));
 
-    const highlights: Map<string, Highlight> = new Map();
-    let consecutiveNoNew = 0;
-    const MAX_SCROLLS = 15;
-    const STOP_AFTER_NO_NEW = 2;
-
-    for (let i = 0; i < MAX_SCROLLS; i++) {
-      const videos: Array<{ title: string; href: string }> = await page.evaluate(() => {
-        const items = document.querySelectorAll('ytd-rich-item-renderer');
-        return Array.from(items).map(item => {
-          const titleEl = item.querySelector('#video-title');
-          const linkEl = item.querySelector('a#video-title-link');
-          return {
-            title: titleEl?.textContent?.trim() ?? '',
-            href: linkEl?.getAttribute('href') ?? '',
-          };
-        });
-      });
-
-      let novosNestaRodada = 0;
-      for (const video of videos) {
-        const match = video.title.match(HIGHLIGHT_REGEX);
-        if (!match || !video.href) continue;
-
-        const url = `https://www.youtube.com${video.href}`;
-        if (highlights.has(url)) continue;
-
-        highlights.set(url, {
-          title: video.title,
-          url,
-          team1: match[1].trim(),
-          team2: match[2].trim(),
-        });
-        novosNestaRodada++;
-        console.log(`  Highlight encontrado: ${video.title}`);
-      }
-
-      console.log(`Scroll ${i + 1}/${MAX_SCROLLS} — ${novosNestaRodada} novos highlights Copa`);
-
-      if (novosNestaRodada === 0) {
-        consecutiveNoNew++;
-        if (consecutiveNoNew >= STOP_AFTER_NO_NEW) {
-          console.log('Nenhum highlight novo nos últimos scrolls. Encerrando scroll.');
-          break;
-        }
-      } else {
-        consecutiveNoNew = 0;
-      }
-
-      await page.evaluate(() => window.scrollBy(0, window.innerHeight * 3));
-      await new Promise(r => setTimeout(r, 2_000));
+    if (!ytData) {
+      const title = await page.title();
+      throw new Error(`ytInitialData não encontrado. Título da página: "${title}"`);
     }
 
-    return Array.from(highlights.values());
+    if (ytApiKey) apiKey = ytApiKey;
+    visitorData = ytVisitorData;
+
+    const parsed = parsearYtInitialData(ytData);
+    allVideos = parsed.videos;
+    contToken = parsed.continuationToken;
+
+    console.log(`Batch inicial: ${allVideos.length} vídeos`);
   } finally {
     await browser.close();
   }
+
+  // Carregar mais batches via API (sem Puppeteer)
+  let batchNum = 2;
+  while (contToken && batchNum <= 5) {
+    console.log(`Carregando batch ${batchNum}...`);
+    const more = await carregarMaisVideos(contToken, apiKey, visitorData);
+    allVideos = allVideos.concat(more.videos);
+    contToken = more.continuationToken;
+    batchNum++;
+    await new Promise(r => setTimeout(r, 800));
+  }
+
+  console.log(`Total analisado: ${allVideos.length} vídeos`);
+
+  if (DEBUG) {
+    console.log('\n── Todos os títulos encontrados ──');
+    allVideos.forEach((v, i) => console.log(`  [${i + 1}] ${v.title}`));
+    console.log('──────────────────────────────────\n');
+  }
+
+  // Filtrar highlights Copa 2026
+  const highlights: Highlight[] = [];
+  for (const v of allVideos) {
+    if (!IS_COPA.test(v.title)) continue;
+
+    const match = v.title.match(HIGHLIGHT_REGEX);
+    if (!match) {
+      if (DEBUG) console.log(`  ℹ️ Copa sem match de times: "${v.title}"`);
+      continue;
+    }
+
+    highlights.push({
+      title: v.title,
+      url: `https://www.youtube.com/watch?v=${v.videoId}`,
+      team1: match[1].trim(),
+      team2: match[2].trim(),
+    });
+    console.log(`  🎬 Highlight: "${v.title}"`);
+  }
+
+  return highlights;
 }
+
+// ── Cruzar com MongoDB e salvar ────────────────────────────────────────────────
 
 async function salvarHighlights(highlights: Highlight[]): Promise<void> {
   if (highlights.length === 0) {
@@ -122,10 +259,7 @@ async function salvarHighlights(highlights: Highlight[]): Promise<void> {
 
   const db = await getDb();
   const jogosCol = db.collection('jogos');
-
-  const jogos = await jogosCol
-    .find({ campeonato: 'Copa do Mundo 2026' })
-    .toArray();
+  const jogos = await jogosCol.find({ campeonato: 'Copa do Mundo 2026' }).toArray();
 
   console.log(`\nCruzando ${highlights.length} highlights com ${jogos.length} jogos Copa 2026...`);
 
@@ -139,10 +273,10 @@ async function salvarHighlights(highlights: Highlight[]): Promise<void> {
       const mandante = jogo['timeMandante'] as string;
       const visitante = jogo['timeVisitante'] as string;
 
-      const casaNormal = nomesCoincide(h.team1, mandante) && nomesCoincide(h.team2, visitante);
-      const foraInvertido = nomesCoincide(h.team1, visitante) && nomesCoincide(h.team2, mandante);
+      const normal = nomesCoincide(h.team1, mandante) && nomesCoincide(h.team2, visitante);
+      const invertido = nomesCoincide(h.team1, visitante) && nomesCoincide(h.team2, mandante);
 
-      if (casaNormal || foraInvertido) {
+      if (normal || invertido) {
         await jogosCol.updateOne(
           { _id: jogo['_id'] },
           { $set: { melhoresMomentos: h.url } }
@@ -155,7 +289,7 @@ async function salvarHighlights(highlights: Highlight[]): Promise<void> {
     }
 
     if (!matched) {
-      console.log(`⚠️  Sem match: "${h.team1}" × "${h.team2}" (${h.title})`);
+      console.log(`⚠️  Sem match: "${h.team1}" × "${h.team2}" | título: "${h.title}"`);
       semMatch++;
     }
   }
@@ -163,33 +297,30 @@ async function salvarHighlights(highlights: Highlight[]): Promise<void> {
   console.log(`\nResumo: ${atualizados} atualizados, ${semMatch} sem match.`);
 }
 
+// ── Cache bust ─────────────────────────────────────────────────────────────────
+
 async function invalidarCache(): Promise<void> {
   const backendUrl = process.env['BACKEND_URL'];
   const adminSecret = process.env['ADMIN_SECRET'];
-
   if (!backendUrl || !adminSecret) {
     console.log('BACKEND_URL ou ADMIN_SECRET não configurados — pulando cache bust.');
     return;
   }
-
   try {
     const resp = await fetch(`${backendUrl}/api/admin/invalidar-cache-copa`, {
       method: 'POST',
       headers: { 'x-admin-secret': adminSecret, 'Content-Type': 'application/json' },
     });
-    if (resp.ok) {
-      console.log('Cache Copa invalidado com sucesso.');
-    } else {
-      console.warn(`Cache bust retornou ${resp.status}.`);
-    }
+    console.log(resp.ok ? 'Cache Copa invalidado.' : `Cache bust retornou ${resp.status}.`);
   } catch (err) {
-    console.warn('Falha ao invalidar cache (servidor pode estar offline):', err);
+    console.warn('Falha ao invalidar cache:', err);
   }
 }
 
+// ── Entry point ────────────────────────────────────────────────────────────────
+
 async function main(): Promise<void> {
   console.log(`\n──── Scraper CazéTV Melhores Momentos — ${new Date().toISOString()} ────\n`);
-
   try {
     const highlights = await scrapeYouTubeHighlights();
     await salvarHighlights(highlights);

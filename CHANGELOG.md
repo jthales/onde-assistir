@@ -6,6 +6,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.0.1] — 2026-06-17
+
+### Corrigido
+
+- **Scraper CazéTV**: YouTube migrou o modelo de dados interno de `videoRenderer` para `lockupViewModel` em 2024. O scraper estava tentando navegar pelo caminho antigo e retornava 0 vídeos. Corrigido o parser para usar `lockupViewModel.contentId` (ID do vídeo) e `lockupViewModel.metadata.lockupMetadataViewModel.title.content` (título).
+- **Regex de score mais robusto**: Substituída a classe `[\d()\s]+` (dependia de backtracking implícito) por `\d+(?:\s*\(\d+\))?\s*[xX]\s*(?:\(\d+\)\s*)?\d+`, que também suporta placares de pênaltis como `0 (5) X (3) 0`.
+
+---
+
 ## [1.0.0] — 2026-06-17
 
 Primeira versão versionada formalmente. O projeto já estava em produção com todas as funcionalidades abaixo.
