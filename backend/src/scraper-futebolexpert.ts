@@ -116,66 +116,150 @@ async function fetchHtml(): Promise<string> {
   try {
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36');
-    await page.goto(URL_FUTEBOLEXPERT, { waitUntil: 'networkidle2', timeout: 40_000 });
-    // Aguarda as linhas da tabela carregarem
-    await page.waitForSelector('table tbody tr', { timeout: 15_000 }).catch(() => {});
-    return await page.content();
+    await page.goto(URL_FUTEBOLEXPERT, { waitUntil: 'networkidle2', timeout: 60_000 });
+
+    // Scroll para garantir lazy-loading de todo o conteúdo
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await new Promise(r => setTimeout(r, 2000));
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await new Promise(r => setTimeout(r, 1000));
+
+    // Tenta aguardar linhas de tabela; sem erro se não vier
+    const tableFound = await page.waitForSelector('table tbody tr, table tr td', { timeout: 10_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!tableFound) {
+      console.warn('  [fetch] Nenhuma tabela encontrada após espera — página pode ter mudado estrutura');
+    }
+
+    const html = await page.content();
+    console.log(`  [fetch] HTML: ${html.length} chars | table encontrada: ${tableFound}`);
+    return html;
   } finally {
     await browser.close();
   }
 }
 
-function parsearJogos(html: string): JogoCanais[] {
-  const $ = cheerio.load(html);
+const VS_REGEX = /^([A-Za-zÀ-ú\s.'()\-]+?)\s+[xX×]\s+([A-Za-zÀ-ú\s.'()\-]+)$/;
+
+function extrairCanaisDaCell($: cheerio.CheerioAPI, cell: cheerio.Element): string[] {
+  const canais: string[] = [];
+  const $cell = $(cell);
+
+  $cell.find('a').each((_, a) => {
+    $(a).text().trim().split(/,\s*/).forEach(part => {
+      const p = part.trim();
+      if (p.length > 1) canais.push(p);
+    });
+  });
+
+  if (canais.length === 0) {
+    $cell.find('img').each((_, img) => {
+      const alt = ($(img).attr('alt') ?? $(img).attr('title') ?? '').trim();
+      if (alt.length > 1) canais.push(alt);
+    });
+  }
+
+  if (canais.length === 0) {
+    $cell.text().trim().split(/,\s*/).forEach(c => {
+      const t = c.trim();
+      if (t.length > 1) canais.push(t);
+    });
+  }
+
+  return canais;
+}
+
+function parsearPorTabela($: cheerio.CheerioAPI): JogoCanais[] {
+  const jogos: JogoCanais[] = [];
+  let totalRows = 0;
+  let puladas = 0;
+
+  $('table tbody tr, table tr').each((_, row) => {
+    totalRows++;
+    const cells = $(row).find('td');
+    if (cells.length < 3) { puladas++; return; }
+
+    // Tenta todas as combinações de coluna para o confronto (col 2 e col 1)
+    for (const colConfronto of [2, 1, 0]) {
+      const confronto = cells.eq(colConfronto).text().trim();
+      const vsMatch = confronto.match(VS_REGEX);
+      if (!vsMatch) continue;
+
+      const mandante = vsMatch[1].trim();
+      const visitante = vsMatch[2].trim();
+      if (mandante.length < 2 || visitante.length < 2) continue;
+
+      // Coluna seguinte = onde assistir
+      const ondeCell = cells.get(colConfronto + 1);
+      if (!ondeCell) continue;
+      const canais = extrairCanaisDaCell($, ondeCell);
+
+      console.log(`  [tabela] ${mandante} x ${visitante} → [${canais.join(', ') || 'sem canais'}]`);
+      jogos.push({ timeMandante: mandante, timeVisitante: visitante, canais });
+      break;
+    }
+  });
+
+  console.log(`  [tabela] ${totalRows} linha(s) total, ${puladas} puladas (<3 cols), ${jogos.length} jogo(s) extraído(s)`);
+  return jogos;
+}
+
+function parsearPorCards($: cheerio.CheerioAPI): JogoCanais[] {
   const jogos: JogoCanais[] = [];
 
-  // Estrutura: tabela com colunas Data | Horário | Confronto | Onde assistir | Fase
-  $('table tbody tr, table tr').each((_, row) => {
-    const cells = $(row).find('td');
-    if (cells.length < 4) return;
+  // Tenta encontrar confronto em qualquer elemento com padrão "Time x Time"
+  $('*').each((_, el) => {
+    const tag = (el as any).name ?? '';
+    if (['script', 'style', 'head', 'noscript'].includes(tag)) return;
+    const $el = $(el);
+    if ($el.children().length > 0) return; // só folhas de texto
 
-    // Coluna 2: Confronto (ex: "Brasil x Haiti")
-    const confronto = cells.eq(2).text().trim();
-    const vsMatch = confronto.match(/^([A-Za-zÀ-ú\s.'()\-]+?)\s+[xX×]\s+([A-Za-zÀ-ú\s.'()\-]+)$/);
+    const text = $el.text().trim();
+    const vsMatch = text.match(VS_REGEX);
     if (!vsMatch) return;
 
     const mandante = vsMatch[1].trim();
     const visitante = vsMatch[2].trim();
     if (mandante.length < 2 || visitante.length < 2) return;
 
-    // Coluna 3: Onde assistir — tentar <a>, depois <img alt>, depois texto
-    const ondeCell = cells.eq(3);
-    const canais: string[] = [];
+    // Procura canais no elemento pai/irmãos
+    const $parent = $el.closest('[class]').parent();
+    const canais = extrairCanaisDaCell($, $parent.get(0) as cheerio.Element);
 
-    ondeCell.find('a').each((_, a) => {
-      $(a).text().trim().split(/,\s*/).forEach(part => {
-        const p = part.trim();
-        if (p.length > 1) canais.push(p);
-      });
-    });
-
-    if (canais.length === 0) {
-      ondeCell.find('img').each((_, img) => {
-        const alt = ($(img).attr('alt') ?? $(img).attr('title') ?? '').trim();
-        if (alt.length > 1) canais.push(alt);
-      });
-    }
-
-    if (canais.length === 0) {
-      ondeCell.text().trim().split(/,\s*/).forEach(c => {
-        const t = c.trim();
-        if (t.length > 1) canais.push(t);
-      });
-    }
-
-    console.log(`  [parse] ${mandante} x ${visitante} → [${canais.join(', ') || 'sem canais'}]`);
+    console.log(`  [cards] ${mandante} x ${visitante} → [${canais.join(', ') || 'sem canais'}]`);
     jogos.push({ timeMandante: mandante, timeVisitante: visitante, canais });
   });
 
+  return jogos;
+}
+
+function parsearJogos(html: string): JogoCanais[] {
+  const $ = cheerio.load(html);
+
+  // Estratégia 1: tabela clássica
+  let jogos = parsearPorTabela($);
+
+  if (jogos.length < 5) {
+    console.warn(`  [parse] Estratégia tabela retornou ${jogos.length} jogo(s) — tentando cards/divs`);
+
+    // Estratégia 2: elementos genéricos com texto "X x Y"
+    const cardJogos = parsearPorCards($);
+    if (cardJogos.length > jogos.length) {
+      console.log(`  [parse] Estratégia cards retornou ${cardJogos.length} jogo(s) — usando esses`);
+      jogos = cardJogos;
+    }
+  }
+
   if (jogos.length === 0) {
-    console.warn('  [parse] Nenhum jogo encontrado — verificar estrutura HTML.');
-    console.log('  [debug] Primeiros 3000 chars do HTML:');
-    console.log(html.slice(0, 3000));
+    console.warn('  [parse] Nenhum jogo encontrado em nenhuma estratégia — dump do HTML para diagnóstico:');
+    // Dump das primeiras 8000 chars e das tags de tabela encontradas
+    console.log(`  [debug-html] ${html.slice(0, 8000)}`);
+    const tables = $('table').length;
+    const trs = $('tr').length;
+    console.log(`  [debug-estrutura] tables=${tables} trs=${trs}`);
+  } else {
+    console.log(`  [parse] Total: ${jogos.length} jogo(s) extraído(s)`);
   }
 
   return jogos;
