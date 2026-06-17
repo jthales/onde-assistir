@@ -13,6 +13,7 @@
     "populate:copa": "ts-node src/populate-copa-2026.ts",
     "populate:copa:dry": "ts-node src/populate-copa-2026.ts --dry-run",
     "scrape:futebolexpert": "ts-node src/scraper-futebolexpert.ts",
+    "scrape:caze-highlights": "ts-node src/scraper-caze-highlights.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

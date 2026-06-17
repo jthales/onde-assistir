@@ -490,6 +490,27 @@
   padding: 12px 0;
 }
 
+.btn-melhores-momentos {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, #ff0000 12%, var(--color-surface));
+  border: 1px solid color-mix(in srgb, #ff0000 30%, transparent);
+  color: #cc2200;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: color-mix(in srgb, #ff0000 20%, var(--color-surface));
+    border-color: color-mix(in srgb, #ff0000 50%, transparent);
+  }
+}
+
 // ── Estilos de tabela de classificação (não herdados do app.scss por ViewEncapsulation)
 
 .classificacao {

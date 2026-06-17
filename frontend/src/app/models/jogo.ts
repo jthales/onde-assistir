@@ -40,6 +40,7 @@ export interface Jogo {
   streaming: string[];
   estadio: string;
   campeonato?: string;
+  melhoresMomentos?: string;
 }
 
 export interface Noticia {

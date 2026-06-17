@@ -128,6 +128,14 @@
                     <span>{{ translateCountry(jogo.timeVisitante) }}</span>
                   </div>
                 </div>
+                @if (jogo.melhoresMomentos) {
+                  <a class="btn-melhores-momentos"
+                     [href]="jogo.melhoresMomentos"
+                     target="_blank"
+                     rel="noopener noreferrer">
+                    ▶ Melhores momentos
+                  </a>
+                }
               </div>
             }
           </div>
@@ -227,6 +235,14 @@
                               <span>{{ translateCountry(jogo.timeVisitante) }}</span>
                             </div>
                           </div>
+                          @if (jogo.melhoresMomentos) {
+                            <a class="btn-melhores-momentos"
+                               [href]="jogo.melhoresMomentos"
+                               target="_blank"
+                               rel="noopener noreferrer">
+                              ▶ Melhores momentos
+                            </a>
+                          }
                         </div>
                       }
                     </div>

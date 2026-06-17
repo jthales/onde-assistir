@@ -153,8 +153,9 @@ async function fetchCopaJogosMongo(): Promise<any[]> {
     hora:          d['hora'],
     canal:         d['canal']      ?? [],
     streaming:     d['streaming']  ?? [],
-    estadio:       d['estadio']    ?? '',
-    campeonato:    'Copa do Mundo 2026',
+    estadio:          d['estadio']          ?? '',
+    campeonato:       'Copa do Mundo 2026',
+    melhoresMomentos: d['melhoresMomentos'] ?? undefined,
   })).sort((a, b) => a.data.localeCompare(b.data) || a.hora.localeCompare(b.hora));
 }
 
