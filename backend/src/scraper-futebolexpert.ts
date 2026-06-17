@@ -118,22 +118,42 @@ async function fetchHtml(): Promise<string> {
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36');
     await page.goto(URL_FUTEBOLEXPERT, { waitUntil: 'networkidle2', timeout: 60_000 });
 
-    // Scroll para garantir lazy-loading de todo o conteúdo
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await new Promise(r => setTimeout(r, 2000));
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await new Promise(r => setTimeout(r, 1000));
+    // Aguarda ao menos uma linha aparecer antes de começar o scroll
+    await page.waitForSelector('table tr, tr', { timeout: 15_000 }).catch(() => {});
 
-    // Tenta aguardar linhas de tabela; sem erro se não vier
-    const tableFound = await page.waitForSelector('table tbody tr, table tr td', { timeout: 10_000 })
-      .then(() => true)
-      .catch(() => false);
-    if (!tableFound) {
-      console.warn('  [fetch] Nenhuma tabela encontrada após espera — página pode ter mudado estrutura');
+    // Rola a página incrementalmente para disparar lazy-loading de todos os jogos,
+    // aguardando a contagem de linhas estabilizar antes de capturar o HTML
+    let prevRowCount = 0;
+    let stableRounds = 0;
+    const MAX_ROUNDS = 20;
+
+    for (let i = 0; i < MAX_ROUNDS; i++) {
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+      await new Promise(r => setTimeout(r, 1500));
+
+      const rowCount: number = await page.evaluate(
+        () => document.querySelectorAll('table tr, tr').length
+      );
+
+      if (rowCount === prevRowCount) {
+        stableRounds++;
+        if (stableRounds >= 3) {
+          console.log(`  [fetch] Contagem estável em ${rowCount} linhas após ${i + 1} rodadas de scroll`);
+          break;
+        }
+      } else {
+        stableRounds = 0;
+        console.log(`  [fetch] Scroll rodada ${i + 1}: ${prevRowCount} → ${rowCount} linhas`);
+        prevRowCount = rowCount;
+      }
     }
 
+    // Volta ao topo e aguarda um momento final
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await new Promise(r => setTimeout(r, 500));
+
     const html = await page.content();
-    console.log(`  [fetch] HTML: ${html.length} chars | table encontrada: ${tableFound}`);
+    console.log(`  [fetch] HTML final: ${html.length} chars`);
     return html;
   } finally {
     await browser.close();
