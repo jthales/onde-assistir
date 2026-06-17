@@ -12,6 +12,7 @@ import { teamInitials } from './team-logos';
 import { Copa2026Component } from './copa-2026/copa-2026.component';
 import { translateCountry } from './copa-2026/country-names';
 import { Copa2026Service } from './services/copa-2026.service';
+import { APP_VERSION } from './version';
 
 interface Regressiva { dias: number; horas: number; minutos: number; segundos: number }
 
@@ -65,6 +66,7 @@ export class App implements OnInit, OnDestroy {
   isRefreshing = signal(false);
 
   readonly currentYear = new Date().getFullYear();
+  readonly appVersion = APP_VERSION;
 
   campeonatoSelecionado = signal<string>('');
   classificacaoCampeonato = signal<ClassificacaoResponse | null>(null);

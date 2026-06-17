@@ -866,6 +866,26 @@ body {
 
 .site-footer-dev { color: rgba(255, 255, 255, 0.5); }
 
+.site-footer-version {
+  display: inline-block;
+  margin-top: 0.1rem;
+  padding: 2px 7px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  font-family: monospace;
+  transition: color 0.15s, border-color 0.15s;
+
+  &:hover {
+    color: rgba(255, 255, 255, 0.75);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+}
+
 // ── Filtros bar ───────────────────────────────────────────────────────────────
 
 .filtros-bar {
