@@ -233,12 +233,14 @@ body {
 // ── Container ────────────────────────────────────────────────────────────────
 
 .container {
+  width: 100%;
   max-width: 1280px;
   margin: -1.75rem auto 0;
   padding: 0 1rem 4rem;
   position: relative;
   z-index: 2;
   flex: 1;
+  box-sizing: border-box;
 }
 
 // ── Times Picker ─────────────────────────────────────────────────────────────
@@ -371,6 +373,8 @@ body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0.875rem;
+  width: 100%;
+  min-width: 0;
 }
 
 // ── Card ─────────────────────────────────────────────────────────────────────
@@ -560,6 +564,9 @@ body {
   background: #f8fafc;
   border-radius: 12px;
   padding: 0.75rem 0.5rem;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .time-col {
@@ -1032,7 +1039,7 @@ body {
 .conteudo-wrapper {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 1.5rem;
 
   .jogos-coluna {

@@ -6,6 +6,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.0.3] — 2026-06-24
+
+### Corrigido
+
+- **Copa 2026 — fase eliminatória antecipada**: `detectPhase()` consultava a ESPN com janela de +7 dias no futuro, fazendo o mata-mata aparecer desde 22/06 ao encontrar jogos de `round-of-32` agendados para 28/06. Janela limitada ao dia atual (BRT) para só mudar de fase quando os jogos realmente chegam.
+- **Copa 2026 — layout mata-mata quebrado**: classes `confrontos-grid`, `mm-card`, `mm-teams`, `mm-team`, `mm-team-logo` e demais não tinham CSS definido, causando layout em texto puro e bandeiras enormes. Adicionado CSS completo para a fase eliminatória com cards em grid responsivo.
+- **Mobile — card width inconsistente**: `main.container` encolhia baseado no conteúdo (366px com 1 card, 412px com vários) porque `.page` é `flex-direction: column` e `flex: 1` só controla altura, não largura. Corrigido adicionando `width: 100%` ao `.container` e `align-items: stretch` ao `.conteudo-wrapper`.
+
+### Adicionado
+
+- **Dev — override de fase via query param**: endpoint `/api/copa-2026/classificacao?fase=<slug>` aceita parâmetro para forçar uma fase específica localmente sem reiniciar o servidor, facilitando testes de layout.
+
+---
+
 ## [1.0.2] — 2026-06-17
 
 ### Corrigido
