@@ -474,7 +474,7 @@
                   </span>
                 } @else if (eEncerrado(jogo)) {
                   <span class="encerrado-badge">Encerrado</span>
-                } @else if (jogo.hora && jogo.hora !== '00:00') {
+                } @else if (jogo.hora && (jogo.hora !== '00:00' || jogo.campeonato === 'Copa do Mundo 2026')) {
                   <span class="hora">{{ jogo.hora }}</span>
                 }
               </div>
