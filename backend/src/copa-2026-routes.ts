@@ -205,10 +205,6 @@ router.get('/api/copa-2026/classificacao', async (_req, res) => {
 });
 
 // ── Admin: limpar + repopulate Copa (uso único via curl/browser no Vercel) ────
-function slugify(s: string): string {
-  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-}
-
 router.post('/api/admin/repopulate-copa', async (req, res) => {
   const secret = req.headers['x-admin-secret'];
   if (!process.env['ADMIN_SECRET'] || secret !== process.env['ADMIN_SECRET']) {
@@ -242,7 +238,7 @@ router.post('/api/admin/repopulate-copa', async (req, res) => {
       const timeMandante  = translateCountry(mand.team.displayName);
       const timeVisitante = translateCountry(visit.team.displayName);
       const dataStr = brt.toISOString().slice(0, 10);
-      const id = `copa26-${dataStr}-${slugify(timeMandante)}-${slugify(timeVisitante)}`;
+      const id = `copa26-espn-${event.id}`;
 
       bulkOps.push({
         updateOne: {
@@ -257,6 +253,7 @@ router.post('/api/admin/repopulate-copa', async (req, res) => {
               canal: [], streaming: ['CazéTV', 'Prime Video'],
               estadio: comp.venue?.fullName ?? '',
               campeonato: 'Copa do Mundo 2026',
+              espnEventId: String(event.id),
               lastUpdated: agora,
             },
           },

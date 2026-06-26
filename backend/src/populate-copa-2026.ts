@@ -15,24 +15,17 @@ import { translateCountry } from './country-names';
 const DRY_RUN = process.argv.includes('--dry-run');
 const CAMPEONATO_LABEL = 'Copa do Mundo 2026';
 
-function slugify(s: string): string {
-  return s.toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '');
+function jogoId(espnEventId: string): string {
+  return `copa26-espn-${espnEventId}`;
 }
 
-function jogoId(data: string, mandante: string, visitante: string): string {
-  return `copa26-${data}-${slugify(mandante)}-${slugify(visitante)}`;
-}
-
-async function fetchCopaFixtures(): Promise<Array<Omit<Jogo, 'rodada'> & { rodada: number }>> {
+async function fetchCopaFixtures(): Promise<Array<Omit<Jogo, 'rodada'> & { rodada: number; espnEventId: string }>> {
   const url = espnCopaUrl();
   const resp = await fetch(url);
   if (!resp.ok) throw new Error(`ESPN API error: ${resp.status}`);
   const data: any = await resp.json();
 
-  const fixtures: Array<Omit<Jogo, 'rodada'> & { rodada: number }> = [];
+  const fixtures: Array<Omit<Jogo, 'rodada'> & { rodada: number; espnEventId: string }> = [];
 
   for (const event of data.events ?? []) {
     const comp = event.competitions?.[0];
@@ -46,6 +39,7 @@ async function fetchCopaFixtures(): Promise<Array<Omit<Jogo, 'rodada'> & { rodad
 
     fixtures.push({
       rodada:        0,
+      espnEventId:   String(event.id),
       timeMandante:  translateCountry(mand.team.displayName),
       timeVisitante: translateCountry(visit.team.displayName),
       logoMandante:  mand.team.logo ?? '',
@@ -93,7 +87,7 @@ async function runPopulate(): Promise<void> {
   console.log(`  Jogos já existentes no MongoDB: ${existingDocs.size}`);
 
   const jogosParaSalvar = fixtures.map(f => ({
-    id: jogoId(f.data, f.timeMandante, f.timeVisitante),
+    id: jogoId(f.espnEventId),
     ...f,
     lastUpdated: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
   }));
@@ -103,9 +97,11 @@ async function runPopulate(): Promise<void> {
     fs.writeFileSync(outPath, JSON.stringify(jogosParaSalvar, null, 2), 'utf-8');
     console.log(`\n📄 Dry-run: ${jogosParaSalvar.length} jogo(s) escritos em ${outPath}`);
     for (const j of jogosParaSalvar) {
-      console.log(`   ${j.data} ${j.hora} — ${j.timeMandante} x ${j.timeVisitante} (${j.estadio})`);
+      console.log(`   ${j.id} ${j.data} ${j.hora} — ${j.timeMandante} x ${j.timeVisitante} (${j.estadio})`);
     }
   } else {
+    const validIds = new Set(jogosParaSalvar.map(j => j.id));
+
     const bulkOps = jogosParaSalvar.map(jogo => {
       const { id, canal: defaultCanal, streaming: defaultStreaming, ...jogoBase } = jogo;
       const existing = existingDocs.get(id);
@@ -131,6 +127,17 @@ async function runPopulate(): Promise<void> {
       };
     });
     await mdb.collection('jogos').bulkWrite(bulkOps);
+
+    // Remove documentos Copa com IDs que não correspondem a nenhum evento ESPN atual.
+    // Isso limpa órfãos gerados antes desta correção (IDs baseados em nomes de times).
+    const deleteResult = await mdb.collection('jogos').deleteMany({
+      campeonato: CAMPEONATO_LABEL,
+      _id: { $nin: Array.from(validIds) } as any,
+    });
+    if (deleteResult.deletedCount > 0) {
+      console.log(`  🗑  ${deleteResult.deletedCount} documento(s) órfão(s) removido(s) do MongoDB.`);
+    }
+
     console.log(`\n✅ ${jogosParaSalvar.length} jogo(s) salvos no MongoDB (coleção 'jogos')`);
     for (const j of jogosParaSalvar) {
       console.log(`   ${j.data} ${j.hora} — ${j.timeMandante} x ${j.timeVisitante}`);
