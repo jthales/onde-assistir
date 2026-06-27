@@ -79,13 +79,16 @@
       <div class="state-error-icon">⚠️</div>
       <p>{{ erro() }}</p>
     </div>
-  } @else if (classificacao(); as classif) {
+  } @else if (classificacaoExibida(); as classif) {
 
     @if (classif.tipo === 'grupos') {
       <!-- Fase de Grupos: 12 grupos A–L -->
       <section class="copa-classificacao">
         <div class="copa-section-header">
           <h3 class="copa-section-titulo">Fase de Grupos</h3>
+          @if (mostrandoGrupos()) {
+            <button class="btn-ver-fase btn-ver-fase--voltar" (click)="voltarMataMata()">← Mata-mata</button>
+          }
           @if (temClassificacaoProvisoria()) {
             <span class="classificacao-ao-vivo-badge">
               <span class="ao-vivo-dot"></span>Ao vivo
@@ -262,6 +265,9 @@
       <section class="copa-classificacao">
         <div class="copa-section-header">
           <h3 class="copa-section-titulo">{{ classif.faseAtual }}</h3>
+          <button class="btn-ver-fase" (click)="verGrupos()" [disabled]="gruposLoading()">
+            @if (gruposLoading()) { Carregando... } @else { Ver fase de grupos }
+          </button>
         </div>
         <div class="confrontos-grid">
           @for (c of classif.confrontos ?? []; track c.time1.nome + c.time2.nome) {

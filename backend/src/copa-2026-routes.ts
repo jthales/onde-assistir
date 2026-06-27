@@ -22,6 +22,7 @@ const ELIMINATORIAS_SLUGS = new Set([
 ]);
 
 let copaClassifCache: { dados: any; fetchedAt: number } | null = null;
+let copaGruposCache: { dados: any; fetchedAt: number } | null = null;
 const COPA_CLASSIF_TTL_MS = 5 * 60_000;
 
 let copaJogosCache: { dados: any[]; fetchedAt: number } | null = null;
@@ -180,8 +181,29 @@ router.get('/api/copa-2026/jogos', async (_req, res) => {
   }
 });
 
-router.get('/api/copa-2026/classificacao', async (_req, res) => {
+router.get('/api/copa-2026/classificacao', async (req, res) => {
   const agora = Date.now();
+
+  // Modo forceGrupos: sempre retorna grupos (independente da fase atual)
+  if (req.query['forceGrupos'] === 'true') {
+    if (copaGruposCache && agora - copaGruposCache.fetchedAt < COPA_CLASSIF_TTL_MS) {
+      res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+      res.json(copaGruposCache.dados);
+      return;
+    }
+    try {
+      const resultado = await fetchGrupos();
+      copaGruposCache = { dados: resultado, fetchedAt: agora };
+      res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+      res.json(resultado);
+    } catch (error) {
+      console.error('Erro ao buscar grupos Copa 2026:', error);
+      if (copaGruposCache) { res.json(copaGruposCache.dados); return; }
+      res.status(500).json({ error: 'Falha ao buscar grupos da Copa 2026' });
+    }
+    return;
+  }
+
   if (copaClassifCache && agora - copaClassifCache.fetchedAt < COPA_CLASSIF_TTL_MS) {
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
     res.json(copaClassifCache.dados);
@@ -281,6 +303,7 @@ router.post('/api/admin/invalidar-cache-copa', (req, res) => {
     return;
   }
   copaJogosCache = null;
+  copaGruposCache = null;
   res.json({ ok: true, message: 'Cache de jogos Copa invalidado' });
 });
 

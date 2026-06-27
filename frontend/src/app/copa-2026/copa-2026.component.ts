@@ -31,6 +31,10 @@ export class Copa2026Component implements OnInit, OnDestroy {
   jogos = signal<Jogo[]>([]);
   placares = signal<Map<string, Placar>>(new Map());
 
+  mostrandoGrupos = signal(false);
+  gruposCache = signal<ClassificacaoResponse | null>(null);
+  gruposLoading = signal(false);
+
   private classificacaoInterval?: ReturnType<typeof setInterval>;
   private jogosInterval?: ReturnType<typeof setInterval>;
   private placarInterval?: ReturnType<typeof setInterval>;
@@ -41,8 +45,14 @@ export class Copa2026Component implements OnInit, OnDestroy {
 
   readonly translateCountry = translateCountry;
 
+  readonly classificacaoExibida = computed(() =>
+    this.mostrandoGrupos() && this.gruposCache()
+      ? this.gruposCache()!
+      : this.classificacao()
+  );
+
   readonly jogosPorGrupo = computed(() => {
-    const classif = this.classificacao();
+    const classif = this.classificacaoExibida();
     if (classif?.tipo !== 'grupos') return new Map<string, Jogo[]>();
     const map = new Map<string, Jogo[]>();
     for (const grupo of classif.grupos) {
@@ -204,6 +214,21 @@ export class Copa2026Component implements OnInit, OnDestroy {
     return this.placares().get(`${jogo.timeMandante}|${jogo.timeVisitante}`);
   }
 
+  verGrupos(): void {
+    this.mostrandoGrupos.set(true);
+    if (!this.gruposCache()) {
+      this.gruposLoading.set(true);
+      this.copaSvc.getGruposClassificacao().subscribe({
+        next: (data) => { this.gruposCache.set(data); this.gruposLoading.set(false); },
+        error: () => this.gruposLoading.set(false),
+      });
+    }
+  }
+
+  voltarMataMata(): void {
+    this.mostrandoGrupos.set(false);
+  }
+
   getMelhoresMomentosMataMata(time1Nome: string, time2Nome: string): string | undefined {
     return this.jogos().find(j =>
       (j.timeMandante === time1Nome && j.timeVisitante === time2Nome) ||
@@ -231,7 +256,7 @@ export class Copa2026Component implements OnInit, OnDestroy {
   }
 
   readonly classificacaoProvisoria = computed(() => {
-    const classif = this.classificacao();
+    const classif = this.classificacaoExibida();
     if (!classif || classif.tipo !== 'grupos') return classif;
 
     const aoVivo = Array.from(this.placares().values()).filter(p => p.status === 'em-andamento');

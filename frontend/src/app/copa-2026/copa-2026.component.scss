@@ -195,6 +195,29 @@
   color: var(--color-text);
 }
 
+.btn-ver-fase {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+
+  &:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
 // ── Ao vivo (placares em andamento) ──────────────────────────────────────────
 
 .copa-ao-vivo {

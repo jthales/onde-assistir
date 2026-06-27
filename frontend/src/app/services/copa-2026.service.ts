@@ -12,6 +12,10 @@ export class Copa2026Service {
     return this.http.get<ClassificacaoResponse>(`${environment.apiUrl}/api/copa-2026/classificacao`);
   }
 
+  getGruposClassificacao(): Observable<ClassificacaoResponse> {
+    return this.http.get<ClassificacaoResponse>(`${environment.apiUrl}/api/copa-2026/classificacao?forceGrupos=true`);
+  }
+
   getJogos(): Observable<Jogo[]> {
     return this.http.get<Jogo[]>(`${environment.apiUrl}/api/copa-2026/jogos`);
   }
