@@ -39,10 +39,9 @@ function getStat(stats: any[], name: string): number {
 async function detectPhase(): Promise<string> {
   const brtNow = new Date(Date.now() - 3 * 60 * 60 * 1000);
   const past = new Date(brtNow.getTime() - 3 * 24 * 60 * 60 * 1000);
-  // Não olhar para o futuro: só mudar de fase quando jogos eliminatórios
-  // já chegaram no dia de hoje (BRT), evitando antecipar a exibição do mata-mata.
+  const future = new Date(brtNow.getTime() + 1 * 24 * 60 * 60 * 1000);
   const resp = await fetch(
-    `https://site.api.espn.com/apis/site/v2/sports/soccer/${ESPN_COPA}/scoreboard?dates=${fmt(past)}-${fmt(brtNow)}`
+    `https://site.api.espn.com/apis/site/v2/sports/soccer/${ESPN_COPA}/scoreboard?dates=${fmt(past)}-${fmt(future)}`
   );
   if (!resp.ok) return 'group-stage';
   const data: any = await resp.json();
