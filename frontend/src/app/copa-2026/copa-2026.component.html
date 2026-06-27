@@ -311,6 +311,15 @@
                   {{ translateCountry(c.vencedor === 'time1' ? c.time1.nome : c.time2.nome) }} classificado
                 </div>
               }
+              @let mmUrl = getMelhoresMomentosMataMata(c.time1.nome, c.time2.nome);
+              @if (mmUrl) {
+                <a class="btn-melhores-momentos"
+                   [href]="mmUrl"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                  ▶ Melhores momentos
+                </a>
+              }
             </div>
           }
         </div>

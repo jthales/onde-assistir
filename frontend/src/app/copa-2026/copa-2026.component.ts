@@ -204,6 +204,13 @@ export class Copa2026Component implements OnInit, OnDestroy {
     return this.placares().get(`${jogo.timeMandante}|${jogo.timeVisitante}`);
   }
 
+  getMelhoresMomentosMataMata(time1Nome: string, time2Nome: string): string | undefined {
+    return this.jogos().find(j =>
+      (j.timeMandante === time1Nome && j.timeVisitante === time2Nome) ||
+      (j.timeMandante === time2Nome && j.timeVisitante === time1Nome)
+    )?.melhoresMomentos;
+  }
+
   eAoVivo(jogo: Jogo): boolean {
     return this.getPlacarJogo(jogo)?.status === 'em-andamento';
   }
