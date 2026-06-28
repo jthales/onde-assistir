@@ -31,11 +31,10 @@ export class Copa2026Component implements OnInit, OnDestroy {
   jogos = signal<Jogo[]>([]);
   placares = signal<Map<string, Placar>>(new Map());
 
-  mostrandoGrupos = signal(false);
   gruposCache = signal<ClassificacaoResponse | null>(null);
   gruposLoading = signal(false);
 
-  faseIdxMataMata = signal(0);
+  faseIdxGeral = signal(1); // 0 = Fase de Grupos; 1+ = fases eliminatórias
   private mmFaseIniciada = false;
 
   private classificacaoInterval?: ReturnType<typeof setInterval>;
@@ -48,26 +47,31 @@ export class Copa2026Component implements OnInit, OnDestroy {
 
   readonly translateCountry = translateCountry;
 
+  readonly estaEmFaseGrupos = computed(() => this.faseIdxGeral() === 0);
+
   readonly classificacaoExibida = computed(() =>
-    this.mostrandoGrupos() && this.gruposCache()
+    this.estaEmFaseGrupos() && this.gruposCache()
       ? this.gruposCache()!
       : this.classificacao()
   );
 
+  // Usa classificacao() diretamente para evitar dependência circular com classificacaoExibida
   readonly fasesMataMata = computed(() => {
     const seen = new Set<string>(); const fases: string[] = [];
-    for (const c of this.classificacaoExibida()?.confrontos ?? [])
+    for (const c of this.classificacao()?.confrontos ?? [])
       if (c.fase && !seen.has(c.fase)) { seen.add(c.fase); fases.push(c.fase); }
     return fases;
   });
 
+  readonly fasesGerais = computed(() => ['Fase de Grupos', ...this.fasesMataMata()]);
+
   readonly confrontosFaseMM = computed(() => {
-    const fase = this.fasesMataMata()[this.faseIdxMataMata()];
-    return (this.classificacaoExibida()?.confrontos ?? []).filter(c => c.fase === fase);
+    const fase = this.fasesMataMata()[this.faseIdxGeral() - 1];
+    return (this.classificacao()?.confrontos ?? []).filter(c => c.fase === fase);
   });
 
-  readonly tituloFaseMM = computed(() =>
-    this.fasesMataMata()[this.faseIdxMataMata()] ?? this.classificacaoExibida()?.faseAtual ?? ''
+  readonly tituloFaseGeral = computed(() =>
+    this.fasesGerais()[this.faseIdxGeral()] ?? this.classificacao()?.faseAtual ?? ''
   );
 
   readonly jogosPorGrupo = computed(() => {
@@ -206,7 +210,8 @@ export class Copa2026Component implements OnInit, OnDestroy {
           for (const c of data.confrontos ?? [])
             if (c.fase && !seen.has(c.fase)) { seen.add(c.fase); fases.push(c.fase); }
           const idx = data.faseAtual ? fases.indexOf(data.faseAtual) : -1;
-          this.faseIdxMataMata.set(idx >= 0 ? idx : Math.max(0, fases.length - 1));
+          // +1 porque índice 0 é reservado para "Fase de Grupos"
+          this.faseIdxGeral.set(idx >= 0 ? idx + 1 : Math.max(1, fases.length));
           this.mmFaseIniciada = true;
         }
       },
@@ -242,19 +247,10 @@ export class Copa2026Component implements OnInit, OnDestroy {
   }
 
   irFaseAnteriorMM(): void {
-    if (this.faseIdxMataMata() > 0) this.faseIdxMataMata.update(i => i - 1);
-  }
-
-  irProximaFaseMM(): void {
-    if (this.faseIdxMataMata() < this.fasesMataMata().length - 1) this.faseIdxMataMata.update(i => i + 1);
-  }
-
-  temFaseAnteriorMM(): boolean { return this.faseIdxMataMata() > 0; }
-  temProximaFaseMM(): boolean { return this.faseIdxMataMata() < this.fasesMataMata().length - 1; }
-
-  verGrupos(): void {
-    this.mostrandoGrupos.set(true);
-    if (!this.gruposCache()) {
+    const newIdx = this.faseIdxGeral() - 1;
+    if (newIdx < 0) return;
+    this.faseIdxGeral.set(newIdx);
+    if (newIdx === 0 && !this.gruposCache()) {
       this.gruposLoading.set(true);
       this.copaSvc.getGruposClassificacao().subscribe({
         next: (data) => { this.gruposCache.set(data); this.gruposLoading.set(false); },
@@ -263,9 +259,12 @@ export class Copa2026Component implements OnInit, OnDestroy {
     }
   }
 
-  voltarMataMata(): void {
-    this.mostrandoGrupos.set(false);
+  irProximaFaseMM(): void {
+    if (this.faseIdxGeral() < this.fasesGerais().length - 1) this.faseIdxGeral.update(i => i + 1);
   }
+
+  temFaseAnteriorMM(): boolean { return this.faseIdxGeral() > 0; }
+  temProximaFaseMM(): boolean { return this.faseIdxGeral() < this.fasesGerais().length - 1; }
 
   getMelhoresMomentosMataMata(time1Nome: string, time2Nome: string): string | undefined {
     return this.jogos().find(j =>

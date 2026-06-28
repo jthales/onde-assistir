@@ -66,14 +66,12 @@
       <!-- Fase de Grupos: 12 grupos A–L -->
       <section class="copa-classificacao">
         <div class="copa-section-header">
-          <h3 class="copa-section-titulo">Fase de Grupos</h3>
-          @if (mostrandoGrupos()) {
-            <button class="btn-ver-fase btn-ver-fase--voltar" (click)="voltarMataMata()">← Mata-mata</button>
+          @if (fasesGerais().length > 1) {
+            <button class="grupo-rodada-nav-btn" (click)="irFaseAnteriorMM()" [disabled]="!temFaseAnteriorMM()">&#8249;</button>
           }
-          @if (temClassificacaoProvisoria()) {
-            <span class="classificacao-ao-vivo-badge">
-              <span class="ao-vivo-dot"></span>Ao vivo
-            </span>
+          <h3 class="copa-section-titulo">Fase de Grupos</h3>
+          @if (fasesGerais().length > 1) {
+            <button class="grupo-rodada-nav-btn" (click)="irProximaFaseMM()" [disabled]="!temProximaFaseMM()">&#8250;</button>
           }
         </div>
 
@@ -246,12 +244,12 @@
       <section class="copa-classificacao">
         <div class="copa-section-header">
           <button class="grupo-rodada-nav-btn" (click)="irFaseAnteriorMM()" [disabled]="!temFaseAnteriorMM()">&#8249;</button>
-          <h3 class="copa-section-titulo">{{ tituloFaseMM() }}</h3>
+          <h3 class="copa-section-titulo">{{ tituloFaseGeral() }}</h3>
           <button class="grupo-rodada-nav-btn" (click)="irProximaFaseMM()" [disabled]="!temProximaFaseMM()">&#8250;</button>
-          <button class="btn-ver-fase" (click)="verGrupos()" [disabled]="gruposLoading()">
-            @if (gruposLoading()) { Carregando... } @else { Ver fase de grupos }
-          </button>
         </div>
+        @if (estaEmFaseGrupos() && gruposLoading()) {
+          <div class="state-wrapper"><div class="spinner"></div></div>
+        }
         <div class="confrontos-grid">
           @for (c of confrontosFaseMM(); track c.time1.nome + c.time2.nome) {
             <div class="mm-card" [class.mm-card--encerrado]="c.vencedor">
