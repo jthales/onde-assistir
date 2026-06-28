@@ -936,17 +936,23 @@ body {
 }
 
 .filtro-vivo-btn {
-  @include flex(0.3rem);
-  padding: 0.3rem 0.85rem;
+  @include flex(0.35rem);
+  align-items: center;
+  padding: 0.4rem 1rem;
   border-radius: 999px;
   border: 1.5px solid #dc2626;
-  background: transparent;
+  background: rgba(220, 38, 38, 0.06);
   color: #dc2626;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    background: rgba(220, 38, 38, 0.12);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+  }
 
   &.ativo {
     background: #dc2626;
@@ -1034,80 +1040,24 @@ body {
   &--down { color: #dc2626; }
 }
 
-// ── Ao Vivo Bar (seção pinada automática) ─────────────────────────────────────
-
-.ao-vivo-bar {
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
-  border-left: 3px solid var(--color-live);
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.ao-vivo-bar-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
-}
-
-.ao-vivo-bar-titulo {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--color-live);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.ao-vivo-bar-filtrar {
-  margin-left: auto;
-  background: none;
-  border: none;
-  font-size: 0.72rem;
-  color: var(--color-live);
-  cursor: pointer;
-  font-weight: 600;
-  padding: 0;
-  &:hover { text-decoration: underline; }
-}
-
-.ao-vivo-bar-jogo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.82rem;
-  padding: 2px 0;
-}
-
-.ao-vivo-bar-time {
-  flex: 1;
-  color: var(--color-text);
-  font-weight: 500;
-  &--right { text-align: right; }
-}
-
-.ao-vivo-bar-score {
-  min-width: 44px;
-  text-align: center;
-  font-weight: 700;
-  color: var(--color-live);
-  font-size: 0.88rem;
-  flex-shrink: 0;
-}
-
 // ── Sidebar mata-mata Copa ─────────────────────────────────────────────────────
 
 .mm-sidebar-confronto {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   padding: 5px 0;
   border-bottom: 1px solid var(--color-border);
   font-size: 0.75rem;
   &:last-child { border-bottom: none; }
+}
+
+.mm-sidebar-logo {
+  width: 18px;
+  height: 13px;
+  object-fit: contain;
+  border-radius: 1px;
+  flex-shrink: 0;
 }
 
 .mm-sidebar-time {
@@ -2027,6 +1977,8 @@ body {
   .filtro-vivo-btn {
     border-color: #ef4444;
     color: #ef4444;
+    background: rgba(239, 68, 68, 0.08);
+    &:hover { background: rgba(239, 68, 68, 0.16); box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.14); }
     &.ativo {
       background: #ef4444;
       color: #fff;

@@ -390,8 +390,14 @@
     <div class="filtros-bar">
       @if (temJogoAoVivo() || filtroAoVivo()) {
         <button class="filtro-vivo-btn" [class.ativo]="filtroAoVivo()" (click)="toggleFiltroAoVivo()">
-          <span class="ao-vivo-dot" [class.ao-vivo-dot--pulsando]="temJogoAoVivo()"></span>
-          Ao Vivo
+          <span class="ao-vivo-dot" [class.ao-vivo-dot--pulsando]="temJogoAoVivo() && !filtroAoVivo()"></span>
+          @if (filtroAoVivo()) {
+            Ao Vivo
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          } @else {
+            Ver ao vivo
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          }
         </button>
       }
       @if (timeSelecionado()) {
@@ -404,24 +410,6 @@
       </button>
       }
     </div>
-
-    @if (!loading() && !error() && temJogoAoVivo() && !filtroAoVivo()) {
-      <section class="ao-vivo-bar">
-        <div class="ao-vivo-bar-header">
-          <span class="ao-vivo-dot ao-vivo-dot--pulsando"></span>
-          <span class="ao-vivo-bar-titulo">Ao Vivo</span>
-          <button class="ao-vivo-bar-filtrar" (click)="toggleFiltroAoVivo()">Ver só ao vivo →</button>
-        </div>
-        @for (jogo of jogosAoVivoDestaque(); track jogo.timeMandante + jogo.data) {
-          @let placar = getPlacarJogo(jogo);
-          <div class="ao-vivo-bar-jogo">
-            <span class="ao-vivo-bar-time">{{ jogo.timeMandante }}</span>
-            <span class="ao-vivo-bar-score">{{ placar?.placarMandante ?? '–' }} – {{ placar?.placarVisitante ?? '–' }}</span>
-            <span class="ao-vivo-bar-time ao-vivo-bar-time--right">{{ jogo.timeVisitante }}</span>
-          </div>
-        }
-      </section>
-    }
 
     @if (loading()) {
       <div class="state-wrapper">
@@ -724,6 +712,9 @@
             </div>
             @for (c of confrontosFase; track c.time1.nome + c.time2.nome) {
               <div class="mm-sidebar-confronto">
+                @if (c.time1.logo) {
+                  <img [src]="c.time1.logo" [alt]="c.time1.nome" class="mm-sidebar-logo" (error)="$any($event.target).style.display='none'">
+                }
                 <span class="mm-sidebar-time" [class.mm-sidebar-winner]="c.vencedor === 'time1'">{{ c.time1.nome }}</span>
                 @if (c.ida && c.ida.placarMandante !== null && c.ida.status !== 'agendado') {
                   <span class="mm-sidebar-score">{{ c.ida.placarMandante }}–{{ c.ida.placarVisitante }}</span>
@@ -731,6 +722,9 @@
                   <span class="mm-sidebar-score mm-sidebar-score--vs">vs</span>
                 }
                 <span class="mm-sidebar-time mm-sidebar-time--right" [class.mm-sidebar-winner]="c.vencedor === 'time2'">{{ c.time2.nome }}</span>
+                @if (c.time2.logo) {
+                  <img [src]="c.time2.logo" [alt]="c.time2.nome" class="mm-sidebar-logo" (error)="$any($event.target).style.display='none'">
+                }
               </div>
             }
           </aside>

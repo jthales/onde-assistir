@@ -84,7 +84,9 @@ async function fetchGrupos() {
 async function fetchEliminatorias(phaseSlug: string) {
   const brtNow = new Date(Date.now() - 3 * 60 * 60 * 1000);
   const past = new Date(brtNow.getTime() - 5 * 24 * 60 * 60 * 1000);
-  const future = new Date(brtNow.getTime() + 14 * 24 * 60 * 60 * 1000);
+  // Copa final: 19/jul/2026 — garantir que sempre mostramos até o fim
+  const copaFim = new Date('2026-07-21T00:00:00Z');
+  const future = brtNow < copaFim ? copaFim : new Date(brtNow.getTime() + 14 * 24 * 60 * 60 * 1000);
   const resp = await fetch(
     `https://site.api.espn.com/apis/site/v2/sports/soccer/${ESPN_COPA}/scoreboard?dates=${fmt(past)}-${fmt(future)}`
   );
