@@ -1034,6 +1034,110 @@ body {
   &--down { color: #dc2626; }
 }
 
+// ── Ao Vivo Bar (seção pinada automática) ─────────────────────────────────────
+
+.ao-vivo-bar {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  border-left: 3px solid var(--color-live);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ao-vivo-bar-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.ao-vivo-bar-titulo {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-live);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ao-vivo-bar-filtrar {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 0.72rem;
+  color: var(--color-live);
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0;
+  &:hover { text-decoration: underline; }
+}
+
+.ao-vivo-bar-jogo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  padding: 2px 0;
+}
+
+.ao-vivo-bar-time {
+  flex: 1;
+  color: var(--color-text);
+  font-weight: 500;
+  &--right { text-align: right; }
+}
+
+.ao-vivo-bar-score {
+  min-width: 44px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--color-live);
+  font-size: 0.88rem;
+  flex-shrink: 0;
+}
+
+// ── Sidebar mata-mata Copa ─────────────────────────────────────────────────────
+
+.mm-sidebar-confronto {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.75rem;
+  &:last-child { border-bottom: none; }
+}
+
+.mm-sidebar-time {
+  flex: 1;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  &--right { text-align: right; }
+  &.mm-sidebar-winner { color: var(--color-text); font-weight: 600; }
+}
+
+.mm-sidebar-score {
+  min-width: 36px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  &--vs { color: var(--color-text-secondary); font-weight: 400; }
+}
+
+.classificacao-ver-mais {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--color-primary);
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}
+
 // ── Classificação ─────────────────────────────────────────────────────────────
 
 .conteudo-wrapper {

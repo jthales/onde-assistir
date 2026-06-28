@@ -35,6 +35,9 @@ export class Copa2026Component implements OnInit, OnDestroy {
   gruposCache = signal<ClassificacaoResponse | null>(null);
   gruposLoading = signal(false);
 
+  faseIdxMataMata = signal(0);
+  private mmFaseIniciada = false;
+
   private classificacaoInterval?: ReturnType<typeof setInterval>;
   private jogosInterval?: ReturnType<typeof setInterval>;
   private placarInterval?: ReturnType<typeof setInterval>;
@@ -49,6 +52,22 @@ export class Copa2026Component implements OnInit, OnDestroy {
     this.mostrandoGrupos() && this.gruposCache()
       ? this.gruposCache()!
       : this.classificacao()
+  );
+
+  readonly fasesMataMata = computed(() => {
+    const seen = new Set<string>(); const fases: string[] = [];
+    for (const c of this.classificacaoExibida()?.confrontos ?? [])
+      if (c.fase && !seen.has(c.fase)) { seen.add(c.fase); fases.push(c.fase); }
+    return fases;
+  });
+
+  readonly confrontosFaseMM = computed(() => {
+    const fase = this.fasesMataMata()[this.faseIdxMataMata()];
+    return (this.classificacaoExibida()?.confrontos ?? []).filter(c => c.fase === fase);
+  });
+
+  readonly tituloFaseMM = computed(() =>
+    this.fasesMataMata()[this.faseIdxMataMata()] ?? this.classificacaoExibida()?.faseAtual ?? ''
   );
 
   readonly jogosPorGrupo = computed(() => {
@@ -182,6 +201,14 @@ export class Copa2026Component implements OnInit, OnDestroy {
         this.classificacao.set(data);
         this.loading.set(false);
         this.erro.set(null);
+        if (data.tipo === 'mata-mata' && !this.mmFaseIniciada) {
+          const fases: string[] = []; const seen = new Set<string>();
+          for (const c of data.confrontos ?? [])
+            if (c.fase && !seen.has(c.fase)) { seen.add(c.fase); fases.push(c.fase); }
+          const idx = data.faseAtual ? fases.indexOf(data.faseAtual) : -1;
+          this.faseIdxMataMata.set(idx >= 0 ? idx : Math.max(0, fases.length - 1));
+          this.mmFaseIniciada = true;
+        }
       },
       error: () => {
         this.loading.set(false);
@@ -213,6 +240,17 @@ export class Copa2026Component implements OnInit, OnDestroy {
   getPlacarJogo(jogo: Jogo): Placar | undefined {
     return this.placares().get(`${jogo.timeMandante}|${jogo.timeVisitante}`);
   }
+
+  irFaseAnteriorMM(): void {
+    if (this.faseIdxMataMata() > 0) this.faseIdxMataMata.update(i => i - 1);
+  }
+
+  irProximaFaseMM(): void {
+    if (this.faseIdxMataMata() < this.fasesMataMata().length - 1) this.faseIdxMataMata.update(i => i + 1);
+  }
+
+  temFaseAnteriorMM(): boolean { return this.faseIdxMataMata() > 0; }
+  temProximaFaseMM(): boolean { return this.faseIdxMataMata() < this.fasesMataMata().length - 1; }
 
   verGrupos(): void {
     this.mostrandoGrupos.set(true);

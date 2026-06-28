@@ -70,6 +70,7 @@ export class App implements OnInit, OnDestroy {
 
   campeonatoSelecionado = signal<string>('');
   classificacaoCampeonato = signal<ClassificacaoResponse | null>(null);
+  classificacaoCopaSidebar = signal<ClassificacaoResponse | null>(null);
   copaGrupos = signal<GrupoClassificacao[]>([]);
   jogosCampeonato = signal<JogoCampeonato[]>([]);
   noticiasCampeonato = signal<Noticia[]>([]);
@@ -387,6 +388,8 @@ export class App implements OnInit, OnDestroy {
 
   temJogoAoVivo = computed(() => this.jogos().some(j => this.eAoVivo(j)));
 
+  readonly jogosAoVivoDestaque = computed(() => this.jogos().filter(j => this.eAoVivo(j)));
+
   classificacaoProvisoria = computed(() => {
     const base = this.classificacao();
     if (base.length === 0) return [];
@@ -518,7 +521,10 @@ export class App implements OnInit, OnDestroy {
     this.carregarDados();
     if (this.isCopaPeriod()) {
       this.copa2026Service.getClassificacao().subscribe({
-        next: (r) => { if (r.tipo === 'grupos') this.copaGrupos.set(r.grupos); },
+        next: (r) => {
+          if (r.tipo === 'grupos') this.copaGrupos.set(r.grupos);
+          this.classificacaoCopaSidebar.set(r);
+        },
       });
     }
   }

@@ -49,25 +49,6 @@
     }
   </div>
 
-  <!-- ── Placares Ao Vivo ──────────────────────────────────────────────────── -->
-  @if (temJogosAoVivo()) {
-    <section class="copa-ao-vivo">
-      <div class="copa-section-header">
-        <span class="ao-vivo-dot ao-vivo-dot--pulsando"></span>
-        <h3 class="copa-section-titulo">Ao Vivo</h3>
-      </div>
-      <div class="copa-placares-grid">
-        @for (p of placoresAoVivo(); track p.timeMandante + p.timeVisitante) {
-          <div class="copa-placar-card">
-            <span class="copa-placar-time">{{ translateCountry(p.timeMandante) }}</span>
-            <span class="copa-placar-score">{{ p.placarMandante }} – {{ p.placarVisitante }}</span>
-            <span class="copa-placar-time">{{ translateCountry(p.timeVisitante) }}</span>
-          </div>
-        }
-      </div>
-    </section>
-  }
-
   <!-- ── Classificação ────────────────────────────────────────────────────── -->
   @if (loading()) {
     <div class="state-wrapper">
@@ -264,17 +245,16 @@
       <!-- Fase Eliminatória -->
       <section class="copa-classificacao">
         <div class="copa-section-header">
-          <h3 class="copa-section-titulo">{{ classif.faseAtual }}</h3>
+          <button class="grupo-rodada-nav-btn" (click)="irFaseAnteriorMM()" [disabled]="!temFaseAnteriorMM()">&#8249;</button>
+          <h3 class="copa-section-titulo">{{ tituloFaseMM() }}</h3>
+          <button class="grupo-rodada-nav-btn" (click)="irProximaFaseMM()" [disabled]="!temProximaFaseMM()">&#8250;</button>
           <button class="btn-ver-fase" (click)="verGrupos()" [disabled]="gruposLoading()">
             @if (gruposLoading()) { Carregando... } @else { Ver fase de grupos }
           </button>
         </div>
         <div class="confrontos-grid">
-          @for (c of classif.confrontos ?? []; track c.time1.nome + c.time2.nome) {
+          @for (c of confrontosFaseMM(); track c.time1.nome + c.time2.nome) {
             <div class="mm-card" [class.mm-card--encerrado]="c.vencedor">
-              @if (c.fase) {
-                <div class="mm-fase-tag">{{ c.fase }}</div>
-              }
               <div class="mm-teams">
                 <div class="mm-team mm-team--left" [class.mm-team--winner]="c.vencedor === 'time1'">
                   @if (c.time1.logo) {
