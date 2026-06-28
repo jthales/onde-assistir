@@ -66,10 +66,24 @@
             Em andamento
           </div>
         }
-        <button class="filtro-brasil-btn filtro-brasil-btn--hero" [class.ativo]="filtroBrasil()" (click)="toggleFiltroBrasil()">
-          <img class="filtro-brasil-flag" src="https://flagcdn.com/w20/br.png" alt="" width="20" height="14">
-          <span>{{ filtroBrasil() ? 'Jogos do Brasil' : 'Ver jogos do Brasil' }}</span>
-        </button>
+        <div class="hero-copa-acoes">
+          <button class="filtro-brasil-btn" [class.ativo]="filtroBrasil()" (click)="toggleFiltroBrasil()">
+            <img class="filtro-brasil-flag" src="https://flagcdn.com/w20/br.png" alt="" width="20" height="14">
+            <span>{{ filtroBrasil() ? 'Jogos do Brasil' : 'Ver jogos do Brasil' }}</span>
+          </button>
+          @if (temJogoAoVivo() || filtroAoVivo()) {
+            <button class="filtro-vivo-btn" [class.ativo]="filtroAoVivo()" (click)="toggleFiltroAoVivo()">
+              <span class="ao-vivo-dot" [class.ao-vivo-dot--pulsando]="temJogoAoVivo() && !filtroAoVivo()"></span>
+              @if (filtroAoVivo()) {
+                Ao Vivo
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              } @else {
+                Ver ao vivo
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              }
+            </button>
+          }
+        </div>
       } @else {
         <h1 class="hero-title">Onde <span class="hero-title-accent">Assistir</span> Futebol Ao Vivo — TV e Streaming no Brasil</h1>
         <p class="hero-subtitle">Brasileirão, Libertadores e mais — TV e Streaming</p>
@@ -388,7 +402,7 @@
     }
 
     <div class="filtros-bar">
-      @if (temJogoAoVivo() || filtroAoVivo()) {
+      @if (!isCopaPeriod() && (temJogoAoVivo() || filtroAoVivo())) {
         <button class="filtro-vivo-btn" [class.ativo]="filtroAoVivo()" (click)="toggleFiltroAoVivo()">
           <span class="ao-vivo-dot" [class.ao-vivo-dot--pulsando]="temJogoAoVivo() && !filtroAoVivo()"></span>
           @if (filtroAoVivo()) {
