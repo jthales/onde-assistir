@@ -874,6 +874,7 @@ export class App implements OnInit, OnDestroy {
     const next = !this.filtroAoVivo();
     this.filtroAoVivo.set(next);
     if (next) {
+      this.filtroBrasil.set(false);
       this.timeSelecionado.set('');
       this.noticias.set([]);
       history.replaceState(null, '', '/ao-vivo');
@@ -888,7 +889,10 @@ export class App implements OnInit, OnDestroy {
   toggleFiltroBrasil(): void {
     const next = !this.filtroBrasil();
     this.filtroBrasil.set(next);
-    if (next) this.timeSelecionado.set('');
+    if (next) {
+      this.filtroAoVivo.set(false);
+      this.timeSelecionado.set('');
+    }
   }
 
   async ativarNotificacoes(): Promise<void> {

@@ -945,7 +945,7 @@ body {
   padding: 0.4rem 1rem;
   border-radius: 999px;
   border: 1.5px solid #dc2626;
-  background: rgba(220, 38, 38, 0.06);
+  background: transparent;
   color: #dc2626;
   font-size: 0.75rem;
   font-weight: 700;
@@ -954,8 +954,7 @@ body {
   transition: background 0.15s, color 0.15s, box-shadow 0.15s;
 
   &:hover {
-    background: rgba(220, 38, 38, 0.12);
-    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+    background: rgba(220, 38, 38, 0.1);
   }
 
   &.ativo {
@@ -1981,8 +1980,7 @@ body {
   .filtro-vivo-btn {
     border-color: #ef4444;
     color: #ef4444;
-    background: rgba(239, 68, 68, 0.08);
-    &:hover { background: rgba(239, 68, 68, 0.16); box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.14); }
+    &:hover { background: rgba(239, 68, 68, 0.12); }
     &.ativo {
       background: #ef4444;
       color: #fff;
