@@ -933,10 +933,9 @@ body {
 
 .hero-copa-acoes {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
   margin-top: 1rem;
 }
 
