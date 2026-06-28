@@ -726,9 +726,11 @@
             </div>
             @for (c of confrontosFase; track c.time1.nome + c.time2.nome) {
               <div class="mm-sidebar-confronto">
-                @if (c.time1.logo) {
-                  <img [src]="c.time1.logo" [alt]="c.time1.nome" class="mm-sidebar-logo" (error)="$any($event.target).style.display='none'">
-                }
+                <span class="mm-sidebar-logo-slot">
+                  @if (c.time1.logo) {
+                    <img [src]="c.time1.logo" [alt]="c.time1.nome" class="mm-sidebar-logo" (error)="$any($event.target).style.visibility='hidden'">
+                  }
+                </span>
                 <span class="mm-sidebar-time" [class.mm-sidebar-winner]="c.vencedor === 'time1'">{{ c.time1.nome }}</span>
                 @if (c.ida && c.ida.placarMandante !== null && c.ida.status !== 'agendado') {
                   <span class="mm-sidebar-score">{{ c.ida.placarMandante }}–{{ c.ida.placarVisitante }}</span>
@@ -736,9 +738,11 @@
                   <span class="mm-sidebar-score mm-sidebar-score--vs">vs</span>
                 }
                 <span class="mm-sidebar-time mm-sidebar-time--right" [class.mm-sidebar-winner]="c.vencedor === 'time2'">{{ c.time2.nome }}</span>
-                @if (c.time2.logo) {
-                  <img [src]="c.time2.logo" [alt]="c.time2.nome" class="mm-sidebar-logo" (error)="$any($event.target).style.display='none'">
-                }
+                <span class="mm-sidebar-logo-slot">
+                  @if (c.time2.logo) {
+                    <img [src]="c.time2.logo" [alt]="c.time2.nome" class="mm-sidebar-logo" (error)="$any($event.target).style.visibility='hidden'">
+                  }
+                </span>
               </div>
             }
           </aside>
