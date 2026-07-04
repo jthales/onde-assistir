@@ -17,9 +17,10 @@ const COPA_FASE_TO_PT: Record<string, string> = {
   'final':         'Final',
 };
 
-const ELIMINATORIAS_SLUGS = new Set([
+const ELIMINATORIAS_ORDER = [
   'round-of-32', 'round-of-16', 'quarterfinals', 'semifinals', 'third-place', 'final',
-]);
+];
+const ELIMINATORIAS_SLUGS = new Set(ELIMINATORIAS_ORDER);
 
 let copaClassifCache: { dados: any; fetchedAt: number } | null = null;
 let copaGruposCache: { dados: any; fetchedAt: number } | null = null;
@@ -36,23 +37,26 @@ function getStat(stats: any[], name: string): number {
   return stats?.find((s: any) => s.name === name)?.value ?? 0;
 }
 
+// Fase atual = primeira fase eliminatória (na ordem do mata-mata) que ainda tem jogo
+// não encerrado. Assim que o último jogo de uma fase termina, avança automaticamente
+// para a próxima — sem depender de "hoje" cair dentro de uma janela fixa de dias.
 async function detectPhase(): Promise<string> {
-  const brtNow = new Date(Date.now() - 3 * 60 * 60 * 1000);
-  const past = new Date(brtNow.getTime() - 3 * 24 * 60 * 60 * 1000);
-  const future = new Date(brtNow.getTime() + 1 * 24 * 60 * 60 * 1000);
-  const resp = await fetch(
-    `https://site.api.espn.com/apis/site/v2/sports/soccer/${ESPN_COPA}/scoreboard?dates=${fmt(past)}-${fmt(future)}`
-  );
+  const resp = await fetch(espnCopaUrl());
   if (!resp.ok) return 'group-stage';
   const data: any = await resp.json();
   const events: any[] = data.events ?? [];
-  if (events.length === 0) return 'group-stage';
-  // If any event in the window is in an elimination slug → elimination phase
-  for (const ev of events) {
-    const slug: string = ev.season?.slug ?? '';
-    if (ELIMINATORIAS_SLUGS.has(slug)) return slug;
+  const elimEvents = events.filter((ev: any) => ELIMINATORIAS_SLUGS.has(ev.season?.slug ?? ''));
+  if (elimEvents.length === 0) return 'group-stage';
+
+  for (const slug of ELIMINATORIAS_ORDER) {
+    const phaseEvents = elimEvents.filter((ev: any) => (ev.season?.slug ?? '') === slug);
+    if (phaseEvents.length === 0) continue; // fase ainda sem jogos publicados pela ESPN
+    const todosEncerrados = phaseEvents.every((ev: any) =>
+      ev.status?.type?.completed === true || ev.status?.type?.state === 'post'
+    );
+    if (!todosEncerrados) return slug;
   }
-  return events[0].season?.slug ?? 'group-stage';
+  return ELIMINATORIAS_ORDER[ELIMINATORIAS_ORDER.length - 1];
 }
 
 async function fetchGrupos() {
