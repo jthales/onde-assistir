@@ -70,6 +70,19 @@ app.get('/api/jogos', async (_req, res) => {
   }
 });
 
+// Invalida apenas o cache em memória (sem tocar no banco).
+// Chamado pelo GH Actions após o populate para que o servidor veja dados frescos imediatamente.
+app.post('/api/admin/invalidar-cache', (req, res) => {
+  const secret = req.headers['x-admin-secret'];
+  if (!process.env['ADMIN_SECRET'] || secret !== process.env['ADMIN_SECRET']) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  jogosCache = null;
+  jogosCampeonatoCache.clear();
+  res.json({ ok: true, message: 'Cache de jogos invalidado' });
+});
+
 // ── Endpoint de teste de push (remover após validação) ───────────────────────
 
 app.post('/api/test-push', async (req, res) => {
