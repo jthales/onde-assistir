@@ -2,8 +2,8 @@ name: 🎬 Scrape CazéTV Melhores Momentos Copa 2026
 
 on:
   schedule:
-    # 3x ao dia: 08, 14, 20 UTC (05h, 11h, 17h BRT)
-    - cron: '0 8,14,20 * * *'
+    # 3x à noite: 22, 00, 02 UTC (19h, 21h, 23h BRT)
+    - cron: '0 22,0,2 * * *'
   workflow_dispatch:
 
 jobs:

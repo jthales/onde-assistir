@@ -2,8 +2,8 @@ name: ⚽ Populate Copa do Mundo 2026
 
 on:
   schedule:
-    # 4x ao dia: 00, 06, 12, 18 UTC (21h, 03h, 09h, 15h BRT)
-    - cron: '0 0,6,12,18 * * *'
+    # 4x pela manhã: 09,11,13,15 UTC (06h, 08h, 10h, 12h BRT)
+    - cron: '0 9,11,13,15 * * *'
   workflow_dispatch:
 
 jobs:
