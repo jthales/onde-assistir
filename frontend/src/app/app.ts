@@ -86,6 +86,14 @@ export class App implements OnInit, OnDestroy {
 
   readonly copaComecou = computed(() => new Date() >= new Date('2026-06-11T12:00:00-03:00'));
 
+  /** Enquanto a Copa do Mundo 2026 estiver rolando (até 19/07 23:59), esconde Brasileirão e outros campeonatos da home. */
+  private readonly LIMITE_SO_COPA = new Date('2026-07-19T23:59:59-03:00');
+
+  private filtrarSoCopa(jogos: Jogo[]): Jogo[] {
+    if (new Date() > this.LIMITE_SO_COPA) return jogos;
+    return jogos.filter(j => j.campeonato === 'Copa do Mundo 2026');
+  }
+
   readonly regressiva = signal<Regressiva>(this.calcularRegressiva());
 
   private calcularRegressiva(): Regressiva {
@@ -540,7 +548,7 @@ export class App implements OnInit, OnDestroy {
           const tb = new Date(`${b.data}T${b.hora || '00:00'}:00-03:00`).getTime();
           return ta - tb;
         });
-        this.jogos.set(sorted);
+        this.jogos.set(this.filtrarSoCopa(sorted));
         this.classificacao.set(classificacao);
         this.loading.set(false);
         analyticsTrack('jogos_carregados', { total_jogos: sorted.length });
@@ -610,7 +618,7 @@ export class App implements OnInit, OnDestroy {
           const tb = new Date(`${b.data}T${b.hora || '00:00'}:00-03:00`).getTime();
           return ta - tb;
         });
-        this.jogos.set(sorted);
+        this.jogos.set(this.filtrarSoCopa(sorted));
         this.error.set(null);
         this.atualizarPlacar();
         this.pollingInterval = setInterval(() => this.atualizarPlacar(), 10_000);
