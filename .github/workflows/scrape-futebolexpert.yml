@@ -60,7 +60,7 @@ jobs:
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
         run: |
           if [ -n "$BACKEND_URL" ] && [ -n "$ADMIN_SECRET" ]; then
-            curl -s -X POST "$BACKEND_URL/api/admin/invalidar-cache" \
+            curl -s -X POST "$BACKEND_URL/api/admin/invalidar-cache-copa" \
               -H "x-admin-secret: $ADMIN_SECRET" \
               -H "Content-Type: application/json" || echo "Cache bust falhou (servidor pode estar offline)"
           else

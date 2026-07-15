@@ -234,7 +234,7 @@ async function runPopulate(): Promise<void> {
   if (!DRY_RUN) {
     console.log('Limpando coleção jogos...');
     const mdb = await getDb();
-    await mdb.collection('jogos').deleteMany({});
+    await mdb.collection('jogos').deleteMany({ campeonato: { $ne: 'Copa do Mundo 2026' } });
   }
 
   // Data de hoje em BRT (UTC-3) — usada para priorizar FutebolExpert
