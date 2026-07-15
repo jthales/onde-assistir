@@ -1,4 +1,43 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(rm -rf /tmp/repro-out2)",
+      "Bash(npx tsc *)",
+      "Bash(node repro-out/repro.js)",
+      "Bash(node -e \"console.log\\('eval:', typeof crypto\\)\")",
+      "Bash(echo \"console.log\\('file:', typeof crypto\\);\")",
+      "Bash(node plain.js)",
+      "Bash(cd /tmp)",
+      "Bash(echo \"console.log\\('file-outside-project:', typeof crypto\\);\")",
+      "Bash(node /tmp/plain2.js)",
+      "Bash(node -p \"process.execPath\")",
+      "Bash(env)",
+      "Bash(node -p \"process.allowedNodeEnvironmentFlags.has\\('--experimental-global-webcrypto'\\)\")",
+      "Bash(node --v8-options)",
+      "Bash(node -e \"console.log\\(Object.getOwnPropertyDescriptor\\(globalThis, 'crypto'\\)\\)\")",
+      "Bash(nvm list *)",
+      "Bash(nvm install *)",
+      "Bash(nvm use *)",
+      "Bash(node -e \"console.log\\(typeof crypto\\)\")",
+      "Bash(rm -rf node_modules package-lock.json)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(nslookup -type=SRV _mongodb._tcp.onde-assistir.dmxjxxu.mongodb.net)",
+      "Bash(node -e \"require\\('dns'\\).promises.resolveSrv\\('_mongodb._tcp.onde-assistir.dmxjxxu.mongodb.net'\\).then\\(r=>console.log\\('OK',r\\)\\).catch\\(e=>console.log\\('FAIL',e.code\\)\\)\")",
+      "Bash(netsh interface *)",
+      "Bash(curl -s 'https://onde-assistir-k8rm.vercel.app/api/copa-2026/jogos' -H 'Accept: application/json')",
+      "Bash(curl -s -w \"\\\\nHTTP_STATUS:%{http_code}\\\\n\" 'https://onde-assistir-k8rm.vercel.app/api/copa-2026/jogos' -H 'Accept: application/json' -o /tmp/copa_response.json)",
+      "Read(//tmp/**)",
+      "Bash(curl -sv 'https://onde-assistir-k8rm.vercel.app/api/copa-2026/jogos')",
+      "Bash(curl -sk 'https://onde-assistir-k8rm.vercel.app/api/copa-2026/jogos')",
+      "Bash(python3 -c ' *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
