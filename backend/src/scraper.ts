@@ -83,6 +83,7 @@ const TEAM_ALIASES: Record<string, string[]> = {
   'Cienciano del Cusco':    ['Cienciano'],
   'Estudiantes de La Plata': ['Estudiantes'],
   'Atletico Junior':          ['Junior'],
+  'UCV FC':                   ['Universidad Central'],
 };
 
 // Sufixos de clube que o ge.globo costuma omitir (ex: "Caracas FC" → "Caracas")
@@ -369,6 +370,7 @@ export const FE_CAMPEONATO_URLS: Record<string, string> = {
   'Brasileirão':    'https://www.futebolexpert.com.br/onde-assistir/brasileirao-serie-a/todos-os-canais',
   'Libertadores':   'https://www.futebolexpert.com.br/onde-assistir/copa-libertadores-da-america/todos-os-canais',
   'Copa do Brasil': 'https://www.futebolexpert.com.br/onde-assistir/copa-do-brasil/todos-os-canais',
+  'Sul-Americana':  'https://www.futebolexpert.com.br/onde-assistir/copa-sulamericana/todos-os-canais',
 };
 
 /**
