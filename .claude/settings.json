@@ -36,7 +36,11 @@
       "Bash(git push *)",
       "Bash(git log *)",
       "Bash(npx ng *)",
-      "Bash(git fetch *)"
+      "Bash(git fetch *)",
+      "Bash(gh run *)",
+      "Bash(tee /tmp/populate-dry-run-output.log)",
+      "Bash(tee /tmp/populate-dry-run-output2.log)",
+      "Bash(git commit *)"
     ],
     "additionalDirectories": [
       "\\tmp"
