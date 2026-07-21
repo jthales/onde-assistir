@@ -32,7 +32,11 @@
       "Bash(curl -sk 'https://onde-assistir-k8rm.vercel.app/api/copa-2026/jogos')",
       "Bash(python3 -c ' *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git log *)",
+      "Bash(npx ng *)",
+      "Bash(git fetch *)"
     ],
     "additionalDirectories": [
       "\\tmp"
