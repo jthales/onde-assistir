@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { Jogo } from './types';
+import { slugify as slugifyFull } from './jogo-slug';
+import { buildSitemapXml, dataBrt } from './sitemap';
 import { getMessaging } from './firebase';
 import { getDb } from './mongodb';
 import { espnScoreboardUrlForLeague, espnCopaUrl, fetchEspn, ESPN_LEAGUES, TEAM_NAME_MAP, TEAM_ESPN_ID_MAP, LIGA_SLUG_TO_ESPN, LIGA_SLUG_LABEL } from './constants';
@@ -42,7 +44,7 @@ app.get('/api/jogos', async (_req, res) => {
   }
 
   try {
-    const hojeStr = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const hojeStr = dataBrt(new Date());
     const mdb = await getDb();
     const docs = await mdb.collection('jogos').find({ data: { $gte: hojeStr } }).toArray();
 
@@ -241,13 +243,6 @@ const CACHE_TTL_MS = 10_000;
 // Persistência de resultados finais no Firestore
 function slugify(s: string): string {
   return s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-}
-
-function slugifyFull(s: string): string {
-  return s.toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '');
 }
 
 function escapeHtml(s: string): string {
@@ -961,26 +956,17 @@ app.get('/sitemap.xml', async (_req, res) => {
   try {
     const mdbSitemap = await getDb();
     const sitemapDocs = await mdbSitemap.collection('jogos').find().toArray();
-    const times = new Set<string>();
-    sitemapDocs.forEach(d => {
-      if (d['timeMandante']) times.add(slugifyFull(d['timeMandante']));
-      if (d['timeVisitante']) times.add(slugifyFull(d['timeVisitante']));
-    });
-
-    const today = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const urls = [
-      `  <url><loc>${FRONTEND_URL}/</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>`,
-      ...['brasileirao', 'libertadores', 'sul-americana'].map(slug =>
-        `  <url><loc>${FRONTEND_URL}/campeonato/${slug}</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>0.9</priority></url>`
-      ),
-      ...[...times].sort().map(slug =>
-        `  <url><loc>${FRONTEND_URL}/${slug}</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>`
-      ),
-    ].join('\n');
+    const jogosSitemap = sitemapDocs.map(d => ({
+      timeMandante: d['timeMandante'] ?? '',
+      timeVisitante: d['timeVisitante'] ?? '',
+      data: d['data'] ?? '',
+      campeonato: d['campeonato'] ?? '',
+    }));
+    const xml = buildSitemapXml(jogosSitemap, FRONTEND_URL, new Date());
 
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=7200');
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`);
+    res.send(xml);
   } catch (e) {
     console.error('Erro ao gerar sitemap:', e);
     res.status(500).send('Erro ao gerar sitemap');

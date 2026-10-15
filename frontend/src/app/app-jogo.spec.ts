@@ -235,7 +235,7 @@ describe('Página individual da partida', () => {
     expect(location.pathname).toBe('/copa-2026');
     expect(el.querySelector('.partida-page')).toBeNull();
     expect(el.querySelector('app-copa-2026')).toBeTruthy();
-    expect(document.title).toBe('Copa do Mundo 2026 — Tabela e Jogos | Onde Assistir');
+    expect(document.title).toBe('Copa do Mundo 2026 — Onde Assistir');
     expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://ondeassistir.space/copa-2026');
     expect(document.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe('https://ondeassistir.space/copa-2026');
   });
@@ -246,6 +246,91 @@ describe('Página individual da partida', () => {
     expect(view.nativeElement.querySelector('.partida-data')?.textContent).toContain('Horário a confirmar');
     expect(view.nativeElement.querySelector('.hora')).toBeNull();
     expect(view.nativeElement.querySelector('.btn-agendar')).toBeTruthy();
+  });
+
+  it('abre o campeonato correto na URL desambiguada e usa o mesmo permalink no SEO e WhatsApp', () => {
+    const view = abrir(caminho + '-libertadores');
+    const libertadores = { ...partida, campeonato: 'Libertadores' };
+    responder([partida, libertadores]);
+    expect(view.componentInstance.jogoSelecionado()).toEqual(libertadores);
+    expect(view.nativeElement.querySelector('.campeonato-badge')?.textContent.trim()).toBe('Libertadores');
+    const url = canonical + '-libertadores';
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(url);
+    expect(document.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe(url);
+    const graph = JSON.parse(document.querySelector('script[data-seo="sports-events"]')!.textContent!)['@graph'];
+    expect(graph[0].url).toBe(url);
+    const compartilhamento = view.nativeElement.querySelector('.btn-whatsapp') as HTMLAnchorElement;
+    expect(new URL(compartilhamento.href).searchParams.get('text')).toContain(url);
+  });
+
+  it('mantém a URL antiga resolvendo para a primeira partida com canonical desambiguado', () => {
+    const view = abrir();
+    responder([partida, { ...partida, campeonato: 'Libertadores' }]);
+    expect(view.componentInstance.jogoSelecionado()?.campeonato).toBe('Brasileirão');
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(canonical + '-brasileirao');
+  });
+
+  it('gera links distintos nos cards e preserva o sufixo ao filtrar a lista', () => {
+    const view = abrir('/');
+    responder([partida, { ...partida, campeonato: 'Libertadores' }]);
+    const links = Array.from((view.nativeElement as HTMLElement).querySelectorAll('.btn-detalhes'));
+    expect(links.map(link => link.getAttribute('href'))).toEqual([
+      caminho + '-brasileirao', caminho + '-libertadores',
+    ]);
+    view.componentInstance.busca.set('libertadores');
+    view.detectChanges();
+    expect(view.nativeElement.querySelectorAll('.jogo-card').length).toBe(1);
+    expect(view.nativeElement.querySelector('.btn-detalhes')?.getAttribute('href')).toBe(caminho + '-libertadores');
+  });
+
+  it.each([
+    ['/ao-vivo', 'Ao Vivo — Onde Assistir'],
+    ['/copa-2026', 'Copa do Mundo 2026 — Onde Assistir'],
+  ])('define SEO no acesso direto a %s e restaura a home', (path, title) => {
+    const view = abrir(path);
+    expect(document.title).toBe(title);
+    responder();
+    expect(document.title).toBe(title);
+    expect(document.querySelector('meta[property="og:title"]')?.getAttribute('content')).toBe(title);
+    expect(document.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe('https://ondeassistir.space' + path);
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://ondeassistir.space' + path);
+    view.componentInstance.voltarParaHome();
+    view.detectChanges();
+    expect(location.pathname).toBe('/');
+    expect(document.title).toBe('Onde Assistir — Futebol ao Vivo: TV e Streaming no Brasil');
+    expect(document.querySelector('meta[property="og:title"]')?.getAttribute('content')).toBe(document.title);
+    expect(document.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe('https://ondeassistir.space/');
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://ondeassistir.space/');
+  });
+
+  it('atualiza SEO ao ativar e desativar o filtro ao vivo sem recarregar', () => {
+    const view = abrir('/');
+    responder();
+    view.componentInstance.toggleFiltroAoVivo();
+    expect(location.pathname).toBe('/ao-vivo');
+    expect(document.title).toBe('Ao Vivo — Onde Assistir');
+    expect(document.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe('https://ondeassistir.space/ao-vivo');
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://ondeassistir.space/ao-vivo');
+    view.componentInstance.toggleFiltroAoVivo();
+    expect(location.pathname).toBe('/');
+    expect(document.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe('https://ondeassistir.space/');
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://ondeassistir.space/');
+  });
+
+  it('atualiza SEO ao abrir a Copa pela navegação interna e restaura ao voltar', () => {
+    const view = abrir('/');
+    responder();
+    view.componentInstance.navegarParaCampeonato('Copa do Mundo 2026');
+    responder();
+    expect(location.pathname).toBe('/copa-2026');
+    expect(document.title).toBe('Copa do Mundo 2026 — Onde Assistir');
+    expect(document.querySelector('meta[property="og:title"]')?.getAttribute('content')).toBe(document.title);
+    expect(document.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe('https://ondeassistir.space/copa-2026');
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://ondeassistir.space/copa-2026');
+    view.componentInstance.voltarParaHome();
+    view.detectChanges();
+    expect(document.title).toBe('Onde Assistir — Futebol ao Vivo: TV e Streaming no Brasil');
+    expect(document.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe('https://ondeassistir.space/');
   });
 
   it.each(['/', '/ao-vivo', '/sao-paulo', '/campeonato/libertadores', '/copa-2026'])(

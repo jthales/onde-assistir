@@ -6,6 +6,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.3.0] — 2026-10-15
+
+### Adicionado
+
+- Partidas de hoje em diante no sitemap, com data de Brasília, lastmod, atualização diária e URLs deduplicadas.
+
+### Corrigido
+
+- Colisão de slugs entre partidas dos mesmos times e data: todos os colidentes recebem o sufixo do campeonato; slugs sem colisão são preservados, e o slug antigo continua abrindo a primeira partida. Nomes de campeonatos que geram o mesmo sufixo recebem também uma identificação determinística.
+- Title, og:title, og:url e canonical de /ao-vivo e /copa-2026, tanto no acesso direto quanto na navegação interna, com restauração ao voltar para a home.
+
+---
+
 ## [1.2.0] — 2026-10-15
 
 ### Adicionado

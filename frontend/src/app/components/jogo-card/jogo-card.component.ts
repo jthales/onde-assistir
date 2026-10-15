@@ -27,7 +27,8 @@ export class JogoCardComponent {
   readonly whatsappUrl = input.required<string>();
   readonly calendarioUrl = input('');
   readonly modoDetalhes = input(false);
-  readonly detalhesUrl = computed(() => buildJogoUrl(this.jogo()));
+  readonly urlPartida = input('');
+  readonly detalhesUrl = computed(() => this.urlPartida() || buildJogoUrl(this.jogo()));
 
   readonly navegarParaCampeonato = output<string>();
   readonly toggleNotificacaoJogo = output<Jogo>();

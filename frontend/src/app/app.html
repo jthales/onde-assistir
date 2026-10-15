@@ -133,6 +133,7 @@
           <p class="partida-data"><time [attr.datetime]="jogo.data">{{ formatarDataPartida(jogo) }}</time></p>
           <app-jogo-card
             [jogo]="jogo"
+            [urlPartida]="jogoUrl(jogo)"
             [modoDetalhes]="true"
             [aoVivo]="eAoVivo(jogo)"
             [encerrado]="eEncerrado(jogo)"
@@ -541,9 +542,10 @@
       <div class="conteudo-wrapper">
         <div class="jogos-coluna">
         <div class="jogos-grid">
-        @for (jogo of jogosFiltrados(); track jogo.timeMandante + jogo.data) {
+        @for (jogo of jogosFiltrados(); track jogoUrl(jogo)) {
           <app-jogo-card
             [jogo]="jogo"
+            [urlPartida]="jogoUrl(jogo)"
             [aoVivo]="eAoVivo(jogo)"
             [encerrado]="eEncerrado(jogo)"
             [hoje]="eHoje(jogo.data)"
