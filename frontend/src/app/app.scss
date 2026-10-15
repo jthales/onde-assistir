@@ -2027,3 +2027,35 @@ body {
   }
 }
 
+
+// ── Descoberta: busca e filtros ─────────────────────────────────────────────
+.descoberta-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.descoberta-busca,
+.descoberta-select {
+  flex: 1 1 160px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: inherit;
+  font-size: 16px; // evita zoom automático no iOS
+}
+.descoberta-busca { flex-basis: 100%; }
+.descoberta-select option { color: #111827; }
+.descoberta-limpar {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.btn-whatsapp { text-decoration: none; }

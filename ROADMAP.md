@@ -11,16 +11,16 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 - [~] Responsividade e acessibilidade — Lote A: zoom liberado, `aria-pressed` em todos os chips/filtros, `role=article`+`aria-label` em 11/11 cards (validado em Chrome headless 390px, sem scroll horizontal). Pendente: contraste, foco por teclado, leitor de tela
 
 ## Fase 2 — Descoberta e navegação
-- [~] Filtros — por time (chips), ao vivo, "jogos do Brasil", campeonato (`/campeonato/:slug`); faltam data e plataforma
-- [ ] Busca por time/competição
+- [x] Filtros — time (chips), ao vivo, Brasil, campeonato, e (Lote B) data e canal/plataforma (`datasDisponiveis`, `plataformasDisponiveis`, `jogosFiltrados` em `app.ts`). Validado em Chrome headless: data→1 card, Disney+→1 card, todos com o canal
+- [x] Busca por time/competição — `busca` (sem acento/caixa) em `jogosFiltrados`; validado: "flamengo"→2 jogos, "zzzz"→estado vazio, limpar→11
 - [ ] Página individual da partida (rotas só por time/campeonato, via `history.replaceState`, sem Angular Router)
 - [~] Links oficiais de streaming — `getStreamingUrl` + `STREAMING_URLS` (`app.ts:805`); cobertura por plataforma não auditada
-- [ ] Compartilhamento WhatsApp
+- [x] Compartilhamento WhatsApp — `buildWhatsappUrl` + botão no card; validado: `wa.me/?text=` com jogo, horário, canais e link
 
 ## Fase 3 — Personalização
 - [~] Favoritos — apenas times com notificação em `localStorage` (`notif-times`, `app.ts:56`); não há favoritos gerais nem de campeonatos
 - [~] Persistência local — existe para notificações; não para favoritos/preferências
-- [ ] Lembretes via calendário (.ics)
+- [~] Lembretes via calendário — já existia link do Google Calendar (`buildCalendarUrl`, `app.html` card); falta .ics para Apple/Outlook
 - [ ] Página de próximos jogos dos favoritos
 - [ ] Preferência de serviços de streaming
 
@@ -45,5 +45,6 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 - `environment.ts` aponta para produção em dev local
 
 ## Log
+- 2026-10-15: Lote B em `feat/descoberta` (busca, filtros data/plataforma, WhatsApp). Build OK; validado em browser headless local. Sem push.
 - 2026-10-15: Etapa 0 concluída por Athena. Hephaestus não respondeu (prompts ficam no input do Codex).
 - 2026-10-15: Lote A validado em Chrome headless via Puppeteer (extensão Chrome indisponível). Em `feat/ux-basico`: build OK; `ng test` falha igual na `main` (2 testes, `messaging/unsupported-browser` em jsdom) — pré-existente, não relacionado.

@@ -403,6 +403,28 @@
     </div>
     }
 
+    @if (!isCopaPeriod() && !loading() && !error()) {
+    <div class="descoberta-bar" role="search">
+      <input type="search" class="descoberta-busca" placeholder="Buscar time ou campeonato"
+             aria-label="Buscar time ou campeonato" [value]="busca()" (input)="onBusca($event)">
+      <select class="descoberta-select" aria-label="Filtrar por data" [value]="filtroData()" (change)="onFiltroData($event)">
+        <option value="">Todas as datas</option>
+        @for (d of datasDisponiveis(); track d) {
+          <option [value]="d" [selected]="filtroData() === d">{{ formatarData(d) }}</option>
+        }
+      </select>
+      <select class="descoberta-select" aria-label="Filtrar por canal ou plataforma" [value]="filtroPlataforma()" (change)="onFiltroPlataforma($event)">
+        <option value="">Todos os canais</option>
+        @for (p of plataformasDisponiveis(); track p) {
+          <option [value]="p" [selected]="filtroPlataforma() === p">{{ p }}</option>
+        }
+      </select>
+      @if (temFiltroDescoberta()) {
+        <button type="button" class="descoberta-limpar" (click)="limparFiltrosDescoberta()">Limpar filtros</button>
+      }
+    </div>
+    }
+
     <div class="filtros-bar">
       @if (!isCopaPeriod() && (temJogoAoVivo() || filtroAoVivo())) {
         <button class="filtro-vivo-btn" [class.ativo]="filtroAoVivo()" [attr.aria-pressed]="filtroAoVivo()" (click)="toggleFiltroAoVivo()">
@@ -609,6 +631,13 @@
                   </div>
                 }
               }
+            </div>
+
+            <div class="calendario-row">
+              <a [href]="buildWhatsappUrl(jogo)" target="_blank" rel="noopener noreferrer" class="btn-calendario btn-whatsapp"
+                 [attr.aria-label]="'Compartilhar ' + jogo.timeMandante + ' x ' + jogo.timeVisitante + ' no WhatsApp'">
+                💬 Compartilhar
+              </a>
             </div>
 
             @if (!eEncerrado(jogo)) {

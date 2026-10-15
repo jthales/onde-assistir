@@ -48,6 +48,9 @@ export class App implements OnInit, OnDestroy {
   timeSelecionado = signal<string>('');
   filtroAoVivo = signal(false);
   filtroBrasil = signal(false);
+  busca = signal('');
+  filtroData = signal('');
+  filtroPlataforma = signal('');
   placares = signal<Map<string, Placar>>(new Map());
   odds = signal<Map<string, Odds>>(new Map());
   classificacao = signal<ClassificacaoEntry[]>([]);
@@ -362,10 +365,49 @@ export class App implements OnInit, OnDestroy {
     return jogos.some(j => j.timeMandante === nome || j.timeVisitante === nome);
   }
 
+  private normalizarTexto(t: string): string {
+    return t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  }
+
+  /** Datas (YYYY-MM-DD) com jogos, para o seletor de data. */
+  readonly datasDisponiveis = computed(() => [...new Set(this.jogos().map(j => j.data))].sort());
+
+  /** Canais/plataformas presentes nos jogos carregados, para o seletor de plataforma. */
+  readonly plataformasDisponiveis = computed(() => {
+    const set = new Set<string>();
+    for (const j of this.jogos()) [...j.canal, ...j.streaming].forEach(p => p && set.add(p));
+    return [...set].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  });
+
+  readonly temFiltroDescoberta = computed(() => !!(this.busca().trim() || this.filtroData() || this.filtroPlataforma()));
+
+  limparFiltrosDescoberta(): void {
+    this.busca.set('');
+    this.filtroData.set('');
+    this.filtroPlataforma.set('');
+  }
+
+  onBusca(ev: Event): void { this.busca.set((ev.target as HTMLInputElement).value); }
+  onFiltroData(ev: Event): void { this.filtroData.set((ev.target as HTMLSelectElement).value); }
+  onFiltroPlataforma(ev: Event): void { this.filtroPlataforma.set((ev.target as HTMLSelectElement).value); }
+
+  /** Link de compartilhamento no WhatsApp com resumo do jogo. */
+  buildWhatsappUrl(jogo: Jogo): string {
+    const onde = [...jogo.canal, ...jogo.streaming].join(', ') || 'a confirmar';
+    const quando = this.formatarData(jogo.data) + (jogo.hora && jogo.hora !== '00:00' ? ` às ${jogo.hora}` : '');
+    const texto = `${jogo.timeMandante} x ${jogo.timeVisitante} — ${quando}
+Onde assistir: ${onde}
+${this.BASE_URL}/`;
+    return 'https://wa.me/?text=' + encodeURIComponent(texto);
+  }
+
   jogosFiltrados = computed(() => {
     const time = this.timeSelecionado();
     const aoVivo = this.filtroAoVivo();
     const brasil = this.filtroBrasil();
+    const termo = this.normalizarTexto(this.busca());
+    const data = this.filtroData();
+    const plataforma = this.filtroPlataforma();
     let jogos = time
       ? this.jogos().filter(j => j.timeMandante === time || j.timeVisitante === time)
       : this.jogos();
@@ -374,6 +416,15 @@ export class App implements OnInit, OnDestroy {
     }
     if (aoVivo) {
       jogos = jogos.filter(j => this.eAoVivo(j));
+    }
+    if (termo) {
+      jogos = jogos.filter(j => this.normalizarTexto(`${j.timeMandante} ${j.timeVisitante} ${j.campeonato ?? ''}`).includes(termo));
+    }
+    if (data) {
+      jogos = jogos.filter(j => j.data === data);
+    }
+    if (plataforma) {
+      jogos = jogos.filter(j => j.canal.includes(plataforma) || j.streaming.includes(plataforma));
     }
     return [...jogos].sort((a, b) => {
       if (a.data !== b.data) return a.data.localeCompare(b.data);
