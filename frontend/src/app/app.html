@@ -438,9 +438,16 @@
     <!-- ── Homepage ─────────────────────────────────────────────────────────── -->
     @if (!isCopaPeriod()) {
     <div class="times-picker">
+      <div class="times-acoes">
       <button class="time-chip time-chip--todos" [class.ativo]="timeSelecionado() === '' && !filtroFavoritos()" [attr.aria-pressed]="timeSelecionado() === '' && !filtroFavoritos()" (click)="selecionarTime('')">
         Todos os times
       </button>
+      <button type="button" class="favoritos-acesso" [class.favoritos-acesso--ativo]="filtroFavoritos()"
+              [attr.aria-pressed]="filtroFavoritos()" (click)="toggleFiltroFavoritos()"
+              [attr.aria-label]="'Meus favoritos, ' + favoritos.total() + ' favoritos'">
+        <span aria-hidden="true">★</span> Meus favoritos ({{ favoritos.total() }})
+      </button>
+      </div>
       <div class="times-grid">
         @for (time of timesOrdenados(); track time.nome) {
           <button class="time-chip"
@@ -487,11 +494,6 @@
     }
 
     <div class="filtros-bar">
-      <button type="button" class="favoritos-acesso" [class.favoritos-acesso--ativo]="filtroFavoritos()"
-              [attr.aria-pressed]="filtroFavoritos()" (click)="toggleFiltroFavoritos()"
-              [attr.aria-label]="'Meus favoritos, ' + favoritos.total() + ' favoritos'">
-        <span aria-hidden="true">★</span> Meus favoritos ({{ favoritos.total() }})
-      </button>
       @if (!isCopaPeriod() && (temJogoAoVivo() || filtroAoVivo())) {
         <button class="filtro-vivo-btn" [class.ativo]="filtroAoVivo()" [attr.aria-pressed]="filtroAoVivo()" (click)="toggleFiltroAoVivo()">
           <span class="ao-vivo-dot" [class.ao-vivo-dot--pulsando]="temJogoAoVivo() && !filtroAoVivo()"></span>

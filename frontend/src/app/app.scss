@@ -1552,6 +1552,15 @@ body {
 }
 
 // Favoritos: controles e indicador, sem alterar card/grid.
+.times-acoes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
 .favoritos-acesso {
   display: inline-flex;
   align-items: center;

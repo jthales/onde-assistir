@@ -16,6 +16,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ### Corrigido
 
+- **Observações do QA D1**: acesso a Meus favoritos reposicionado ao lado de Todos os times, sem linha adicional; itens inválidos do armazenamento são filtrados sem perder favoritos válidos; botão de estrela com largura estável ao alternar.
 - Inicialização protegida contra localStorage bloqueado e JSON inválido, inclusive nas leituras antigas de preferências de notificação.
 
 ---

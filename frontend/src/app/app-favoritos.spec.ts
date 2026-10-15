@@ -85,6 +85,32 @@ describe('Favoritos no App', () => {
     expect(location.pathname).toBe('/favoritos');
   });
 
+  it('encaixa Meus favoritos na linha existente de Todos os times e deixa a filtros-bar vazia sem ao vivo', () => {
+    const view = abrir();
+    responder();
+    const el: HTMLElement = view.nativeElement;
+    const linha = el.querySelector('.times-acoes')!;
+    expect(linha.querySelector('.time-chip--todos')).toBeTruthy();
+    expect(linha.querySelector('.favoritos-acesso')).toBeTruthy();
+    expect(getComputedStyle(linha).display).toBe('flex');
+    expect(getComputedStyle(linha).flexWrap).toBe('nowrap');
+    expect(el.querySelector('.filtros-bar')?.children.length).toBe(0);
+  });
+
+  it('mantém a largura mínima da estrela nos estados Favoritar e Favorito', () => {
+    const view = abrir('/flamengo');
+    responder();
+    const botao = view.nativeElement.querySelector('app-favorito-button button') as HTMLButtonElement;
+    const largura = getComputedStyle(botao).minWidth;
+    expect(largura).toBe('7rem');
+    expect(botao.textContent).toContain('Favoritar');
+    botao.click();
+    view.detectChanges();
+    expect(botao.textContent).toContain('Favorito');
+    expect(getComputedStyle(botao).minWidth).toBe(largura);
+    expect(getComputedStyle(botao).minHeight).toBe('44px');
+  });
+
   it('favorita o time selecionado com estrela, aria-pressed, rótulo e indicador no chip', () => {
     const view = abrir('/flamengo');
     responder();

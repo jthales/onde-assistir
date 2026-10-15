@@ -51,13 +51,28 @@ describe('FavoritosService', () => {
     expect(recarregado.campeonatos()).toEqual(['brasileirao']);
   });
 
-  it('trata JSON inválido e valores que não sejam listas válidas como listas vazias', () => {
-    for (const valor of ['{invalido', 'null', '{}', '42', '["Flamengo",1]', '[null]', '[""]', '["  "]']) {
+  it('trata JSON inválido e listas sem itens válidos como listas vazias', () => {
+    for (const valor of ['{invalido', 'null', '{}', '42', '[null]', '[""]', '["  "]']) {
       localStorage.setItem('favoritos-times', valor);
       localStorage.setItem('favoritos-campeonatos', valor);
       const service = new FavoritosService();
       expect(service.times()).toEqual([]);
       expect(service.campeonatos()).toEqual([]);
+    }
+  });
+
+  it('filtra apenas itens inválidos, preservando strings válidas sem duplicatas', () => {
+    localStorage.setItem('favoritos-times', '[1,"Flamengo",null,"", "Flamengo","  ","Palmeiras"]');
+    localStorage.setItem('favoritos-campeonatos', '[false,"libertadores",{},"libertadores","brasileirao"]');
+    const service = new FavoritosService();
+    expect(service.times()).toEqual(['Flamengo', 'Palmeiras']);
+    expect(service.campeonatos()).toEqual(['libertadores', 'brasileirao']);
+  });
+
+  it('mantém vazio quando o JSON válido não é um array', () => {
+    for (const valor of ['"Flamengo"', '{"nome":"Flamengo"}', 'true', '12', 'null']) {
+      localStorage.setItem('favoritos-times', valor);
+      expect(new FavoritosService().times()).toEqual([]);
     }
   });
 
