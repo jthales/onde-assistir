@@ -153,7 +153,7 @@ describe('Página individual da partida', () => {
     expect(links[0].getAttribute('aria-label')).toBe('Ver detalhes de São Paulo x Atlético-MG');
   });
 
-  it('mantém data, horário e calendário quando o placar muda para ao vivo ou encerrado', () => {
+  it('mantém data e horário ao atualizar placar e oculta calendário quando o jogo encerra', () => {
     const view = abrir();
     responder();
     const placar: Placar = {
@@ -167,14 +167,46 @@ describe('Página individual da partida', () => {
     expect(el.querySelector('.ao-vivo-badge')?.textContent).toContain('AO VIVO');
     expect(el.querySelector('.placar-numeros')?.textContent).toContain('2 – 1');
     expect(el.querySelector('.partida-data')?.textContent).toContain('20:00');
-    view.componentInstance.placares.set(new Map([[chave, { ...placar, status: 'encerrado' }]]));
-    view.detectChanges();
-    expect(el.querySelector('.encerrado-badge')?.textContent).toBe('Encerrado');
     const calendario = el.querySelector('.btn-agendar') as HTMLAnchorElement;
     expect(calendario.href).toContain('calendar.google.com');
     expect(calendario.href).toContain('20261020T230000Z');
+    view.componentInstance.placares.set(new Map([[chave, { ...placar, status: 'encerrado' }]]));
+    view.detectChanges();
+    expect(el.querySelector('.encerrado-badge')?.textContent).toBe('Encerrado');
+    expect(el.querySelector('.btn-agendar')).toBeNull();
     const compartilhamento = el.querySelector('.btn-whatsapp') as HTMLAnchorElement;
     expect(decodeURIComponent(compartilhamento.href)).toContain(canonical);
+  });
+
+  it('compartilha data absoluta no permalink e preserva Hoje/Amanhã nos cards da home', () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-10-15T12:00:00-03:00'));
+      for (const [data, relativo, absoluto] of [
+        ['2026-10-15', 'Hoje', '15 de outubro de 2026'],
+        ['2026-10-16', 'Amanhã', '16 de outubro de 2026'],
+      ]) {
+        const jogo = { ...partida, data, hora: '21:30' };
+        const view = abrir(buildJogoUrl(jogo));
+        responder([jogo]);
+        const permalink = view.nativeElement.querySelector('.btn-whatsapp') as HTMLAnchorElement;
+        const texto = new URL(permalink.href).searchParams.get('text')!;
+        expect(texto).toContain(absoluto);
+        expect(texto).toContain('21:30');
+        expect(texto).not.toMatch(/Hoje|Amanhã|Amanha/i);
+        expect(texto).toContain('https://ondeassistir.space' + buildJogoUrl(jogo));
+
+        const home = abrir('/');
+        responder([jogo]);
+        const compartilhamento = home.nativeElement.querySelector('.btn-whatsapp') as HTMLAnchorElement;
+        const textoHome = new URL(compartilhamento.href).searchParams.get('text')!;
+        expect(textoHome).toBe(`São Paulo x Atlético-MG — ${relativo} às 21:30\nOnde assistir: SporTV, Disney+\nhttps://ondeassistir.space/`);
+      }
+    } finally {
+      fixture?.destroy();
+      fixture = undefined;
+      vi.useRealTimers();
+    }
   });
 
   it('sai da partida para o campeonato pelo botão existente e volta à home', () => {

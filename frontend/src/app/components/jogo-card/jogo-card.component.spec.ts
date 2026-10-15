@@ -140,13 +140,29 @@ describe('JogoCardComponent', () => {
     expect(link.getAttribute('aria-label')).toBe('Ver detalhes de Flamengo x Palmeiras');
   });
 
-  it('no modo de detalhes mantém calendário para jogo encerrado e oculta o link para si próprio', () => {
+  it('no modo de detalhes oculta calendário para jogo encerrado e o link para si próprio', () => {
     fixture.componentRef.setInput('modoDetalhes', true);
     fixture.componentRef.setInput('encerrado', true);
     fixture.componentRef.setInput('jogoFuturo', false);
     fixture.detectChanges();
     expect(el.querySelector('.btn-detalhes')).toBeNull();
-    expect(el.querySelector('.btn-agendar')?.getAttribute('href')).toBe(calendarioUrl);
+    expect(el.querySelector('.btn-agendar')).toBeNull();
     expect(el.querySelector('.btn-notif-jogo')).toBeNull();
+  });
+
+  it('oculta calendário no modo de detalhes quando encerrado mesmo se marcado como futuro', () => {
+    fixture.componentRef.setInput('modoDetalhes', true);
+    fixture.componentRef.setInput('encerrado', true);
+    fixture.componentRef.setInput('jogoFuturo', true);
+    fixture.detectChanges();
+    expect(el.querySelector('.btn-agendar')).toBeNull();
+    expect(el.querySelector('.btn-whatsapp')).toBeTruthy();
+  });
+
+  it('mostra calendário no modo de detalhes para jogo futuro não encerrado', () => {
+    fixture.componentRef.setInput('modoDetalhes', true);
+    fixture.componentRef.setInput('jogoFuturo', true);
+    fixture.detectChanges();
+    expect(el.querySelector('.btn-agendar')?.getAttribute('href')).toBe(calendarioUrl);
   });
 });

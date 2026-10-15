@@ -408,10 +408,12 @@ export class App implements OnInit, OnDestroy {
   onFiltroPlataforma(ev: Event): void { this.filtroPlataforma.set((ev.target as HTMLSelectElement).value); }
 
   /** Link de compartilhamento no WhatsApp com resumo do jogo. */
-  buildWhatsappUrl(jogo: Jogo): string {
+  buildWhatsappUrl(jogo: Jogo, contexto: 'agenda' | 'partida' = 'agenda'): string {
     const onde = [...jogo.canal, ...jogo.streaming].join(', ') || 'a confirmar';
-    const quando = this.formatarData(jogo.data) + (jogo.hora && jogo.hora !== '00:00' ? ` às ${jogo.hora}` : '');
-    const url = this.slugJogo() !== null ? buildJogoUrl(jogo) : '/';
+    const quando = contexto === 'partida'
+      ? this.formatarDataPartida(jogo)
+      : this.formatarData(jogo.data) + (jogo.hora && jogo.hora !== '00:00' ? ` às ${jogo.hora}` : '');
+    const url = contexto === 'partida' ? buildJogoUrl(jogo) : '/';
     const texto = `${jogo.timeMandante} x ${jogo.timeVisitante} — ${quando}
 Onde assistir: ${onde}
 ${this.BASE_URL}${url}`;

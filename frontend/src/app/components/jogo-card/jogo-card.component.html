@@ -153,7 +153,7 @@
     }
   </div>
 
-  @if (!encerrado() || modoDetalhes()) {
+  @if (!encerrado()) {
     <div class="calendario-row">
       @if (jogoFuturo() || modoDetalhes()) {
         <a [href]="calendarioUrl()" target="_blank" rel="noopener" class="btn-calendario btn-agendar"

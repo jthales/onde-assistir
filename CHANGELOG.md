@@ -17,6 +17,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 ### Corrigido
 
 - Horário de meia-noite da Copa 2026 preservado no link de calendário, com conversão para UTC a partir do horário de Brasília.
+- **Observações do QA C2**: calendário oculto para partidas encerradas também na página individual; compartilhamento do permalink usa data absoluta, mantendo Hoje/Amanhã nos cards da home.
 
 ---
 
