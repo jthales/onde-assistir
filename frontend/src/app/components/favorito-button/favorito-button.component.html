@@ -1,0 +1,6 @@
+<button type="button" class="favorito-btn" [class.favorito-btn--ativo]="ativo()"
+        [attr.aria-pressed]="ativo()" (click)="alternar.emit()"
+        [attr.aria-label]="ativo() ? 'Remover ' + nome() + ' dos favoritos' : 'Favoritar ' + nome()">
+  <span aria-hidden="true">{{ ativo() ? '★' : '☆' }}</span>
+  {{ ativo() ? 'Favorito' : 'Favoritar' }}
+</button>

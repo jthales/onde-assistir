@@ -15,6 +15,9 @@ import { Copa2026Service } from './services/copa-2026.service';
 import { APP_VERSION } from './version';
 import { JogoCardComponent } from './components/jogo-card/jogo-card.component';
 import { buildJogoSlug, buildJogoUrl, findJogoBySlug, slugify } from './jogo-url';
+import { FavoritosService } from './services/favoritos.service';
+import { FavoritoButtonComponent } from './components/favorito-button/favorito-button.component';
+import { lerListaLocal } from './services/local-storage';
 
 interface Regressiva { dias: number; horas: number; minutos: number; segundos: number }
 
@@ -32,7 +35,7 @@ function analyticsTrack(event: string, params: Record<string, string | number | 
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, Copa2026Component, JogoCardComponent],
+  imports: [CommonModule, Copa2026Component, JogoCardComponent, FavoritoButtonComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -57,6 +60,7 @@ export class App implements OnInit, OnDestroy {
   });
   timeSelecionado = signal<string>('');
   filtroAoVivo = signal(false);
+  readonly filtroFavoritos = signal(window.location.pathname === '/favoritos');
   filtroBrasil = signal(false);
   busca = signal('');
   filtroData = signal('');
@@ -67,10 +71,10 @@ export class App implements OnInit, OnDestroy {
   noticias = signal<Noticia[]>([]);
   atualizacaoDisponivel = signal(false);
   timesComNotificacao = signal<string[]>(
-    JSON.parse(localStorage.getItem('notif-times') ?? '[]')
+    lerListaLocal('notif-times')
   );
   jogosComNotificacao = signal<string[]>(
-    JSON.parse(localStorage.getItem('notif-jogos') ?? '[]')
+    lerListaLocal('notif-jogos')
   );
   golToast = signal<string | null>(null);
   notifToast = signal<string | null>(null);
@@ -88,6 +92,13 @@ export class App implements OnInit, OnDestroy {
   jogosCampeonato = signal<JogoCampeonato[]>([]);
   noticiasCampeonato = signal<Noticia[]>([]);
   loadingCampeonato = signal(false);
+
+  readonly timesOrdenados = computed(() => {
+    const times = this.classificacao();
+    if (!this.favoritos.times().length) return times;
+    return [...times.filter(time => this.favoritos.eTimeFavorito(time.nome)),
+      ...times.filter(time => !this.favoritos.eTimeFavorito(time.nome))];
+  });
 
   readonly isCopaPeriod = computed(() =>
     window.location.pathname.startsWith('/copa-2026')
@@ -147,6 +158,7 @@ export class App implements OnInit, OnDestroy {
   });
 
   readonly h1Title = computed(() => {
+    if (this.filtroFavoritos()) return 'Meus favoritos';
     const camp = this.campeonatoSelecionado();
     if (camp) return this.getLabelCampeonato(camp);
     const nome = this.timeSelecionado();
@@ -199,6 +211,7 @@ export class App implements OnInit, OnDestroy {
   navegarParaCampeonato(nomeCampeonato: string): void {
     const slug = this.slugifyCampeonato(nomeCampeonato);
     if (!slug) return;
+    this.filtroFavoritos.set(false);
     if (this.slugJogo() !== null) {
       this.slugJogo.set(null);
       this.atualizarSportsEvents([]);
@@ -226,6 +239,7 @@ export class App implements OnInit, OnDestroy {
   }
 
   voltarParaHome(): void {
+    this.filtroFavoritos.set(false);
     this.slugJogo.set(null);
     this.campeonatoSelecionado.set('');
     this.isCopa2026Route.set(false);
@@ -438,6 +452,12 @@ ${this.BASE_URL}${url}`;
     if (aoVivo) {
       jogos = jogos.filter(j => this.eAoVivo(j));
     }
+    if (this.filtroFavoritos()) {
+      const hoje = this.dataBrt();
+      jogos = jogos.filter(j => j.data >= hoje && this.eJogoFuturo(j) && !this.eEncerrado(j) && !this.eAoVivo(j)
+        && (this.favoritos.eTimeFavorito(j.timeMandante) || this.favoritos.eTimeFavorito(j.timeVisitante)
+          || this.favoritos.eCampeonatoFavorito(this.slugifyCampeonato(j.campeonato ?? ''))));
+    }
     if (termo) {
       jogos = jogos.filter(j => this.normalizarTexto(`${j.timeMandante} ${j.timeVisitante} ${j.campeonato ?? ''}`).includes(termo));
     }
@@ -570,6 +590,7 @@ ${this.BASE_URL}${url}`;
   private fcmToken: string | null = null;
 
   constructor(
+    readonly favoritos: FavoritosService,
     private jogosService: JogosService,
     private pushService: PushNotificacaoService,
     private copa2026Service: Copa2026Service,
@@ -593,6 +614,7 @@ ${this.BASE_URL}${url}`;
     if (this.slugJogo() !== null) this.atualizarMetaJogo();
     else if (this.isCopa2026Route()) this.atualizarMetaCopa();
     else if (window.location.pathname === '/ao-vivo') this.atualizarMetaAoVivo();
+    else if (this.filtroFavoritos()) this.atualizarMetaFavoritos();
     this.carregarDados();
     if (this.isCopaPeriod()) {
       this.copa2026Service.getClassificacao().subscribe({
@@ -627,6 +649,9 @@ ${this.BASE_URL}${url}`;
           this.atualizarMetaAoVivo();
         } else if (slug === 'copa-2026') {
           this.atualizarMetaCopa();
+        } else if (slug === 'favoritos') {
+          this.filtroFavoritos.set(true);
+          this.atualizarMetaFavoritos();
         } else if (slug.startsWith('campeonato/')) {
           const ligaSlug = slug.replace('campeonato/', '');
           if (this.CAMP_SLUG_LABEL[ligaSlug]) {
@@ -712,6 +737,7 @@ ${this.BASE_URL}${url}`;
   }
 
   selecionarTime(nome: string): void {
+    this.filtroFavoritos.set(false);
     if (this.filtroAoVivo()) this.filtroAoVivo.set(false);
     if (this.filtroBrasil()) this.filtroBrasil.set(false);
     this.timeSelecionado.set(nome);
@@ -746,6 +772,11 @@ ${this.BASE_URL}${url}`;
   private atualizarMetaAoVivo(): void {
     this.atualizarMetaPagina('Ao Vivo — Onde Assistir',
       'Acompanhe os jogos de futebol ao vivo agora no Brasil — TV e streaming em tempo real.', '/ao-vivo');
+  }
+
+  private atualizarMetaFavoritos(): void {
+    this.atualizarMetaPagina('Meus favoritos — Onde Assistir',
+      'Próximos jogos dos seus times e campeonatos favoritos. Salvos neste navegador, sem cadastro.', '/favoritos');
   }
 
   private atualizarMetaCopa(): void {
@@ -982,6 +1013,7 @@ ${this.BASE_URL}${url}`;
   }
 
   toggleFiltroAoVivo(): void {
+    this.filtroFavoritos.set(false);
     const next = !this.filtroAoVivo();
     this.filtroAoVivo.set(next);
     if (next) {
@@ -994,6 +1026,20 @@ ${this.BASE_URL}${url}`;
       history.replaceState(null, '', '/');
       this.atualizarMeta('');
     }
+    this.atualizarSportsEvents(this.jogosFiltrados());
+  }
+
+  toggleFiltroFavoritos(): void {
+    const next = !this.filtroFavoritos();
+    this.filtroFavoritos.set(next);
+    this.filtroAoVivo.set(false);
+    this.filtroBrasil.set(false);
+    this.timeSelecionado.set('');
+    this.noticias.set([]);
+    this.limparFiltrosDescoberta();
+    history.replaceState(null, '', next ? '/favoritos' : '/');
+    if (next) this.atualizarMetaFavoritos();
+    else this.atualizarMeta('');
     this.atualizarSportsEvents(this.jogosFiltrados());
   }
 

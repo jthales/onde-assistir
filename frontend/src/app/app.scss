@@ -1550,3 +1550,46 @@ body {
   font-size: 0.875rem;
   line-height: 1.5;
 }
+
+// Favoritos: controles e indicador, sem alterar card/grid.
+.favoritos-acesso {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--color-primary);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-surface);
+  cursor: pointer;
+
+  &--ativo { background: var(--color-primary-muted); }
+}
+.favoritos-voltar { min-width: 44px; min-height: 44px; }
+.favoritos-acesso:focus-visible,
+.favoritos-voltar:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+}
+.favoritos-voltar:focus-visible { outline-color: #fef08a; }
+.chip-favorito {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+  text-align: center;
+  border-radius: 50%;
+  color: #fef08a;
+  background: var(--color-primary-dark);
+  font-size: 0.75rem;
+  pointer-events: none;
+}

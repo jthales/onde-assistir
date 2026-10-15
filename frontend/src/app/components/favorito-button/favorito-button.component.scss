@@ -1,0 +1,22 @@
+:host { display: inline-block; margin-top: 0.75rem; }
+
+.favorito-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  background: transparent;
+  cursor: pointer;
+
+  &--ativo { color: #fef08a; background: rgba(0, 0, 0, 0.15); }
+  &:focus-visible { outline: 3px solid #fef08a; outline-offset: 3px; }
+}

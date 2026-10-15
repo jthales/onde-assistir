@@ -32,9 +32,19 @@
         </button>
         <h1 class="hero-title">{{ getLabelCampeonato(campeonatoSelecionado()) }}</h1>
         <p class="hero-subtitle">{{ campeonatoSelecionado() === 'copa-do-brasil' ? 'Mata-Mata · Notícias' : 'Tabela de Classificação · Próximos Jogos · Notícias' }}</p>
+        <app-favorito-button [nome]="getLabelCampeonato(campeonatoSelecionado())"
+          [ativo]="favoritos.eCampeonatoFavorito(campeonatoSelecionado())"
+          (alternar)="favoritos.toggleCampeonato(campeonatoSelecionado())" />
+      } @else if (filtroFavoritos()) {
+        <button type="button" class="btn-voltar favoritos-voltar" (click)="voltarParaHome()"
+                aria-label="Voltar aos jogos da semana">← Voltar aos jogos</button>
+        <h1 class="hero-title">Meus favoritos</h1>
+        <p class="hero-subtitle">Próximos jogos dos seus times e campeonatos favoritos</p>
       } @else if (timeSelecionado()) {
         <h1 class="hero-title">{{ timeSelecionado() }} — Próximos Jogos e Onde Assistir</h1>
         <p class="hero-subtitle">Brasileirão, Libertadores e mais — TV e Streaming</p>
+        <app-favorito-button [nome]="timeSelecionado()" [ativo]="favoritos.eTimeFavorito(timeSelecionado())"
+          (alternar)="favoritos.toggleTime(timeSelecionado())" />
       } @else if (isCopaPeriod()) {
         <h1 class="hero-title">Copa do <span class="hero-title-accent">Mundo</span> 2026</h1>
         <p class="hero-subtitle">Onde assistir os jogos — EUA · Canadá · México</p>
@@ -428,23 +438,26 @@
     <!-- ── Homepage ─────────────────────────────────────────────────────────── -->
     @if (!isCopaPeriod()) {
     <div class="times-picker">
-      <button class="time-chip time-chip--todos" [class.ativo]="timeSelecionado() === ''" [attr.aria-pressed]="timeSelecionado() === ''" (click)="selecionarTime('')">
+      <button class="time-chip time-chip--todos" [class.ativo]="timeSelecionado() === '' && !filtroFavoritos()" [attr.aria-pressed]="timeSelecionado() === '' && !filtroFavoritos()" (click)="selecionarTime('')">
         Todos os times
       </button>
       <div class="times-grid">
-        @for (time of classificacao(); track time.nome) {
+        @for (time of timesOrdenados(); track time.nome) {
           <button class="time-chip"
                   [class.ativo]="timeSelecionado() === time.nome"
                   [class.sem-jogo]="!temJogo(time.nome)"
                   [class.notif-ativa]="timesComNotificacao().includes(time.nome)"
                   (click)="selecionarTime(time.nome)"
                   [attr.aria-pressed]="timeSelecionado() === time.nome"
-                  [attr.aria-label]="time.nome"
+                  [attr.aria-label]="time.nome + (favoritos.eTimeFavorito(time.nome) ? ', favorito' : '')"
                   [title]="time.nome">
             @if (time.logo) {
               <img [src]="time.logo" [alt]="time.nome" class="chip-logo" (error)="$any($event.target).style.display='none'">
             }
             <span class="chip-initials">{{ getInitials(time.nome) }}</span>
+            @if (favoritos.eTimeFavorito(time.nome)) {
+              <span class="chip-favorito" aria-hidden="true">★</span>
+            }
           </button>
         }
       </div>
@@ -474,6 +487,11 @@
     }
 
     <div class="filtros-bar">
+      <button type="button" class="favoritos-acesso" [class.favoritos-acesso--ativo]="filtroFavoritos()"
+              [attr.aria-pressed]="filtroFavoritos()" (click)="toggleFiltroFavoritos()"
+              [attr.aria-label]="'Meus favoritos, ' + favoritos.total() + ' favoritos'">
+        <span aria-hidden="true">★</span> Meus favoritos ({{ favoritos.total() }})
+      </button>
       @if (!isCopaPeriod() && (temJogoAoVivo() || filtroAoVivo())) {
         <button class="filtro-vivo-btn" [class.ativo]="filtroAoVivo()" [attr.aria-pressed]="filtroAoVivo()" (click)="toggleFiltroAoVivo()">
           <span class="ao-vivo-dot" [class.ao-vivo-dot--pulsando]="temJogoAoVivo() && !filtroAoVivo()"></span>
@@ -510,7 +528,13 @@
       </div>
     } @else if (jogosFiltrados().length === 0) {
       <div class="state-wrapper">
-        @if (filtroAoVivo()) {
+        @if (filtroFavoritos() && !favoritos.temFavoritos()) {
+          <p class="state-text">Você ainda não tem favoritos.</p>
+          <p>Selecione um time ou abra a página de um campeonato e use a estrela para favoritar.</p>
+          <button type="button" class="favoritos-acesso" (click)="voltarParaHome()">Explorar jogos</button>
+        } @else if (filtroFavoritos()) {
+          <p class="state-text">Nenhum jogo futuro dos seus favoritos nesta agenda.</p>
+        } @else if (filtroAoVivo()) {
           <p class="state-text">Nenhum jogo ao vivo no momento.</p>
         } @else if (timeSelecionado()) {
           <p class="state-text">Nenhum jogo encontrado para os próximos dias.</p>

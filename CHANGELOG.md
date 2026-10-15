@@ -6,6 +6,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.4.0] — 2026-10-15
+
+### Adicionado
+
+- Favoritos de times e campeonatos salvos neste navegador, sem cadastro, com botões de estrela acessíveis e indicadores nos chips.
+- Visão Meus favoritos em /favoritos, com contador, próximos jogos dos times ou campeonatos salvos e orientação quando a lista está vazia.
+- Chips de times favoritos exibidos primeiro, preservando a ordem original dentro de cada grupo.
+
+### Corrigido
+
+- Inicialização protegida contra localStorage bloqueado e JSON inválido, inclusive nas leituras antigas de preferências de notificação.
+
+---
+
 ## [1.3.1] — 2026-10-15
 
 ### Corrigido
