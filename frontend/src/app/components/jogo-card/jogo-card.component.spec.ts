@@ -100,10 +100,10 @@ describe('JogoCardComponent', () => {
     expect(botao.classList.contains('ativo')).toBe(true);
     expect(botao.title).toBe('Desativar notificações de gol');
     expect(botao.textContent).toContain('Notificações ativas');
-    expect(el.querySelector('a.btn-calendario:not(.btn-whatsapp)')?.getAttribute('href')).toBe(calendarioUrl);
+    expect(el.querySelector('.btn-agendar')?.getAttribute('href')).toBe(calendarioUrl);
     fixture.componentRef.setInput('jogoFuturo', false);
     fixture.detectChanges();
-    expect(el.querySelector('a.btn-calendario:not(.btn-whatsapp)')).toBeNull();
+    expect(el.querySelector('.btn-agendar')).toBeNull();
   });
 
   it('oculta calendário, notificação e odds ao encerrar e mantém Compartilhar', () => {
@@ -118,7 +118,7 @@ describe('JogoCardComponent', () => {
     fixture.detectChanges();
     expect(el.querySelector('.encerrado-badge')?.textContent).toBe('Encerrado');
     expect(el.querySelector('.btn-notif-jogo')).toBeNull();
-    expect(el.querySelector('a.btn-calendario:not(.btn-whatsapp)')).toBeNull();
+    expect(el.querySelector('.btn-agendar')).toBeNull();
     expect(el.querySelector('.odds-row')).toBeNull();
     expect(el.querySelector('.btn-whatsapp')).toBeTruthy();
   });
@@ -131,5 +131,22 @@ describe('JogoCardComponent', () => {
     fixture.componentRef.setInput('mostrarOndeAssistir', true);
     fixture.detectChanges();
     expect(el.querySelector('.badge-confirmar')?.textContent).toBe('A confirmar');
+  });
+
+  it('oferece Ver detalhes com slug e nome acessível do confronto', () => {
+    const link = el.querySelector('.btn-detalhes') as HTMLAnchorElement;
+    expect(link.textContent).toContain('Ver detalhes');
+    expect(link.getAttribute('href')).toBe('/jogo/flamengo-x-palmeiras-2026-10-20');
+    expect(link.getAttribute('aria-label')).toBe('Ver detalhes de Flamengo x Palmeiras');
+  });
+
+  it('no modo de detalhes mantém calendário para jogo encerrado e oculta o link para si próprio', () => {
+    fixture.componentRef.setInput('modoDetalhes', true);
+    fixture.componentRef.setInput('encerrado', true);
+    fixture.componentRef.setInput('jogoFuturo', false);
+    fixture.detectChanges();
+    expect(el.querySelector('.btn-detalhes')).toBeNull();
+    expect(el.querySelector('.btn-agendar')?.getAttribute('href')).toBe(calendarioUrl);
+    expect(el.querySelector('.btn-notif-jogo')).toBeNull();
   });
 });

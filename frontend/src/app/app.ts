@@ -14,15 +14,9 @@ import { translateCountry } from './copa-2026/country-names';
 import { Copa2026Service } from './services/copa-2026.service';
 import { APP_VERSION } from './version';
 import { JogoCardComponent } from './components/jogo-card/jogo-card.component';
+import { buildJogoSlug, buildJogoUrl, slugify } from './jogo-url';
 
 interface Regressiva { dias: number; horas: number; minutos: number; segundos: number }
-
-function slugify(s: string): string {
-  return s.toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '');
-}
 
 function analyticsTrack(event: string, params: Record<string, string | number | boolean | undefined> = {}): void {
   const data: Record<string, string> = {};
@@ -46,6 +40,20 @@ export class App implements OnInit, OnDestroy {
   jogos = signal<Jogo[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
+  readonly slugJogo = signal<string | null>(
+    window.location.pathname.match(/^\/jogo\/(.*)$/)?.[1].replace(/\/$/, '').toLowerCase() ?? null
+  );
+  readonly jogoSelecionado = computed(() =>
+    this.jogos().find(jogo => buildJogoSlug(jogo) === this.slugJogo())
+  );
+  readonly tituloPaginaJogo = computed(() => {
+    if (this.loading()) return 'Carregando partida';
+    if (this.error()) return 'Não foi possível carregar a partida';
+    const jogo = this.jogoSelecionado();
+    return jogo
+      ? `${translateCountry(jogo.timeMandante)} x ${translateCountry(jogo.timeVisitante)}`
+      : 'Partida não encontrada';
+  });
   timeSelecionado = signal<string>('');
   filtroAoVivo = signal(false);
   filtroBrasil = signal(false);
@@ -190,6 +198,11 @@ export class App implements OnInit, OnDestroy {
   navegarParaCampeonato(nomeCampeonato: string): void {
     const slug = this.slugifyCampeonato(nomeCampeonato);
     if (!slug) return;
+    if (this.slugJogo() !== null) {
+      this.slugJogo.set(null);
+      this.atualizarSportsEvents([]);
+      if (slug === 'copa-2026') this.atualizarMetaCampeonato(slug);
+    }
     if (slug === 'copa-2026') {
       this.timeSelecionado.set('');
       this.filtroAoVivo.set(false);
@@ -212,6 +225,7 @@ export class App implements OnInit, OnDestroy {
   }
 
   voltarParaHome(): void {
+    this.slugJogo.set(null);
     this.campeonatoSelecionado.set('');
     this.isCopa2026Route.set(false);
     this.classificacaoCampeonato.set(null);
@@ -220,6 +234,7 @@ export class App implements OnInit, OnDestroy {
     clearInterval(this.campeonatoClassifInterval);
     history.replaceState(null, '', '/');
     this.atualizarMeta('');
+    this.atualizarSportsEvents(this.jogosFiltrados());
   }
 
   private carregarDadosCampeonato(liga: string): void {
@@ -250,10 +265,10 @@ export class App implements OnInit, OnDestroy {
   }
 
   private atualizarMetaCampeonato(slug: string): void {
-    const label = this.getLabelCampeonato(slug);
+    const label = slug === 'copa-2026' ? 'Copa do Mundo 2026' : this.getLabelCampeonato(slug);
     const title = `${label} — Tabela e Jogos | Onde Assistir`;
     const desc = `Tabela de classificação, próximos jogos e notícias da ${label}.`;
-    const url = `${this.BASE_URL}/campeonato/${slug}`;
+    const url = slug === 'copa-2026' ? `${this.BASE_URL}/copa-2026` : `${this.BASE_URL}/campeonato/${slug}`;
     this.titleService.setTitle(title);
     this.meta.updateTag({ property: 'og:title', content: title });
     this.meta.updateTag({ property: 'og:description', content: desc });
@@ -396,9 +411,10 @@ export class App implements OnInit, OnDestroy {
   buildWhatsappUrl(jogo: Jogo): string {
     const onde = [...jogo.canal, ...jogo.streaming].join(', ') || 'a confirmar';
     const quando = this.formatarData(jogo.data) + (jogo.hora && jogo.hora !== '00:00' ? ` às ${jogo.hora}` : '');
+    const url = this.slugJogo() !== null ? buildJogoUrl(jogo) : '/';
     const texto = `${jogo.timeMandante} x ${jogo.timeVisitante} — ${quando}
 Onde assistir: ${onde}
-${this.BASE_URL}/`;
+${this.BASE_URL}${url}`;
     return 'https://wa.me/?text=' + encodeURIComponent(texto);
   }
 
@@ -570,6 +586,7 @@ ${this.BASE_URL}/`;
     this.regressivaTimer = setInterval(() => this.regressiva.set(this.calcularRegressiva()), 1000);
     // Canonical já na carga inicial (antes só era definido após navegação interna)
     this.setCanonical(this.BASE_URL + window.location.pathname);
+    if (this.slugJogo() !== null) this.atualizarMetaJogo();
     this.carregarDados();
     if (this.isCopaPeriod()) {
       this.copa2026Service.getClassificacao().subscribe({
@@ -597,7 +614,9 @@ ${this.BASE_URL}/`;
         this.loading.set(false);
         analyticsTrack('jogos_carregados', { total_jogos: sorted.length });
         const slug = window.location.pathname.replace(/^\//, '').toLowerCase();
-        if (slug === 'ao-vivo') {
+        if (this.slugJogo() !== null) {
+          this.atualizarMetaJogo();
+        } else if (slug === 'ao-vivo') {
           this.filtroAoVivo.set(true);
           const aoVivoDesc = 'Acompanhe os jogos de futebol ao vivo agora no Brasil — TV e streaming em tempo real.';
           this.titleService.setTitle('Ao Vivo — Onde Assistir');
@@ -620,7 +639,7 @@ ${this.BASE_URL}/`;
             this.carregarNoticias(slug);
           }
         }
-        this.atualizarSportsEvents(this.jogosFiltrados());
+        if (this.slugJogo() === null) this.atualizarSportsEvents(this.jogosFiltrados());
         this.atualizarPlacar();
         this.pollingInterval = setInterval(() => this.atualizarPlacar(), 10_000);
         this.atualizarOdds();
@@ -638,6 +657,7 @@ ${this.BASE_URL}/`;
           this.error.set('Não foi possível carregar os jogos. Tente novamente mais tarde.');
         }
         this.loading.set(false);
+        if (this.slugJogo() !== null) this.atualizarMetaJogo();
         analyticsTrack('jogos_erro', { status: err?.status });
       }
     });
@@ -646,6 +666,7 @@ ${this.BASE_URL}/`;
   tentarNovamente(): void {
     this.error.set(null);
     this.loading.set(true);
+    if (this.slugJogo() !== null) this.atualizarMetaJogo();
     this.carregarDados();
   }
 
@@ -670,6 +691,7 @@ ${this.BASE_URL}/`;
         });
         this.jogos.set(sorted);
         this.error.set(null);
+        if (this.slugJogo() !== null) this.atualizarMetaJogo();
         this.atualizarPlacar();
         this.pollingInterval = setInterval(() => this.atualizarPlacar(), 10_000);
         this.atualizarOdds();
@@ -703,6 +725,33 @@ ${this.BASE_URL}/`;
   }
 
   private readonly BASE_URL = 'https://ondeassistir.space';
+
+  formatarDataPartida(jogo: Jogo): string {
+    const data = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo', dateStyle: 'long',
+    }).format(new Date(`${jogo.data}T12:00:00-03:00`));
+    const horaConhecida = jogo.hora && (jogo.hora !== '00:00' || jogo.campeonato === 'Copa do Mundo 2026');
+    return `${data} · ${horaConhecida ? jogo.hora : 'Horário a confirmar'} · Horário de Brasília (America/Sao_Paulo)`;
+  }
+
+  private atualizarMetaJogo(): void {
+    const jogo = !this.loading() && !this.error() ? this.jogoSelecionado() : undefined;
+    const title = `${this.tituloPaginaJogo()} — Onde Assistir`;
+    const canais = jogo ? [...jogo.canal, ...jogo.streaming].join(', ') || 'a confirmar' : '';
+    const description = jogo
+      ? `${this.tituloPaginaJogo()} — ${this.formatarDataPartida(jogo)}. ${jogo.campeonato ? jogo.campeonato + '. ' : ''}${jogo.estadio ? jogo.estadio + '. ' : ''}Onde assistir: ${canais}.`
+      : this.loading() ? 'Carregando os detalhes da partida.'
+      : this.error() ? 'Não foi possível carregar a partida. Tente novamente.'
+      : 'Esta partida não está disponível na agenda atual. Veja os jogos da semana.';
+    const url = this.BASE_URL + (jogo ? buildJogoUrl(jogo) : `/jogo/${this.slugJogo()}`);
+    this.titleService.setTitle(title);
+    this.meta.updateTag({ name: 'description', content: description });
+    this.meta.updateTag({ property: 'og:title', content: title });
+    this.meta.updateTag({ property: 'og:description', content: description });
+    this.meta.updateTag({ property: 'og:url', content: url });
+    this.setCanonical(url);
+    this.atualizarSportsEvents(jogo ? [jogo] : []);
+  }
 
   private atualizarMeta(nome: string): void {
     if (!nome) {
@@ -747,6 +796,7 @@ ${this.BASE_URL}/`;
       const hora = jogo.hora && jogo.hora !== '00:00' ? jogo.hora : '00:00';
       const event: Record<string, unknown> = {
         '@type': 'SportsEvent',
+        'url': this.BASE_URL + buildJogoUrl(jogo),
         'name': `${jogo.timeMandante} x ${jogo.timeVisitante}`,
         'startDate': `${jogo.data}T${hora}:00-03:00`,
         'competitor': [
@@ -1128,7 +1178,7 @@ ${this.BASE_URL}/`;
     const camp = jogo.campeonato ? ` — ${jogo.campeonato}` : '';
     const text = encodeURIComponent(titulo + camp);
 
-    const hora = jogo.hora && jogo.hora !== '00:00' ? jogo.hora : '12:00';
+    const hora = jogo.hora && (jogo.hora !== '00:00' || jogo.campeonato === 'Copa do Mundo 2026') ? jogo.hora : '12:00';
     const inicio = new Date(`${jogo.data}T${hora}:00-03:00`);
     const fim = new Date(inicio.getTime() + 2 * 60 * 60 * 1000);
     const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';

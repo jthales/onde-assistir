@@ -77,3 +77,11 @@ body {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.4; transform: scale(0.7); }
 }
+
+/* Foco dos novos links e ações da página de partida. */
+.btn-detalhes:focus-visible,
+.partida-page a:focus-visible,
+.partida-page button:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+}

@@ -1,0 +1,232 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideServiceWorker } from '@angular/service-worker';
+import { App } from './app';
+import { buildJogoSlug, buildJogoUrl } from './jogo-url';
+import { ClassificacaoEntry, Jogo, Placar } from './models/jogo';
+
+describe('Página individual da partida', () => {
+  let fixture: ComponentFixture<App> | undefined;
+  let http: HttpTestingController;
+  let urlAnterior: string;
+  let tituloAnterior: string;
+
+  const partida: Jogo = {
+    rodada: 1, timeMandante: 'São Paulo', timeVisitante: 'Atlético-MG',
+    logoMandante: 'https://example.test/sao-paulo.png', logoVisitante: 'https://example.test/atletico.png',
+    data: '2026-10-20', hora: '20:00', canal: ['SporTV'], streaming: ['Disney+'],
+    estadio: 'Morumbi', campeonato: 'Brasileirão',
+  };
+  const jogos = [
+    partida,
+    { ...partida, data: '2026-10-21' },
+    { ...partida, timeMandante: 'Flamengo', timeVisitante: 'Palmeiras' },
+  ];
+  const classificacao: ClassificacaoEntry[] = [{
+    posicao: 1, nome: 'São Paulo', logo: null, jogos: 1, vitorias: 1,
+    empates: 0, derrotas: 0, gols: 2, golsSofridos: 0, saldo: 2, pontos: 3,
+  }];
+  const caminho = '/jogo/sao-paulo-x-atletico-mg-2026-10-20';
+  const canonical = 'https://ondeassistir.space' + caminho;
+
+  function abrir(url = caminho): ComponentFixture<App> {
+    fixture?.destroy();
+    history.replaceState(null, '', url);
+    fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  function responder(lista: Jogo[] = jogos): void {
+    // Inclui as requisições criadas pelas respostas anteriores e pelos templates.
+    for (let rodada = 0; rodada < 4; rodada++) {
+      for (const req of http.match(() => true)) {
+        if (req.cancelled) continue;
+        const url = req.request.url;
+        req.flush(url.endsWith('/api/jogos') ? lista
+          : url.endsWith('/api/classificacao') ? classificacao
+          : url.includes('/classificacao/') || url.includes('/copa-2026/classificacao') ? { tipo: 'grupos', grupos: [] }
+          : []);
+      }
+      fixture!.detectChanges();
+    }
+  }
+
+  beforeEach(async () => {
+    urlAnterior = location.pathname + location.search + location.hash;
+    tituloAnterior = document.title;
+    await TestBed.configureTestingModule({
+      imports: [App],
+      providers: [
+        provideHttpClient(), provideHttpClientTesting(),
+        provideServiceWorker('ngsw-worker.js', { enabled: false }),
+      ],
+    }).compileComponents();
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    fixture?.destroy();
+    fixture = undefined;
+    http.verify({ ignoreCancelled: true });
+    history.replaceState(null, '', urlAnterior);
+    document.title = tituloAnterior;
+    document.querySelector('script[data-seo="sports-events"]')?.remove();
+  });
+
+  it('gera slug sem acentos com mandante, visitante e data', () => {
+    expect(buildJogoSlug(partida)).toBe('sao-paulo-x-atletico-mg-2026-10-20');
+    expect(buildJogoUrl(partida)).toBe(caminho);
+  });
+
+  it('abre a URL direta com loading e encontra apenas a partida da data solicitada', () => {
+    const view = abrir();
+    const el: HTMLElement = view.nativeElement;
+    expect(el.querySelector('[role="status"]')?.textContent).toContain('Carregando partida');
+    responder();
+    expect(view.componentInstance.jogoSelecionado()).toEqual(partida);
+    expect(el.querySelectorAll('.jogo-card').length).toBe(1);
+    expect(el.querySelectorAll('h1').length).toBe(1);
+    expect(el.querySelector('h1')?.textContent).toBe('São Paulo x Atlético-MG');
+    expect(el.querySelector('main')?.getAttribute('aria-labelledby')).toBe('partida-titulo');
+    expect(el.querySelector('.partida-data')?.textContent).toContain('20 de outubro de 2026 · 20:00');
+    expect(el.querySelector('.partida-data')?.textContent).toContain('America/Sao_Paulo');
+    expect(el.querySelectorAll('.logo-img').length).toBe(2);
+    expect(el.querySelector('.badge-tv--link')?.getAttribute('href')).toBe('https://globoplay.globo.com');
+    expect(el.querySelector('.badge-streaming--link')?.getAttribute('href')).toBe('https://www.disneyplus.com/pt-br');
+    expect(el.querySelector('.partida-voltar')?.getAttribute('href')).toBe('/');
+    expect(el.querySelector('.btn-detalhes')).toBeNull();
+  });
+
+  it('mostra Partida não encontrada e link para a home sem publicar SportsEvent incorreto', () => {
+    const view = abrir('/jogo/inexistente-x-outro-2026-10-20');
+    responder();
+    const el: HTMLElement = view.nativeElement;
+    expect(el.querySelector('h1')?.textContent).toBe('Partida não encontrada');
+    expect(el.querySelector('.state-text')?.textContent).toContain('Partida não encontrada');
+    expect(el.querySelector('.state-wrapper a')?.getAttribute('href')).toBe('/');
+    expect(el.querySelector('.jogo-card')).toBeNull();
+    expect(document.querySelector('script[data-seo="sports-events"]')).toBeNull();
+  });
+
+  it('mostra erro e recupera a mesma rota ao clicar em Tentar novamente', () => {
+    const view = abrir();
+    http.expectOne(req => req.url.endsWith('/api/jogos'))
+      .flush('erro', { status: 500, statusText: 'Server Error' });
+    responder();
+    const el: HTMLElement = view.nativeElement;
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain('Não foi possível carregar');
+    const botao = el.querySelector('[role="alert"] button') as HTMLButtonElement;
+    expect(botao.textContent).toBe('Tentar novamente');
+    botao.click();
+    view.detectChanges();
+    expect(el.querySelector('[role="status"]')?.textContent).toContain('Carregando partida');
+    responder();
+    expect(location.pathname).toBe(caminho);
+    expect(el.querySelector('[role="alert"]')).toBeNull();
+    expect(el.querySelectorAll('.jogo-card').length).toBe(1);
+  });
+
+  it('publica title, description, og:url, canonical e um SportsEvent específico', () => {
+    abrir(caminho + '/?origem=teste');
+    responder();
+    expect(document.title).toBe('São Paulo x Atlético-MG — Onde Assistir');
+    expect(document.querySelector('meta[name="description"]')?.getAttribute('content')).toContain('SporTV, Disney+');
+    expect(document.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe(canonical);
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(canonical);
+    const script = document.querySelector('script[data-seo="sports-events"]')!;
+    const eventos = JSON.parse(script.textContent!)['@graph'];
+    expect(eventos).toHaveLength(1);
+    expect(eventos[0]['@type']).toBe('SportsEvent');
+    expect(eventos[0].url).toBe(canonical);
+    expect(eventos[0].startDate).toBe('2026-10-20T20:00:00-03:00');
+    expect(eventos[0].location.name).toBe('Morumbi');
+  });
+
+  it('oferece link de detalhes acessível em cada card da agenda', () => {
+    const view = abrir('/');
+    responder();
+    const links = (view.nativeElement as HTMLElement).querySelectorAll<HTMLAnchorElement>('.btn-detalhes');
+    expect(links.length).toBe(jogos.length);
+    expect(links[0].getAttribute('href')).toBe(caminho);
+    expect(links[0].getAttribute('aria-label')).toBe('Ver detalhes de São Paulo x Atlético-MG');
+  });
+
+  it('mantém data, horário e calendário quando o placar muda para ao vivo ou encerrado', () => {
+    const view = abrir();
+    responder();
+    const placar: Placar = {
+      timeMandante: partida.timeMandante, timeVisitante: partida.timeVisitante, data: partida.data,
+      status: 'em-andamento', placarMandante: 2, placarVisitante: 1, gols: [],
+    };
+    const chave = `${partida.data}_${partida.timeMandante}_${partida.timeVisitante}`;
+    view.componentInstance.placares.set(new Map([[chave, placar]]));
+    view.detectChanges();
+    const el: HTMLElement = view.nativeElement;
+    expect(el.querySelector('.ao-vivo-badge')?.textContent).toContain('AO VIVO');
+    expect(el.querySelector('.placar-numeros')?.textContent).toContain('2 – 1');
+    expect(el.querySelector('.partida-data')?.textContent).toContain('20:00');
+    view.componentInstance.placares.set(new Map([[chave, { ...placar, status: 'encerrado' }]]));
+    view.detectChanges();
+    expect(el.querySelector('.encerrado-badge')?.textContent).toBe('Encerrado');
+    const calendario = el.querySelector('.btn-agendar') as HTMLAnchorElement;
+    expect(calendario.href).toContain('calendar.google.com');
+    expect(calendario.href).toContain('20261020T230000Z');
+    const compartilhamento = el.querySelector('.btn-whatsapp') as HTMLAnchorElement;
+    expect(decodeURIComponent(compartilhamento.href)).toContain(canonical);
+  });
+
+  it('sai da partida para o campeonato pelo botão existente e volta à home', () => {
+    const view = abrir();
+    responder();
+    (view.nativeElement.querySelector('.campeonato-badge--btn') as HTMLButtonElement).click();
+    responder();
+    expect(location.pathname).toBe('/campeonato/brasileirao');
+    expect(view.componentInstance.slugJogo()).toBeNull();
+    expect(view.nativeElement.querySelector('.partida-page')).toBeNull();
+    expect(view.nativeElement.querySelector('.campeonato-page')).toBeTruthy();
+    view.componentInstance.voltarParaHome();
+    view.detectChanges();
+    expect(location.pathname).toBe('/');
+    expect(view.nativeElement.querySelectorAll('.jogo-card').length).toBe(jogos.length);
+  });
+
+  it('preserva meia-noite no calendário da Copa e limpa o SEO da partida ao abrir a Copa', () => {
+    const view = abrir();
+    responder([{ ...partida, campeonato: 'Copa do Mundo 2026', hora: '00:00' }]);
+    const el: HTMLElement = view.nativeElement;
+    expect(el.querySelector('.partida-data')?.textContent).toContain('00:00');
+    expect(el.querySelector('.btn-agendar')?.getAttribute('href')).toContain('20261020T030000Z');
+    (el.querySelector('.campeonato-badge--btn') as HTMLButtonElement).click();
+    responder();
+    expect(location.pathname).toBe('/copa-2026');
+    expect(el.querySelector('.partida-page')).toBeNull();
+    expect(el.querySelector('app-copa-2026')).toBeTruthy();
+    expect(document.title).toBe('Copa do Mundo 2026 — Tabela e Jogos | Onde Assistir');
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://ondeassistir.space/copa-2026');
+    expect(document.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe('https://ondeassistir.space/copa-2026');
+  });
+
+  it('mostra Horário a confirmar quando o jogo não tem horário definido', () => {
+    const view = abrir();
+    responder([{ ...partida, hora: '' }]);
+    expect(view.nativeElement.querySelector('.partida-data')?.textContent).toContain('Horário a confirmar');
+    expect(view.nativeElement.querySelector('.hora')).toBeNull();
+    expect(view.nativeElement.querySelector('.btn-agendar')).toBeTruthy();
+  });
+
+  it.each(['/', '/ao-vivo', '/sao-paulo', '/campeonato/libertadores', '/copa-2026'])(
+    'preserva o acesso direto à URL existente %s', url => {
+      const view = abrir(url);
+      responder();
+      expect(view.componentInstance.slugJogo()).toBeNull();
+      expect(view.nativeElement.querySelector('.partida-page')).toBeNull();
+      expect(location.pathname).toBe(url);
+      if (url === '/ao-vivo') expect(view.componentInstance.filtroAoVivo()).toBe(true);
+      if (url === '/sao-paulo') expect(view.componentInstance.timeSelecionado()).toBe('São Paulo');
+      if (url === '/campeonato/libertadores') expect(view.componentInstance.campeonatoSelecionado()).toBe('libertadores');
+      if (url === '/copa-2026') expect(view.nativeElement.querySelector('app-copa-2026')).toBeTruthy();
+    },
+  );
+});

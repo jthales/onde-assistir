@@ -15,7 +15,10 @@
   <header class="hero">
     <div class="hero-inner">
       <div class="hero-badge">2026</div>
-      @if (isCopa2026Route()) {
+      @if (slugJogo() !== null) {
+        <h1 id="partida-titulo" class="hero-title">{{ tituloPaginaJogo() }}</h1>
+        <p class="hero-subtitle">Onde assistir · Detalhes da partida</p>
+      } @else if (isCopa2026Route()) {
         <button class="btn-voltar" (click)="voltarParaHome()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
           Voltar
@@ -108,9 +111,53 @@
     <div class="notif-toast">{{ notifToast() }}</div>
   }
 
-  <main class="container">
+  <main class="container" [attr.aria-labelledby]="slugJogo() !== null ? 'partida-titulo' : null">
 
-    @if (campeonatoSelecionado()) {
+    @if (slugJogo() !== null) {
+      <section class="partida-page" aria-label="Detalhes da partida">
+        <nav aria-label="Navegação da partida">
+          <a href="/" class="partida-voltar" aria-label="Voltar aos jogos da semana">← Voltar aos jogos</a>
+        </nav>
+        @if (loading()) {
+          <div class="state-wrapper" role="status" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <p class="state-text">Carregando partida...</p>
+          </div>
+        } @else if (error()) {
+          <div class="state-error" role="alert">
+            <p>{{ error() }}</p>
+            <button type="button" class="filtro-vivo-btn" (click)="tentarNovamente()"
+                    aria-label="Tentar carregar a partida novamente">Tentar novamente</button>
+          </div>
+        } @else if (jogoSelecionado(); as jogo) {
+          <p class="partida-data"><time [attr.datetime]="jogo.data">{{ formatarDataPartida(jogo) }}</time></p>
+          <app-jogo-card
+            [jogo]="jogo"
+            [modoDetalhes]="true"
+            [aoVivo]="eAoVivo(jogo)"
+            [encerrado]="eEncerrado(jogo)"
+            [hoje]="eHoje(jogo.data)"
+            [dataFormatada]="formatarData(jogo.data)"
+            [textoJogo]="h3TextoJogo(jogo)"
+            [placar]="getPlacarJogo(jogo)"
+            [odds]="getOddsJogo(jogo)"
+            [mostrarOndeAssistir]="mostrarOndeAssistir(jogo)"
+            [jogoFuturo]="eJogoFuturo(jogo)"
+            [notificacaoAtiva]="notifAtivaParaJogo(jogo)"
+            [whatsappUrl]="buildWhatsappUrl(jogo)"
+            [calendarioUrl]="buildCalendarUrl(jogo)"
+            (navegarParaCampeonato)="navegarParaCampeonato($event)"
+            (toggleNotificacaoJogo)="toggleNotificacaoJogo($event)"
+          />
+        } @else {
+          <div class="state-wrapper" role="status">
+            <p class="state-text">Partida não encontrada.</p>
+            <p>Esta partida não está disponível na agenda atual.</p>
+            <a href="/" class="partida-voltar" aria-label="Ver os jogos da semana na página inicial">Ver jogos da semana</a>
+          </div>
+        }
+      </section>
+    } @else if (campeonatoSelecionado()) {
 
       <!-- ── Página de Campeonato ────────────────────────────────────────────── -->
       <div class="campeonato-page">

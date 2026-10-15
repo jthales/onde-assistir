@@ -6,6 +6,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.2.0] — 2026-10-15
+
+### Adicionado
+
+- Página individual da partida em `/jogo/:slug`, com confronto, data e horário de Brasília, transmissão, placar, compartilhamento no WhatsApp e calendário.
+- Link acessível "Ver detalhes" nos cards e estados de carregamento, erro com nova tentativa e partida não encontrada.
+- Title, descrição, Open Graph, canonical e JSON-LD SportsEvent próprios da partida, reutilizando os dados e helpers existentes.
+
+### Corrigido
+
+- Horário de meia-noite da Copa 2026 preservado no link de calendário, com conversão para UTC a partir do horário de Brasília.
+
+---
+
 ## [1.1.2] — 2026-10-15
 
 ### Alterado

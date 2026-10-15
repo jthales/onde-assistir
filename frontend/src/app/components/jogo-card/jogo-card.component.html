@@ -110,7 +110,8 @@
           <div class="badges">
             @for (canal of jogo.canal; track canal) {
               @if (getStreamingUrl(canal); as url) {
-                <a [href]="url" target="_blank" rel="noopener" class="badge badge-tv badge-tv--link">{{ canal }}</a>
+                <a [href]="url" target="_blank" rel="noopener" class="badge badge-tv badge-tv--link"
+                   [attr.aria-label]="'Assistir em ' + canal">{{ canal }}</a>
               } @else {
                 <span class="badge badge-tv">{{ canal }}</span>
               }
@@ -127,7 +128,8 @@
           <div class="badges">
             @for (plataforma of jogo.streaming; track plataforma) {
               @if (getStreamingUrl(plataforma); as url) {
-                <a [href]="url" target="_blank" rel="noopener" class="badge badge-streaming badge-streaming--link">{{ plataforma }}</a>
+                <a [href]="url" target="_blank" rel="noopener" class="badge badge-streaming badge-streaming--link"
+                   [attr.aria-label]="'Assistir em ' + plataforma">{{ plataforma }}</a>
               } @else {
                 <span class="badge badge-streaming">{{ plataforma }}</span>
               }
@@ -143,22 +145,31 @@
        [attr.aria-label]="'Compartilhar ' + jogo.timeMandante + ' x ' + jogo.timeVisitante + ' no WhatsApp'">
       💬 Compartilhar
     </a>
+    @if (!modoDetalhes()) {
+      <a [href]="detalhesUrl()" class="btn-calendario btn-detalhes"
+         [attr.aria-label]="'Ver detalhes de ' + translateCountry(jogo.timeMandante) + ' x ' + translateCountry(jogo.timeVisitante)">
+        Ver detalhes
+      </a>
+    }
   </div>
 
-  @if (!encerrado()) {
+  @if (!encerrado() || modoDetalhes()) {
     <div class="calendario-row">
-      @if (jogoFuturo()) {
-        <a [href]="calendarioUrl()" target="_blank" rel="noopener" class="btn-calendario">
+      @if (jogoFuturo() || modoDetalhes()) {
+        <a [href]="calendarioUrl()" target="_blank" rel="noopener" class="btn-calendario btn-agendar"
+           [attr.aria-label]="'Adicionar ' + translateCountry(jogo.timeMandante) + ' x ' + translateCountry(jogo.timeVisitante) + ' ao calendário'">
           📅 Adicionar ao calendário
         </a>
       }
-      <button class="btn-notif-jogo"
-              [class.ativo]="notificacaoAtiva()"
-              (click)="toggleNotificacaoJogo.emit(jogo)"
-              [title]="notificacaoAtiva() ? 'Desativar notificações de gol' : 'Notificar gols deste jogo'">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        {{ notificacaoAtiva() ? 'Notificações ativas' : 'Notificar gols' }}
-      </button>
+      @if (!encerrado()) {
+        <button class="btn-notif-jogo"
+                [class.ativo]="notificacaoAtiva()"
+                (click)="toggleNotificacaoJogo.emit(jogo)"
+                [title]="notificacaoAtiva() ? 'Desativar notificações de gol' : 'Notificar gols deste jogo'">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          {{ notificacaoAtiva() ? 'Notificações ativas' : 'Notificar gols' }}
+        </button>
+      }
     </div>
   }
 
