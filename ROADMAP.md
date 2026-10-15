@@ -45,8 +45,8 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 - `environment.ts` aponta para produção em dev local
 
 ## Dívida técnica registrada (pós-C2)
-- ~~Colisão de slug~~ resolvida na v1.3.0 (sufixo do campeonato); pendente: title/h1 iguais nas páginas colidentes (patch 1.3.1)
-- Sitemap lista `/<time>` para documentos incompletos (ex.: `/sem-mandante`) e `/copa-2026` emite JSON-LD da home (patch 1.3.1)
+- ~~Colisão de slug~~ resolvida na v1.3.0 (sufixo do campeonato) e título/h1 com campeonato na v1.3.1
+- Ao abrir `/copa-2026` a frio e clicar em Voltar, URL e meta voltam à home mas o h1 do hero permanece "Copa do Mundo 2026" (pré-existente)
 - Cold start do backend: o usuário vê só "Carregando jogos" por muito tempo
 - `STREAMING_URLS` e links oficiais ainda sem auditoria de cobertura por plataforma
 
@@ -56,3 +56,4 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 - 2026-10-15: Lote A validado em Chrome headless via Puppeteer (extensão Chrome indisponível). Em `feat/ux-basico`: build OK; `ng test` falha igual na `main` (2 testes, `messaging/unsupported-browser` em jsdom) — pré-existente, não relacionado.
 - 2026-10-15: Lotes C1 (extração do card, v1.1.2) e C2 (página da partida, v1.2.0) publicados após QA do Argus; fluxo Athena → Hephaestus → Argus operando (1 rodada de correção em cada).
 - 2026-10-15: C3 (SEO das partidas, v1.3.0) publicado; primeiro deploy de backend da frente. Sitemap e frontend validados em produção.
+- 2026-10-15: patch 1.3.1 publicado (título com campeonato nas colisões, sitemap sem documentos incompletos, /copa-2026 sem SportsEvent doméstico); aprovado pelo Argus (63 testes front, 13 back).
