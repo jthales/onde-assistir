@@ -18,10 +18,10 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 - [x] Compartilhamento WhatsApp — `buildWhatsappUrl` + botão no card; validado: `wa.me/?text=` com jogo, horário, canais e link
 
 ## Fase 3 — Personalização
-- [~] Favoritos — apenas times com notificação em `localStorage` (`notif-times`, `app.ts:56`); não há favoritos gerais nem de campeonatos
-- [~] Persistência local — existe para notificações; não para favoritos/preferências
+- [x] Favoritos de times e campeonatos — v1.4.0: `FavoritosService` (`favoritos-times`/`favoritos-campeonatos`), estrela com `aria-pressed` (112×44), chips com favoritos primeiro, `/favoritos`. Evidências: QA do Argus (89 testes, delta 0 de layout contra produção, storage hostil) e smoke em produção em 3 viewports
+- [x] Persistência local sem cadastro — `localStorage` com leitura protegida e fallback em memória; validado com storage bloqueado, JSON inválido e tipos errados (0 erros de JS, 11 cards)
 - [~] Lembretes via calendário — já existia link do Google Calendar (`buildCalendarUrl`, `app.html` card); falta .ics para Apple/Outlook
-- [ ] Página de próximos jogos dos favoritos
+- [x] Página de próximos jogos dos favoritos — `/favoritos` (jogos futuros de time ou campeonato favorito, SEO próprio, estado vazio, JSON-LD); validada em produção
 - [ ] Preferência de serviços de streaming
 
 ## Fase 4 — SEO e crescimento
@@ -50,6 +50,10 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 - Cold start do backend: o usuário vê só "Carregando jogos" por muito tempo
 - `STREAMING_URLS` e links oficiais ainda sem auditoria de cobertura por plataforma
 
+- "Ver ao vivo" com 30px de altura (< 44px de alvo de toque)
+- Acesso a "Meus favoritos" ausente em `/campeonato/*`, `/jogo/*` e `/copa-2026`; `/campeonato/*` emite JSON-LD com os eventos da home
+- Favoritos só no navegador (sem sincronização entre dispositivos)
+
 ## Log
 - 2026-10-15: Lote B em `feat/descoberta` (busca, filtros data/plataforma, WhatsApp). Build OK; validado em browser headless local. Sem push.
 - 2026-10-15: Etapa 0 concluída por Athena. Hephaestus não respondeu (prompts ficam no input do Codex).
@@ -57,3 +61,4 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 - 2026-10-15: Lotes C1 (extração do card, v1.1.2) e C2 (página da partida, v1.2.0) publicados após QA do Argus; fluxo Athena → Hephaestus → Argus operando (1 rodada de correção em cada).
 - 2026-10-15: C3 (SEO das partidas, v1.3.0) publicado; primeiro deploy de backend da frente. Sitemap e frontend validados em produção.
 - 2026-10-15: patch 1.3.1 publicado (título com campeonato nas colisões, sitemap sem documentos incompletos, /copa-2026 sem SportsEvent doméstico); aprovado pelo Argus (63 testes front, 13 back).
+- 2026-10-15: Lote D1 (favoritos, v1.4.0) publicado após QA do Argus com 1 rodada de correção (delta de 44px eliminado, favoritos válidos preservados, estrela estável).
