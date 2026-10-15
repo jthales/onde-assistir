@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { translateCountry } from './country-names';
 import { getDb } from './mongodb';
-import { espnCopaUrl } from './constants';
+import { espnCopaUrl, fetchEspn } from './constants';
 
 const router = Router();
 
@@ -41,7 +41,7 @@ function getStat(stats: any[], name: string): number {
 // não encerrado. Assim que o último jogo de uma fase termina, avança automaticamente
 // para a próxima — sem depender de "hoje" cair dentro de uma janela fixa de dias.
 async function detectPhase(): Promise<string> {
-  const resp = await fetch(espnCopaUrl());
+  const resp = await fetchEspn(espnCopaUrl());
   if (!resp.ok) return 'group-stage';
   const data: any = await resp.json();
   const events: any[] = data.events ?? [];
@@ -91,7 +91,7 @@ async function fetchEliminatorias(phaseSlug: string) {
   // Copa final: 19/jul/2026 — garantir que sempre mostramos até o fim
   const copaFim = new Date('2026-07-21T00:00:00Z');
   const future = brtNow < copaFim ? copaFim : new Date(brtNow.getTime() + 14 * 24 * 60 * 60 * 1000);
-  const resp = await fetch(
+  const resp = await fetchEspn(
     `https://site.api.espn.com/apis/site/v2/sports/soccer/${ESPN_COPA}/scoreboard?dates=${fmt(past)}-${fmt(future)}`
   );
   if (!resp.ok) throw new Error(`ESPN scoreboard ${resp.status}`);
@@ -247,7 +247,7 @@ router.post('/api/admin/repopulate-copa', async (req, res) => {
 
     // 2. Buscar fixtures da ESPN (período completo da Copa: 11 Jun–19 Jul)
     const url = espnCopaUrl();
-    const espnResp = await fetch(url);
+    const espnResp = await fetchEspn(url);
     if (!espnResp.ok) throw new Error(`ESPN ${espnResp.status}`);
     const data: any = await espnResp.json();
 

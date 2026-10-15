@@ -10,7 +10,7 @@ import * as fs from 'fs';
 import { GoogleGenAI } from '@google/genai';
 import { Jogo } from './types';
 import { getDb } from './mongodb';
-import { espnScoreboardUrlForLeague, ESPN_LEAGUES, TEAM_NAME_MAP } from './constants';
+import { espnScoreboardUrlForLeague, fetchEspn, ESPN_LEAGUES, TEAM_NAME_MAP } from './constants';
 import { buscarDadosRodada, buscarOndeAssistir, buscarFutebolExpert, buscarFutebolExpertCampeonato } from './scraper';
 
 const DRY_RUN    = process.argv.includes('--dry-run');
@@ -77,7 +77,7 @@ interface Broadcast {
 const TIMES_BRASILEIROS = new Set(Object.values(TEAM_NAME_MAP));
 
 async function fetchScoreboardForLeague(leagueId: string, janelaDias?: number): Promise<EspnFixture[]> {
-  const res = await fetch(espnScoreboardUrlForLeague(leagueId, janelaDias));
+  const res = await fetchEspn(espnScoreboardUrlForLeague(leagueId, janelaDias));
   if (!res.ok) throw new Error(`ESPN API error (${leagueId}): ${res.status}`);
   const data: any = await res.json();
 

@@ -8,7 +8,7 @@
 import 'dotenv/config';
 import * as fs from 'fs';
 import { getDb } from './mongodb';
-import { espnCopaUrl } from './constants';
+import { espnCopaUrl, fetchEspn } from './constants';
 import { Jogo } from './types';
 import { translateCountry } from './country-names';
 
@@ -21,7 +21,7 @@ function jogoId(espnEventId: string): string {
 
 async function fetchCopaFixtures(): Promise<Array<Omit<Jogo, 'rodada'> & { rodada: number; espnEventId: string }>> {
   const url = espnCopaUrl();
-  const resp = await fetch(url);
+  const resp = await fetchEspn(url);
   if (!resp.ok) throw new Error(`ESPN API error: ${resp.status}`);
   const data: any = await resp.json();
 

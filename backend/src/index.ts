@@ -5,7 +5,7 @@ import rateLimit from 'express-rate-limit';
 import { Jogo } from './types';
 import { getMessaging } from './firebase';
 import { getDb } from './mongodb';
-import { espnScoreboardUrlForLeague, espnCopaUrl, ESPN_LEAGUES, TEAM_NAME_MAP, TEAM_ESPN_ID_MAP, LIGA_SLUG_TO_ESPN, LIGA_SLUG_LABEL } from './constants';
+import { espnScoreboardUrlForLeague, espnCopaUrl, fetchEspn, ESPN_LEAGUES, TEAM_NAME_MAP, TEAM_ESPN_ID_MAP, LIGA_SLUG_TO_ESPN, LIGA_SLUG_LABEL } from './constants';
 import copa2026Router from './copa-2026-routes';
 const app = express();
 const PORT = process.env['PORT'] ?? 3000;
@@ -304,11 +304,11 @@ app.get('/api/placar', async (_req, res) => {
 
   try {
     const [dataBra, dataLib, dataSul, dataCopa, dataCopa2026] = await Promise.all([
-      fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.brasileirao, 1)).then(r => r.json()),
-      fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.libertadores, 1)).then(r => r.json()),
-      fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.sudamericana, 1)).then(r => r.json()),
-      fetch(espnScoreboardUrlForLeague(ESPN_LEAGUES.copadobrasil, 1)).then(r => r.json()),
-      fetch(espnCopaUrl()).then(r => r.json()),
+      fetchEspn(espnScoreboardUrlForLeague(ESPN_LEAGUES.brasileirao, 1)).then(r => r.json()),
+      fetchEspn(espnScoreboardUrlForLeague(ESPN_LEAGUES.libertadores, 1)).then(r => r.json()),
+      fetchEspn(espnScoreboardUrlForLeague(ESPN_LEAGUES.sudamericana, 1)).then(r => r.json()),
+      fetchEspn(espnScoreboardUrlForLeague(ESPN_LEAGUES.copadobrasil, 1)).then(r => r.json()),
+      fetchEspn(espnCopaUrl()).then(r => r.json()),
     ]);
     const allEvents = [
       ...(dataBra.events ?? []),
@@ -413,7 +413,7 @@ app.get('/api/odds', async (_req, res) => {
 
     const ligaResults = await Promise.allSettled(
       ligas.map(leagueId =>
-        fetch(espnScoreboardUrlForLeague(leagueId, 1))
+        fetchEspn(espnScoreboardUrlForLeague(leagueId, 1))
           .then(r => r.json())
           .then((data: any) => ({ leagueId, events: (data.events ?? []) as any[] }))
       )
@@ -580,8 +580,8 @@ async function fetchMataMata(espnLeague: string) {
   const base = `https://site.api.espn.com/apis/site/v2/sports/soccer/${espnLeague}/scoreboard`;
 
   const [respPass, respFut] = await Promise.all([
-    fetch(`${base}?dates=${fmt(passado)}-${fmt(brtNow)}`),
-    fetch(`${base}?dates=${fmt(brtNow)}-${fmt(futuro)}`),
+    fetchEspn(`${base}?dates=${fmt(passado)}-${fmt(brtNow)}`),
+    fetchEspn(`${base}?dates=${fmt(brtNow)}-${fmt(futuro)}`),
   ]);
   if (!respPass.ok) throw new Error(`ESPN scoreboard error: ${respPass.status}`);
   if (!respFut.ok)  throw new Error(`ESPN scoreboard error: ${respFut.status}`);
@@ -742,7 +742,7 @@ app.get('/api/jogos-campeonato/:liga', async (req, res) => {
   }
 
   try {
-    const resp = await fetch(espnScoreboardUrlForLeague(espnLeague, 14));
+    const resp = await fetchEspn(espnScoreboardUrlForLeague(espnLeague, 14));
     const data: any = await resp.json();
     const events: any[] = data.events ?? [];
 

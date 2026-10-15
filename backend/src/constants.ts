@@ -137,3 +137,47 @@ export const TEAM_NAME_MAP: Record<string, string> = {
   'Ghana':               'Gana',
   'Panama':              'Panamá',
 };
+
+// A ESPN passou a responder 400 para `dates=YYYYMMDD-YYYYMMDD` (intervalo). Datas únicas e o
+// ano inteiro (`dates=YYYY`) continuam funcionando, então intervalos são resolvidos buscando
+// o(s) ano(s) envolvidos e filtrando os eventos pelo período pedido.
+const ESPN_YEAR_CACHE_TTL_MS = 60_000;
+const espnYearCache = new Map<string, { at: number; promise: Promise<any> }>();
+
+function fetchEspnYear(base: string, year: string): Promise<any> {
+  const key = `${base}|${year}`;
+  const hit = espnYearCache.get(key);
+  if (hit && Date.now() - hit.at < ESPN_YEAR_CACHE_TTL_MS) return hit.promise;
+  const promise = fetch(`${base}?dates=${year}&limit=1000`).then(async (r) => {
+    if (!r.ok) throw new Error(`ESPN API error: ${r.status}`);
+    return r.json();
+  });
+  espnYearCache.set(key, { at: Date.now(), promise });
+  promise.catch(() => espnYearCache.delete(key));
+  return promise;
+}
+
+/** Substituto de `fetch` para URLs do scoreboard da ESPN; expande `dates=A-B` em consultas por ano. */
+export async function fetchEspn(url: string): Promise<Response> {
+  const m = url.match(/^([^?]+)\?(?:.*&)?dates=(\d{8})-(\d{8})/);
+  if (!m) return fetch(url);
+  const [, base, ini, fim] = m;
+  const toMs = (s: string, end: boolean) =>
+    Date.parse(`${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}T${end ? '23:59:59' : '00:00:00'}Z`);
+  const from = toMs(ini, false);
+  const to = toMs(fim, true);
+
+  const years: string[] = [];
+  for (let y = +ini.slice(0, 4); y <= +fim.slice(0, 4); y++) years.push(String(y));
+
+  try {
+    const parts = await Promise.all(years.map((y) => fetchEspnYear(base, y)));
+    const events = parts
+      .flatMap((p) => p.events ?? [])
+      .filter((e: any) => { const t = Date.parse(e.date); return t >= from && t <= to; });
+    const body = { ...parts[0], events };
+    return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: String(e) }), { status: 502 });
+  }
+}
