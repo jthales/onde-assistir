@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { provideServiceWorker } from '@angular/service-worker';
 import { App } from './app';
-import { Jogo } from './models/jogo';
+import { Jogo, JogoCampeonato } from './models/jogo';
 
 function dataBrt(offsetDias = 0): string {
   const base = new Date(Date.now() + offsetDias * 24 * 60 * 60 * 1000);
@@ -80,6 +80,37 @@ describe('App', () => {
   it('ordena por data e horário', () => {
     responder();
     expect(app.jogosFiltrados().map(j => j.timeMandante)).toEqual(['Flamengo', 'Fluminense', 'São Paulo']);
+  });
+
+  it('preserva badges de status, horário e placar na lista de campeonato fora do jogo-card', () => {
+    responder();
+    const base: JogoCampeonato = {
+      timeMandante: 'Flamengo', timeVisitante: 'Palmeiras',
+      logoMandante: null, logoVisitante: null,
+      data: dataBrt(5), hora: '20:00', status: 'agendado',
+      rodada: 1, fase: null, placarMandante: null, placarVisitante: null,
+      estadio: 'Maracanã', campeonato: 'Libertadores',
+    };
+    app.campeonatoSelecionado.set('libertadores');
+    app.jogosCampeonato.set([
+      { ...base, status: 'encerrado', placarMandante: 2, placarVisitante: 1 },
+      { ...base, timeMandante: 'Fluminense' },
+      { ...base, timeMandante: 'Botafogo', status: 'em-andamento', placarMandante: 1, placarVisitante: 0 },
+    ]);
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const cards = el.querySelectorAll('.campeonato-sidebar .jogos-camp-lista .jogo-camp-card');
+    expect(cards.length).toBe(3);
+    expect(cards[0].closest('app-jogo-card')).toBeNull();
+    expect(cards[0].querySelector('.encerrado-badge')?.textContent).toBe('FIM');
+    expect(cards[0].querySelector('.placar-numeros')?.textContent).toContain('2 – 1');
+    expect(cards[1].querySelector('.hora')?.textContent).toBe('20:00');
+    expect(cards[2].querySelector('.ao-vivo-badge')?.textContent).toBe('AO VIVO');
+    expect(cards[0].querySelector('.estadio svg')).toBeTruthy();
+    expect(getComputedStyle(cards[0].querySelector('.placar-numeros')!).fontWeight).toBe('800');
+    expect(getComputedStyle(cards[0].querySelector('.encerrado-badge')!).backgroundColor).toBe('rgb(243, 244, 246)');
+    expect(getComputedStyle(cards[1].querySelector('.hora')!).backgroundColor).toBe('rgb(29, 111, 66)');
   });
 
   it('mostra erro com alerta e recarrega ao tentar novamente', () => {

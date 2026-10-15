@@ -1,4 +1,5 @@
 @use '../../mixins' as *;
+@use '../../jogo-shared';
 
 // Mantém o card como item do grid, sem uma caixa extra no layout.
 :host { display: contents; }
@@ -13,6 +14,8 @@
 a, button, [role="button"] {
   touch-action: manipulation;
 }
+
+@include jogo-shared.base;
 
 // ── Card ─────────────────────────────────────────────────────────────────────
 
@@ -105,66 +108,8 @@ a, button, [role="button"] {
   color: #1d6f42;
 }
 
-.hora {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #fff;
-  background: #1d6f42;
-  padding: 0.15rem 0.45rem;
-  border-radius: 6px;
-}
-
-.ao-vivo-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: #fff;
-  background: #dc2626;
-  padding: 0.15rem 0.5rem;
-  border-radius: 6px;
-}
-
-.ao-vivo-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #fff;
-  animation: pulsar 1.2s ease-in-out infinite;
-}
-
-@keyframes pulsar {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.4; transform: scale(0.7); }
-}
-
 .placar-ao-vivo {
   @include flex-col(0.15rem, center);
-}
-
-.placar-encerrado .placar-numeros {
-  color: #374151;
-}
-
-.encerrado-badge {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: #6b7280;
-  background: #f3f4f6;
-  padding: 0.15rem 0.5rem;
-  border-radius: 6px;
-  text-transform: uppercase;
-}
-
-.placar-numeros {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: #111827;
-  letter-spacing: 0.05em;
-  line-height: 1;
 }
 
 .placar-tempo {
@@ -195,16 +140,6 @@ a, button, [role="button"] {
 }
 
 // ── Confronto ────────────────────────────────────────────────────────────────
-
-.confronto {
-  @include flex(0.5rem);
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 0.75rem 0.5rem;
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-}
 
 .time-col {
   @include flex-col(0.25rem, flex-start);
@@ -267,31 +202,6 @@ a, button, [role="button"] {
   flex-shrink: 0;
 }
 
-.vs {
-  @include flex($justify: center);
-  font-weight: 800;
-  font-size: 0.75rem;
-  color: #9ca3af;
-  background: #e5e7eb;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  letter-spacing: 0.05em;
-}
-
-// ── Estádio ──────────────────────────────────────────────────────────────────
-
-.estadio {
-  @include flex(0.35rem);
-  font-size: 0.78rem;
-  color: #9ca3af;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-  svg { flex-shrink: 0; color: #d1d5db; }
-}
-
 // ── Onde assistir ────────────────────────────────────────────────────────────
 
 .onde-assistir {
@@ -319,42 +229,6 @@ a, button, [role="button"] {
   color: #6b7280;
   min-width: 64px;
   flex-shrink: 0;
-}
-
-.badges {
-  @include flex(0.35rem, $wrap: wrap);
-}
-
-.badge {
-  display: inline-block;
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 0.25rem 0.6rem;
-  border-radius: 999px;
-  white-space: nowrap;
-}
-
-.badge-tv         { background: #dbeafe; color: #1d4ed8; }
-.badge-tv--link {
-  text-decoration: none;
-  cursor: pointer;
-  &::after { content: ' ↗'; font-size: 0.75em; opacity: 0.65; }
-  &:hover { filter: brightness(0.88); }
-}
-.badge-confirmar  { background: #f3f4f6; color: #9ca3af; font-weight: 400; }
-
-.badge-streaming {
-  background: #ede9fe;
-  color: #6d28d9;
-  font-size: 0.8rem;
-  padding: 0.3rem 0.75rem;
-}
-
-.badge-streaming--link {
-  text-decoration: none;
-  cursor: pointer;
-  &::after { content: ' ↗'; font-size: 0.75em; opacity: 0.65; }
-  &:hover { filter: brightness(0.88); }
 }
 
 // ── Calendário ───────────────────────────────────────────────────────────────
@@ -458,7 +332,7 @@ a, button, [role="button"] {
 
 @media (min-width: 768px) {
   .jogo-card { padding: 1rem; }
-  .confronto { padding: 1rem 0.75rem; }
+  @include jogo-shared.tablet;
 }
 
 @media (min-width: 1100px) {
@@ -475,40 +349,29 @@ a, button, [role="button"] {
 }
 
 @media (prefers-color-scheme: dark) {
+  @include jogo-shared.dark;
   // Cards de jogo
   .jogo-card {
     background: #1e293b;
     border-color: #334155;
     box-shadow: 0 2px 12px rgba(0,0,0,0.45);
   }
-  .confronto { background: #0f172a; }
   .logo-initials {
-    background: #334155;
-    color: #94a3b8;
-  }
-  .vs {
     background: #334155;
     color: #94a3b8;
   }
   .time-nome { color: #f1f5f9; }
   .time-label { color: #64748b; }
 
-  // Data / hora / badges de status
+  // Data / badges
   .data { color: #cbd5e1; }
   .data--hoje { color: #22c55e; }
-  .hora { background: #15803d; }
-  .encerrado-badge {
-    background: #334155;
-    color: #94a3b8;
-  }
   .campeonato-badge {
     background: #2e1065;
     color: #a78bfa;
   }
 
   // Placar
-  .placar-numeros { color: #f1f5f9; }
-  .placar-encerrado .placar-numeros { color: #cbd5e1; }
   .placar-tempo { color: #94a3b8; }
 
   // Gols
@@ -518,18 +381,6 @@ a, button, [role="button"] {
   .onde-assistir { border-top-color: #334155; }
   .onde-tipo { color: #94a3b8; }
   .onde-label { color: #64748b; }
-  .badge-tv {
-    background: #1e3a5f;
-    color: #60a5fa;
-  }
-  .badge-confirmar {
-    background: #334155;
-    color: #64748b;
-  }
-  .badge-streaming {
-    background: #2e1065;
-    color: #a78bfa;
-  }
 
   // Calendário
   .calendario-row { border-top-color: #334155; }

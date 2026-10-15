@@ -12,6 +12,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 - Extração do card de jogo para o componente standalone `JogoCardComponent`, sem mudança visual ou de comportamento.
 
+### Corrigido
+
+- **Regressão de CSS na extração do card (QA C1)**: restaurados os estilos compartilhados de status, horário, placar, estádio, badges e confronto nas listas de campeonato/Copa, com os valores originais, modo escuro e breakpoints em `_jogo-shared.scss`. A animação `pulsar` passou a ter uma única definição global.
+
 ---
 
 ## [1.1.1] — 2026-10-15
