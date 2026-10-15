@@ -13,7 +13,7 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 ## Fase 2 — Descoberta e navegação
 - [x] Filtros — time (chips), ao vivo, Brasil, campeonato, e (Lote B) data e canal/plataforma (`datasDisponiveis`, `plataformasDisponiveis`, `jogosFiltrados` em `app.ts`). Validado em Chrome headless: data→1 card, Disney+→1 card, todos com o canal
 - [x] Busca por time/competição — `busca` (sem acento/caixa) em `jogosFiltrados`; validado: "flamengo"→2 jogos, "zzzz"→estado vazio, limpar→11
-- [ ] Página individual da partida (rotas só por time/campeonato, via `history.replaceState`, sem Angular Router)
+- [x] Página individual da partida — `/jogo/:slug` (v1.2.0, `jogo-url.ts`, `app.ts`, `JogoCardComponent` em modo detalhes). Evidências: QA do Argus em desktop/tablet/mobile (44→47 testes), e smoke em produção: h1 único, canonical e `SportsEvent` próprios, 404 amigável, WhatsApp com permalink e data absoluta. Limites: SEO por JS (sem SSR), partidas fora de `/api/jogos` não são encontradas, colisão de slug possível
 - [~] Links oficiais de streaming — `getStreamingUrl` + `STREAMING_URLS` (`app.ts:805`); cobertura por plataforma não auditada
 - [x] Compartilhamento WhatsApp — `buildWhatsappUrl` + botão no card; validado: `wa.me/?text=` com jogo, horário, canais e link
 
@@ -44,7 +44,15 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 - ESPN rejeitou `dates=A-B` em 2026-10 → corrigido por `fetchEspn` (commit `c80ce3c`); dependência de API não oficial segue frágil
 - `environment.ts` aponta para produção em dev local
 
+## Dívida técnica registrada (pós-C2)
+- Colisão de slug quando dois campeonatos têm os mesmos times na mesma data (`jogoSelecionado` usa o primeiro)
+- `og:url` de `/ao-vivo` e `/copa-2026` aponta para a home; `/copa-2026` mantém title padrão
+- Partidas ainda não estão no `sitemap.xml` (backend)
+- Cold start do backend: o usuário vê só "Carregando jogos" por muito tempo
+- `STREAMING_URLS` e links oficiais ainda sem auditoria de cobertura por plataforma
+
 ## Log
 - 2026-10-15: Lote B em `feat/descoberta` (busca, filtros data/plataforma, WhatsApp). Build OK; validado em browser headless local. Sem push.
 - 2026-10-15: Etapa 0 concluída por Athena. Hephaestus não respondeu (prompts ficam no input do Codex).
 - 2026-10-15: Lote A validado em Chrome headless via Puppeteer (extensão Chrome indisponível). Em `feat/ux-basico`: build OK; `ng test` falha igual na `main` (2 testes, `messaging/unsupported-browser` em jsdom) — pré-existente, não relacionado.
+- 2026-10-15: Lotes C1 (extração do card, v1.1.2) e C2 (página da partida, v1.2.0) publicados após QA do Argus; fluxo Athena → Hephaestus → Argus operando (1 rodada de correção em cada).
