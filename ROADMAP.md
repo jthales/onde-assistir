@@ -26,7 +26,7 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 
 ## Fase 4 — SEO e crescimento
 - [ ] SSR/prerender — sem `@angular/ssr`; SPA (compensado por `/og` no backend e metas dinâmicas)
-- [x] Sitemap dinâmico e canonical — sitemap (`backend/src/index.ts:960`) e `setCanonical` em `app.ts` (Lote A: canonical agora definido já na carga inicial; antes só após navegação — validado: `https://ondeassistir.space/`)
+- [x] Sitemap dinâmico e canonical — v1.3.0: `buildSitemapXml` (`backend/src/sitemap.ts`) inclui home, campeonatos, times e partidas futuras (`/jogo/<slug>`); canonical desde a carga inicial. Evidências: Argus (12 testes backend, paridade de slugs, 20.000 instantes BRT) e produção: 84 URLs únicas, 11 `/jogo/`, paridade 11/11 com os cards, `/ao-vivo` e `/copa-2026` com canonical/og:url próprios
 - [~] Dados estruturados — `WebSite` (`index.html:46`) e `SportsEvent` dinâmico (`atualizarSportsEvents`, `app.ts`); falta validar no Rich Results Test
 - [ ] Core Web Vitals — não medido
 - [~] Monitoramento — `@vercel/analytics` com eventos (`app.ts:26,544,587`); sem monitor de erros (Sentry/Datadog)
@@ -45,9 +45,8 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 - `environment.ts` aponta para produção em dev local
 
 ## Dívida técnica registrada (pós-C2)
-- Colisão de slug quando dois campeonatos têm os mesmos times na mesma data (`jogoSelecionado` usa o primeiro)
-- `og:url` de `/ao-vivo` e `/copa-2026` aponta para a home; `/copa-2026` mantém title padrão
-- Partidas ainda não estão no `sitemap.xml` (backend)
+- ~~Colisão de slug~~ resolvida na v1.3.0 (sufixo do campeonato); pendente: title/h1 iguais nas páginas colidentes (patch 1.3.1)
+- Sitemap lista `/<time>` para documentos incompletos (ex.: `/sem-mandante`) e `/copa-2026` emite JSON-LD da home (patch 1.3.1)
 - Cold start do backend: o usuário vê só "Carregando jogos" por muito tempo
 - `STREAMING_URLS` e links oficiais ainda sem auditoria de cobertura por plataforma
 
@@ -56,3 +55,4 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 - 2026-10-15: Etapa 0 concluída por Athena. Hephaestus não respondeu (prompts ficam no input do Codex).
 - 2026-10-15: Lote A validado em Chrome headless via Puppeteer (extensão Chrome indisponível). Em `feat/ux-basico`: build OK; `ng test` falha igual na `main` (2 testes, `messaging/unsupported-browser` em jsdom) — pré-existente, não relacionado.
 - 2026-10-15: Lotes C1 (extração do card, v1.1.2) e C2 (página da partida, v1.2.0) publicados após QA do Argus; fluxo Athena → Hephaestus → Argus operando (1 rodada de correção em cada).
+- 2026-10-15: C3 (SEO das partidas, v1.3.0) publicado; primeiro deploy de backend da frente. Sitemap e frontend validados em produção.
