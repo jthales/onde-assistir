@@ -1,22 +1,35 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { initializeApp, getApps } from 'firebase/app';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
 import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class PushNotificacaoService {
-  private messaging = (() => {
-    const app = getApps().length ? getApps()[0] : initializeApp(environment.firebaseConfig);
-    return getMessaging(app);
-  })();
+  // Inicialização lazy e tolerante: em navegadores sem suporte a FCM (ex.: iOS Safari fora do PWA)
+  // getMessaging() lança erro — isso não pode derrubar o app inteiro na criação do serviço.
+  private messagingInstance: Messaging | null | undefined;
+
+  private get messaging(): Messaging | null {
+    if (this.messagingInstance === undefined) {
+      try {
+        const app = getApps().length ? getApps()[0] : initializeApp(environment.firebaseConfig);
+        this.messagingInstance = getMessaging(app);
+      } catch {
+        this.messagingInstance = null;
+      }
+    }
+    return this.messagingInstance;
+  }
 
   constructor(private http: HttpClient) {}
 
   async getToken(): Promise<string | null> {
+    const messaging = this.messaging;
+    if (!messaging) return null;
     try {
       const sw = await navigator.serviceWorker.ready;
-      return await getToken(this.messaging, {
+      return await getToken(messaging, {
         vapidKey: environment.firebaseConfig.vapidKey,
         serviceWorkerRegistration: sw,
       });
@@ -26,7 +39,8 @@ export class PushNotificacaoService {
   }
 
   onMessage(handler: (payload: any) => void): void {
-    onMessage(this.messaging, handler);
+    const messaging = this.messaging;
+    if (messaging) onMessage(messaging, handler);
   }
 
   salvarSubscricao(fcmToken: string, times: string[], jogos: string[]): void {
