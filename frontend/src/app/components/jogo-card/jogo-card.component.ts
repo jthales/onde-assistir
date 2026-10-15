@@ -4,7 +4,7 @@ import { Jogo, Odds, Placar } from '../../models/jogo';
 import { teamInitials } from '../../team-logos';
 import { translateCountry } from '../../copa-2026/country-names';
 import { buildJogoUrl } from '../../jogo-url';
-import { logoUrl } from '../../utils/logo-url';
+import { logoUrl, onLogoError } from '../../utils/logo-url';
 
 @Component({
   selector: 'app-jogo-card',
@@ -30,6 +30,7 @@ export class JogoCardComponent {
   readonly modoDetalhes = input(false);
   readonly logosLazy = input(false);
   readonly logoUrl = logoUrl;
+  readonly onLogoError = onLogoError;
   readonly urlPartida = input('');
   readonly detalhesUrl = computed(() => this.urlPartida() || buildJogoUrl(this.jogo()));
 

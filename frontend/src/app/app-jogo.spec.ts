@@ -131,6 +131,38 @@ describe('Página individual da partida', () => {
     expect(el.querySelector('.btn-detalhes')).toBeNull();
   });
 
+  it('limita a reserva do título e a invisibilidade do rodapé ao carregamento', () => {
+    const view = abrir();
+    const el: HTMLElement = view.nativeElement;
+    expect(el.querySelector('h1')?.classList.contains('partida-titulo--carregando')).toBe(true);
+    expect(getComputedStyle(el.querySelector('footer')!).visibility).toBe('hidden');
+    responder();
+    expect(el.querySelector('h1')?.classList.contains('partida-titulo--carregando')).toBe(false);
+    expect(getComputedStyle(el.querySelector('footer')!).visibility).not.toBe('hidden');
+  });
+
+  it('remove a reserva do título e revela o rodapé também no 404', () => {
+    const view = abrir('/jogo/inexistente');
+    responder();
+    const el: HTMLElement = view.nativeElement;
+    expect(el.querySelector('h1')?.textContent).toBe('Partida não encontrada');
+    expect(el.querySelector('h1')?.classList.contains('partida-titulo--carregando')).toBe(false);
+    expect(getComputedStyle(el.querySelector('footer')!).visibility).not.toBe('hidden');
+  });
+
+  it('encaminha a falha do logo do card para a URL original antes de ocultar', () => {
+    const view = abrir();
+    const original = 'https://a.espncdn.com/i/teamlogos/soccer/500/819.png';
+    responder([{ ...partida, logoMandante: original }]);
+    const img = view.nativeElement.querySelector('img.logo-img') as HTMLImageElement;
+    expect(img.getAttribute('src')).toContain('/combiner/');
+    img.dispatchEvent(new Event('error'));
+    expect(img.getAttribute('src')).toBe(original);
+    expect(img.style.display).toBe('');
+    img.dispatchEvent(new Event('error'));
+    expect(img.style.display).toBe('none');
+  });
+
   it('mostra Partida não encontrada e link para a home sem publicar SportsEvent incorreto', () => {
     const view = abrir('/jogo/inexistente-x-outro-2026-10-20');
     responder();

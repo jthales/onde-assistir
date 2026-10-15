@@ -15,7 +15,7 @@ import { Copa2026Service } from './services/copa-2026.service';
 import { APP_VERSION } from './version';
 import { JogoCardComponent } from './components/jogo-card/jogo-card.component';
 import { buildJogoSlug, buildJogoUrl, buildJogoUrlMap, findJogoBySlug, slugify } from './jogo-url';
-import { logoUrl } from './utils/logo-url';
+import { logoUrl, onLogoError } from './utils/logo-url';
 import { FavoritosService } from './services/favoritos.service';
 import { FavoritoButtonComponent } from './components/favorito-button/favorito-button.component';
 import { lerListaLocal } from './services/local-storage';
@@ -44,6 +44,7 @@ export class App implements OnInit, OnDestroy {
   jogos = signal<Jogo[]>([]);
   private readonly jogosUrls = computed(() => buildJogoUrlMap(this.jogos()));
   readonly logoUrl = logoUrl;
+  readonly onLogoError = onLogoError;
   loading = signal(true);
   error = signal<string | null>(null);
   readonly slugJogo = signal<string | null>(

@@ -1,4 +1,4 @@
-<div class="page">
+<div class="page" [class.page--carregando]="loading() || loadingCampeonato()">
 
   <div class="pull-indicator"
        [class.pull-indicator--ready]="pullDistance() >= 72"
@@ -16,7 +16,8 @@
     <div class="hero-inner">
       <div class="hero-badge">2026</div>
       @if (slugJogo() !== null) {
-        <h1 id="partida-titulo" class="hero-title">{{ tituloPaginaJogo() }}</h1>
+        <!-- Nós distintos evitam contar o movimento horizontal do texto do loading como CLS. -->
+        <h1 id="partida-titulo" class="hero-title" [class.partida-titulo--carregando]="loading()">@if (loading()) {<ng-container>{{ tituloPaginaJogo() }}</ng-container>} @else {<ng-container>{{ tituloPaginaJogo() }}</ng-container>}</h1>
         <p class="hero-subtitle">Onde assistir · Detalhes da partida</p>
       } @else if (isCopa2026Route()) {
         <button class="btn-voltar" (click)="voltarParaHome()">
@@ -212,7 +213,7 @@
                             <td class="col-time">
                               <div class="col-time-inner">
                                 @if (entry.logo) {
-                                  <img [src]="logoUrl(entry.logo, 64)" [alt]="entry.nome" width="18" height="18" decoding="async" loading="lazy" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                                  <img [src]="logoUrl(entry.logo, 64)" [alt]="entry.nome" width="18" height="18" decoding="async" loading="lazy" class="classificacao-logo" (error)="onLogoError($event, entry.logo)">
                                 }
                                 <span class="classificacao-nome classificacao-nome--full">{{ entry.nome }}</span>
                               </div>
@@ -245,7 +246,7 @@
                           <div class="mm-teams">
                             <div class="mm-team mm-team--left" [class.mm-team--winner]="c.vencedor === 'time1'">
                               @if (c.time1.logo) {
-                                <img [src]="logoUrl(c.time1.logo, 104)" [alt]="c.time1.nome" width="34" height="34" decoding="async" loading="lazy" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
+                                <img [src]="logoUrl(c.time1.logo, 104)" [alt]="c.time1.nome" width="34" height="34" decoding="async" loading="lazy" class="mm-team-logo" (error)="onLogoError($event, c.time1.logo)">
                               }
                               <span class="mm-team-name">{{ c.time1.nome }}</span>
                             </div>
@@ -261,7 +262,7 @@
 
                             <div class="mm-team mm-team--right" [class.mm-team--winner]="c.vencedor === 'time2'">
                               @if (c.time2.logo) {
-                                <img [src]="logoUrl(c.time2.logo, 104)" [alt]="c.time2.nome" width="34" height="34" decoding="async" loading="lazy" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
+                                <img [src]="logoUrl(c.time2.logo, 104)" [alt]="c.time2.nome" width="34" height="34" decoding="async" loading="lazy" class="mm-team-logo" (error)="onLogoError($event, c.time2.logo)">
                               }
                               <span class="mm-team-name">{{ c.time2.nome }}</span>
                             </div>
@@ -328,7 +329,7 @@
                                 <td class="col-time">
                                   <div class="col-time-inner">
                                     @if (entry.logo) {
-                                      <img [src]="logoUrl(entry.logo, 64)" [alt]="entry.nome" width="18" height="18" decoding="async" loading="lazy" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                                      <img [src]="logoUrl(entry.logo, 64)" [alt]="entry.nome" width="18" height="18" decoding="async" loading="lazy" class="classificacao-logo" (error)="onLogoError($event, entry.logo)">
                                     }
                                     <span class="classificacao-nome">{{ entry.nome }}</span>
                                   </div>
@@ -384,7 +385,7 @@
                           <div class="jogo-camp-times">
                             <div class="jogo-camp-time">
                               @if (jogo.logoMandante) {
-                                <img [src]="logoUrl(jogo.logoMandante, 96)" [alt]="jogo.timeMandante" width="30" height="30" decoding="async" loading="lazy" class="jogo-camp-logo" (error)="$any($event.target).style.display='none'">
+                                <img [src]="logoUrl(jogo.logoMandante, 96)" [alt]="jogo.timeMandante" width="30" height="30" decoding="async" loading="lazy" class="jogo-camp-logo" (error)="onLogoError($event, jogo.logoMandante)">
                               }
                               <span>{{ jogo.timeMandante }}</span>
                             </div>
@@ -405,7 +406,7 @@
                             </div>
                             <div class="jogo-camp-time">
                               @if (jogo.logoVisitante) {
-                                <img [src]="logoUrl(jogo.logoVisitante, 96)" [alt]="jogo.timeVisitante" width="30" height="30" decoding="async" loading="lazy" class="jogo-camp-logo" (error)="$any($event.target).style.display='none'">
+                                <img [src]="logoUrl(jogo.logoVisitante, 96)" [alt]="jogo.timeVisitante" width="30" height="30" decoding="async" loading="lazy" class="jogo-camp-logo" (error)="onLogoError($event, jogo.logoVisitante)">
                               }
                               <span>{{ jogo.timeVisitante }}</span>
                             </div>
@@ -459,7 +460,7 @@
                   [attr.aria-label]="time.nome + (favoritos.eTimeFavorito(time.nome) ? ', favorito' : '')"
                   [title]="time.nome">
             @if (time.logo) {
-              <img [src]="logoUrl(time.logo, 144)" [alt]="time.nome" width="48" height="48" decoding="async" loading="eager" class="chip-logo" (error)="$any($event.target).style.display='none'">
+              <img [src]="logoUrl(time.logo, 144)" [alt]="time.nome" width="48" height="48" decoding="async" loading="eager" class="chip-logo" (error)="onLogoError($event, time.logo)">
             }
             <span class="chip-initials">{{ getInitials(time.nome) }}</span>
             @if (favoritos.eTimeFavorito(time.nome)) {
@@ -645,7 +646,7 @@
                         <td class="col-time">
                           <div class="col-time-inner">
                             @if (entry.logo) {
-                              <img [src]="logoUrl(entry.logo, 64)" [alt]="entry.nome" width="18" height="18" decoding="async" loading="lazy" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                              <img [src]="logoUrl(entry.logo, 64)" [alt]="entry.nome" width="18" height="18" decoding="async" loading="lazy" class="classificacao-logo" (error)="onLogoError($event, entry.logo)">
                             }
                             <span class="classificacao-nome">{{ entry.nome }}</span>
                           </div>
@@ -674,7 +675,7 @@
               <div class="mm-sidebar-confronto">
                 <span class="mm-sidebar-logo-slot">
                   @if (c.time1.logo) {
-                    <img [src]="logoUrl(c.time1.logo, 64)" [alt]="c.time1.nome" width="18" height="13" decoding="async" loading="lazy" class="mm-sidebar-logo" (error)="$any($event.target).style.visibility='hidden'">
+                    <img [src]="logoUrl(c.time1.logo, 64)" [alt]="c.time1.nome" width="18" height="13" decoding="async" loading="lazy" class="mm-sidebar-logo" (error)="onLogoError($event, c.time1.logo, 'visibility')">
                   }
                 </span>
                 <span class="mm-sidebar-time" [class.mm-sidebar-winner]="c.vencedor === 'time1'">{{ c.time1.nome }}</span>
@@ -686,7 +687,7 @@
                 <span class="mm-sidebar-time mm-sidebar-time--right" [class.mm-sidebar-winner]="c.vencedor === 'time2'">{{ c.time2.nome }}</span>
                 <span class="mm-sidebar-logo-slot">
                   @if (c.time2.logo) {
-                    <img [src]="logoUrl(c.time2.logo, 64)" [alt]="c.time2.nome" width="18" height="13" decoding="async" loading="lazy" class="mm-sidebar-logo" (error)="$any($event.target).style.visibility='hidden'">
+                    <img [src]="logoUrl(c.time2.logo, 64)" [alt]="c.time2.nome" width="18" height="13" decoding="async" loading="lazy" class="mm-sidebar-logo" (error)="onLogoError($event, c.time2.logo, 'visibility')">
                   }
                 </span>
               </div>
@@ -736,7 +737,7 @@
                     <td class="col-time">
                       <div class="col-time-inner">
                         @if (entry.logo) {
-                          <img [src]="logoUrl(entry.logo, 64)" [alt]="entry.nome" width="18" height="18" decoding="async" loading="lazy" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                          <img [src]="logoUrl(entry.logo, 64)" [alt]="entry.nome" width="18" height="18" decoding="async" loading="lazy" class="classificacao-logo" (error)="onLogoError($event, entry.logo)">
                         }
                         <span class="classificacao-nome">{{ entry.nome }}</span>
                       </div>

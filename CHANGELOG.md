@@ -15,7 +15,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ### Corrigido
 
-- Espaço mínimo reservado para carregamento da agenda e do título da partida, reduzindo deslocamentos do rodapé e do conteúdo durante a resposta da API.
+- **Revisão do QA E1**: removida a altura mínima de uma viewport do main, restaurando altura e rodapé das páginas curtas; rodapé revelado após o loading no layout flex existente. Reserva do título da partida limitada ao carregamento, sem linhas extras após carregar ou no 404. Logos tentam a URL original uma vez antes de ocultar em caso de falha do combiner.
 
 ---
 
