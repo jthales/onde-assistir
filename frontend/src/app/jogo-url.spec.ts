@@ -1,4 +1,4 @@
-import { buildJogoSlug, buildJogoUrl, findJogoBySlug, JogoSlug } from './jogo-url';
+import { buildJogoSlug, buildJogoUrl, buildJogoUrlMap, findJogoBySlug, JogoSlug } from './jogo-url';
 
 describe('Slugs de partidas', () => {
   const jogo: JogoSlug = {
@@ -8,6 +8,14 @@ describe('Slugs de partidas', () => {
   it('mantém o permalink existente sem colisão, mesmo com duplicatas ou outras datas', () => {
     expect(buildJogoSlug(jogo, [jogo, { ...jogo }, { ...jogo, data: '2026-10-21' }]))
       .toBe('sao-paulo-x-atletico-mg-2026-10-20');
+  });
+
+  it('indexa URLs em paridade com os permalinks, incluindo colisões e outras datas', () => {
+    const jogos = [jogo, { ...jogo, campeonato: 'Libertadores' }, { ...jogo, data: '2026-10-21' },
+      { ...jogo, campeonato: 'Série A' }, { ...jogo, campeonato: 'Serie A' }];
+    const urls = buildJogoUrlMap(jogos);
+    for (const partida of jogos) expect(urls.get(partida)).toBe(buildJogoUrl(partida, jogos));
+    expect(new Set(urls.values()).size).toBe(jogos.length);
   });
 
   it('desambigua todos os campeonatos colidentes independentemente da ordem', () => {

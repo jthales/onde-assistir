@@ -105,6 +105,12 @@ body {
 
 .hero-title-accent { color: #86efac; }
 
+// Reserva o título antes da resposta da API, inclusive quando o confronto quebra linha.
+#partida-titulo {
+  min-height: 3.15em;
+  @media (min-width: 768px) { min-height: 2.1em; }
+}
+
 .hero-subtitle {
   margin-top: 0.75rem;
   color: rgba(255,255,255,0.7);
@@ -227,6 +233,8 @@ body {
   z-index: 2;
   flex: 1;
   box-sizing: border-box;
+  // Reserva a agenda desde o primeiro frame e mantém o rodapé fora da primeira dobra.
+  min-height: 100svh;
 }
 
 // ── Times Picker ─────────────────────────────────────────────────────────────

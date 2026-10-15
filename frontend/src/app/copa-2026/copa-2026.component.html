@@ -92,7 +92,7 @@
                 <div class="grupo-jogo-confronto">
                   <div class="grupo-jogo-time">
                     @if (jogo.logoMandante) {
-                      <img [src]="jogo.logoMandante" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                      <img [src]="logoUrl(jogo.logoMandante, 64)" width="20" height="20" decoding="async" loading="lazy" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
                     }
                     <span>{{ translateCountry(jogo.timeMandante) }}</span>
                   </div>
@@ -105,7 +105,7 @@
                   }
                   <div class="grupo-jogo-time">
                     @if (jogo.logoVisitante) {
-                      <img [src]="jogo.logoVisitante" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                      <img [src]="logoUrl(jogo.logoVisitante, 64)" width="20" height="20" decoding="async" loading="lazy" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
                     }
                     <span>{{ translateCountry(jogo.timeVisitante) }}</span>
                   </div>
@@ -154,7 +154,7 @@
                           <td class="col-sele">
                             <div class="col-time-inner">
                               @if (entry.logo) {
-                                <img [src]="entry.logo" [alt]="entry.nome" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                                <img [src]="logoUrl(entry.logo, 64)" [alt]="entry.nome" width="20" height="20" decoding="async" loading="lazy" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
                               }
                               <span class="classificacao-nome">{{ entry.nome }}</span>
                             </div>
@@ -199,7 +199,7 @@
                           <div class="grupo-jogo-confronto">
                             <div class="grupo-jogo-time">
                               @if (jogo.logoMandante) {
-                                <img [src]="jogo.logoMandante" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                                <img [src]="logoUrl(jogo.logoMandante, 64)" width="20" height="20" decoding="async" loading="lazy" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
                               }
                               <span>{{ translateCountry(jogo.timeMandante) }}</span>
                             </div>
@@ -212,7 +212,7 @@
                             }
                             <div class="grupo-jogo-time">
                               @if (jogo.logoVisitante) {
-                                <img [src]="jogo.logoVisitante" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
+                                <img [src]="logoUrl(jogo.logoVisitante, 64)" width="20" height="20" decoding="async" loading="lazy" class="classificacao-logo" (error)="$any($event.target).style.display='none'">
                               }
                               <span>{{ translateCountry(jogo.timeVisitante) }}</span>
                             </div>
@@ -256,7 +256,7 @@
               <div class="mm-teams">
                 <div class="mm-team mm-team--left" [class.mm-team--winner]="c.vencedor === 'time1'">
                   @if (c.time1.logo) {
-                    <img [src]="c.time1.logo" [alt]="translateCountry(c.time1.nome)" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
+                    <img [src]="logoUrl(c.time1.logo, 108)" [alt]="translateCountry(c.time1.nome)" width="36" height="36" decoding="async" loading="lazy" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
                   }
                   <span class="mm-team-name">{{ translateCountry(c.time1.nome) }}</span>
                 </div>
@@ -271,7 +271,7 @@
                 </div>
                 <div class="mm-team mm-team--right" [class.mm-team--winner]="c.vencedor === 'time2'">
                   @if (c.time2.logo) {
-                    <img [src]="c.time2.logo" [alt]="translateCountry(c.time2.nome)" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
+                    <img [src]="logoUrl(c.time2.logo, 108)" [alt]="translateCountry(c.time2.nome)" width="36" height="36" decoding="async" loading="lazy" class="mm-team-logo" (error)="$any($event.target).style.display='none'">
                   }
                   <span class="mm-team-name">{{ translateCountry(c.time2.nome) }}</span>
                 </div>

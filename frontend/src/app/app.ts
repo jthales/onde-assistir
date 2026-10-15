@@ -14,7 +14,8 @@ import { translateCountry } from './copa-2026/country-names';
 import { Copa2026Service } from './services/copa-2026.service';
 import { APP_VERSION } from './version';
 import { JogoCardComponent } from './components/jogo-card/jogo-card.component';
-import { buildJogoSlug, buildJogoUrl, findJogoBySlug, slugify } from './jogo-url';
+import { buildJogoSlug, buildJogoUrl, buildJogoUrlMap, findJogoBySlug, slugify } from './jogo-url';
+import { logoUrl } from './utils/logo-url';
 import { FavoritosService } from './services/favoritos.service';
 import { FavoritoButtonComponent } from './components/favorito-button/favorito-button.component';
 import { lerListaLocal } from './services/local-storage';
@@ -41,6 +42,8 @@ function analyticsTrack(event: string, params: Record<string, string | number | 
 })
 export class App implements OnInit, OnDestroy {
   jogos = signal<Jogo[]>([]);
+  private readonly jogosUrls = computed(() => buildJogoUrlMap(this.jogos()));
+  readonly logoUrl = logoUrl;
   loading = signal(true);
   error = signal<string | null>(null);
   readonly slugJogo = signal<string | null>(
@@ -756,7 +759,7 @@ ${this.BASE_URL}${url}`;
   private readonly BASE_URL = 'https://ondeassistir.space';
 
   jogoUrl(jogo: Jogo): string {
-    return buildJogoUrl(jogo, this.jogos());
+    return this.jogosUrls().get(jogo) ?? buildJogoUrl(jogo, this.jogos());
   }
 
   private atualizarMetaPagina(title: string, description: string, path: string): void {

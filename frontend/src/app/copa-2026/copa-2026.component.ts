@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Copa2026Service } from '../services/copa-2026.service';
 import { ClassificacaoEntry, ClassificacaoResponse, Jogo, Placar } from '../models/jogo';
 import { translateCountry } from './country-names';
+import { logoUrl } from '../utils/logo-url';
 
 function formatarData(dataIso: string): string {
   const hoje = new Date();
@@ -25,6 +26,7 @@ interface Regressiva { dias: number; horas: number; minutos: number; segundos: n
   styleUrl: './copa-2026.component.scss',
 })
 export class Copa2026Component implements OnInit, OnDestroy {
+  readonly logoUrl = logoUrl;
   loading = signal(true);
   erro = signal<string | null>(null);
   classificacao = signal<ClassificacaoResponse | null>(null);

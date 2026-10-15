@@ -6,6 +6,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.4.1] — 2026-10-15
+
+### Alterado
+
+- Logos ESPN servidos pelo combiner em resolução proporcional ao tamanho exibido, com dimensões explícitas, decodificação assíncrona e carregamento tardio nas listas; três primeiros cards da agenda mantidos sem lazy.
+- URLs das partidas memoizadas por lista para evitar recalcular slugs a cada ciclo de filtros, preservando permalinks e desambiguação.
+
+### Corrigido
+
+- Espaço mínimo reservado para carregamento da agenda e do título da partida, reduzindo deslocamentos do rodapé e do conteúdo durante a resposta da API.
+
+---
+
 ## [1.4.0] — 2026-10-15
 
 ### Adicionado

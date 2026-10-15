@@ -35,7 +35,7 @@
     <div class="time-col">
       <div class="time-logo">
         @if (jogo.logoMandante) {
-          <img [src]="jogo.logoMandante" [alt]="translateCountry(jogo.timeMandante)" class="logo-img" (error)="$any($event.target).style.display='none'">
+          <img [src]="logoUrl(jogo.logoMandante, 144)" [alt]="translateCountry(jogo.timeMandante)" width="44" height="44" decoding="async" [attr.loading]="logosLazy() ? 'lazy' : 'eager'" class="logo-img" (error)="$any($event.target).style.display='none'">
         } @else {
           <span class="logo-initials">{{ getInitials(jogo.timeMandante) }}</span>
         }
@@ -57,7 +57,7 @@
     <div class="time-col visitante-col">
       <div class="time-logo">
         @if (jogo.logoVisitante) {
-          <img [src]="jogo.logoVisitante" [alt]="translateCountry(jogo.timeVisitante)" class="logo-img" (error)="$any($event.target).style.display='none'">
+          <img [src]="logoUrl(jogo.logoVisitante, 144)" [alt]="translateCountry(jogo.timeVisitante)" width="44" height="44" decoding="async" [attr.loading]="logosLazy() ? 'lazy' : 'eager'" class="logo-img" (error)="$any($event.target).style.display='none'">
         } @else {
           <span class="logo-initials">{{ getInitials(jogo.timeVisitante) }}</span>
         }
