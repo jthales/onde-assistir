@@ -28,7 +28,7 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 - [ ] SSR/prerender — sem `@angular/ssr`; SPA (compensado por `/og` no backend e metas dinâmicas)
 - [x] Sitemap dinâmico e canonical — v1.3.0: `buildSitemapXml` (`backend/src/sitemap.ts`) inclui home, campeonatos, times e partidas futuras (`/jogo/<slug>`); canonical desde a carga inicial. Evidências: Argus (12 testes backend, paridade de slugs, 20.000 instantes BRT) e produção: 84 URLs únicas, 11 `/jogo/`, paridade 11/11 com os cards, `/ao-vivo` e `/copa-2026` com canonical/og:url próprios
 - [~] Dados estruturados — `WebSite` (`index.html:46`) e `SportsEvent` dinâmico (`atualizarSportsEvents`, `app.ts`); falta validar no Rich Results Test
-- [ ] Core Web Vitals — não medido
+- [~] Core Web Vitals — v1.4.1 (E1): CLS home 0,21→0,00, /jogo 0,16→0,005, /campeonato 0,26→0,016 e bytes de imagem −80/−86% (logos via combiner da ESPN + width/height + lazy + reserva de layout). Validado em produção (Argus, mobile 3G/CPU 4×). Pendente: INP de /favoritos mobile 320 ms (Ruim), TBT 200–350 ms (bundle + AdSense), cold start do backend (~1,5 s MISS), App só no cliente (FCP ~1,65 s mobile frio)
 - [~] Monitoramento — `@vercel/analytics` com eventos (`app.ts:26,544,587`); sem monitor de erros (Sentry/Datadog)
 
 ## Fase 5 — Diferenciais
@@ -47,7 +47,7 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 ## Dívida técnica registrada (pós-C2)
 - ~~Colisão de slug~~ resolvida na v1.3.0 (sufixo do campeonato) e título/h1 com campeonato na v1.3.1
 - Ao abrir `/copa-2026` a frio e clicar em Voltar, URL e meta voltam à home mas o h1 do hero permanece "Copa do Mundo 2026" (pré-existente)
-- Cold start do backend: o usuário vê só "Carregando jogos" por muito tempo
+- Cold start do backend: 1ª requisição com cache de borda expirado ~1,5 s (MISS) e usuário vê só "Carregando jogos"; /api/odds até 1,6 s empurra o card (decisão pendente: keep-warm/SWR, AdSense após load, placeholder de odds, preload do fetch)
 - `STREAMING_URLS` e links oficiais ainda sem auditoria de cobertura por plataforma
 
 - "Ver ao vivo" com 30px de altura (< 44px de alvo de toque)
@@ -62,3 +62,4 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 - 2026-10-15: C3 (SEO das partidas, v1.3.0) publicado; primeiro deploy de backend da frente. Sitemap e frontend validados em produção.
 - 2026-10-15: patch 1.3.1 publicado (título com campeonato nas colisões, sitemap sem documentos incompletos, /copa-2026 sem SportsEvent doméstico); aprovado pelo Argus (63 testes front, 13 back).
 - 2026-10-15: Lote D1 (favoritos, v1.4.0) publicado após QA do Argus com 1 rodada de correção (delta de 44px eliminado, favoritos válidos preservados, estrela estável).
+- 2026-10-15: baseline de Core Web Vitals (Argus, 80 execuções) e lote E1 (v1.4.1, performance de imagens e CLS) publicado após QA com 1 rodada de correção (min-height 100svh removido, fallback de logo); smoke em produção aprovado.
