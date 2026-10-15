@@ -589,6 +589,12 @@ export class App implements OnInit, OnDestroy {
     });
   }
 
+  tentarNovamente(): void {
+    this.error.set(null);
+    this.loading.set(true);
+    this.carregarDados();
+  }
+
   recarregar(): void {
     if (this.atualizacaoDisponivel()) {
       window.location.reload();
@@ -1039,6 +1045,7 @@ export class App implements OnInit, OnDestroy {
 
   formatarData(dataIso: string): string {
     if (this.eHoje(dataIso)) return 'Hoje';
+    if (dataIso === this.dataBrt(1)) return 'Amanhã';
     const data = new Date(dataIso + 'T00:00:00');
     const dias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
     const diaSemana = dias[data.getDay()];
@@ -1047,11 +1054,16 @@ export class App implements OnInit, OnDestroy {
     return `${diaSemana}, ${dia}/${mes}`;
   }
 
+  /** Data (YYYY-MM-DD) em America/Sao_Paulo, com deslocamento opcional em dias. */
+  private dataBrt(offsetDias = 0): string {
+    const base = new Date(Date.now() + offsetDias * 24 * 60 * 60 * 1000);
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(base);
+  }
+
   eHoje(dataIso: string): boolean {
-    // Compara com data de hoje no fuso BRT (UTC-3)
-    const hoje = new Date();
-    const brtHoje = new Date(hoje.getTime() - 3 * 60 * 60 * 1000);
-    return dataIso === brtHoje.toISOString().slice(0, 10);
+    return dataIso === this.dataBrt();
   }
 
   eAoVivo(jogo: Jogo): boolean {
