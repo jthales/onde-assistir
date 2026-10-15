@@ -6,6 +6,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.1.1] — 2026-10-15
+
+### Corrigido
+
+- **App derrubado em navegadores sem suporte a FCM** (ex.: iOS Safari fora do PWA): o Firebase Messaging era inicializado no construtor do serviço de push e lançava erro. Agora usa `isSupported()` e inicializa sob demanda; sem suporte, as notificações ficam desativadas e o resto do app funciona.
+- **`getToken` podia ficar pendente para sempre** quando não havia service worker registrado; agora expira em 5 s e retorna `null`.
+
+### Alterado
+
+- **Testes automatizados**: `ng test` voltou a passar (18 testes) cobrindo carregamento, erro/retry, busca, filtros combinados, datas em America/Sao_Paulo (incluindo virada de dia UTC), WhatsApp e o serviço de push.
+
+---
+
 ## [1.1.0] — 2026-10-15
 
 ### Adicionado

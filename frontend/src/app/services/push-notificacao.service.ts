@@ -1,34 +1,47 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { initializeApp, getApps } from 'firebase/app';
-import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
+import { getMessaging, getToken, isSupported, onMessage, Messaging } from 'firebase/messaging';
 import { environment } from '../../environments/environment';
+
+const SW_READY_TIMEOUT_MS = 5000;
 
 @Injectable({ providedIn: 'root' })
 export class PushNotificacaoService {
   // Inicialização lazy e tolerante: em navegadores sem suporte a FCM (ex.: iOS Safari fora do PWA)
   // getMessaging() lança erro — isso não pode derrubar o app inteiro na criação do serviço.
-  private messagingInstance: Messaging | null | undefined;
+  // isSupported() é consultado antes para não disparar a rejeição interna do SDK.
+  private messagingPromise: Promise<Messaging | null> | null = null;
 
-  private get messaging(): Messaging | null {
-    if (this.messagingInstance === undefined) {
-      try {
-        const app = getApps().length ? getApps()[0] : initializeApp(environment.firebaseConfig);
-        this.messagingInstance = getMessaging(app);
-      } catch {
-        this.messagingInstance = null;
-      }
+  private getMessagingSafe(): Promise<Messaging | null> {
+    if (!this.messagingPromise) {
+      this.messagingPromise = (async () => {
+        try {
+          if (!(await isSupported())) return null;
+          const app = getApps().length ? getApps()[0] : initializeApp(environment.firebaseConfig);
+          return getMessaging(app);
+        } catch {
+          return null;
+        }
+      })();
     }
-    return this.messagingInstance;
+    return this.messagingPromise;
   }
 
   constructor(private http: HttpClient) {}
 
   async getToken(): Promise<string | null> {
-    const messaging = this.messaging;
+    const messaging = await this.getMessagingSafe();
     if (!messaging) return null;
+    if (typeof navigator === 'undefined' || !navigator.serviceWorker) return null;
     try {
-      const sw = await navigator.serviceWorker.ready;
+      // `serviceWorker.ready` nunca resolve se não houver SW registrado (ex.: ng serve);
+      // sem timeout o getToken ficaria pendente para sempre.
+      const sw = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), SW_READY_TIMEOUT_MS)),
+      ]);
+      if (!sw) return null;
       return await getToken(messaging, {
         vapidKey: environment.firebaseConfig.vapidKey,
         serviceWorkerRegistration: sw,
@@ -39,8 +52,14 @@ export class PushNotificacaoService {
   }
 
   onMessage(handler: (payload: any) => void): void {
-    const messaging = this.messaging;
-    if (messaging) onMessage(messaging, handler);
+    void this.getMessagingSafe().then((messaging) => {
+      if (!messaging) return;
+      try {
+        onMessage(messaging, handler);
+      } catch {
+        // listener indisponível neste navegador: ignora silenciosamente
+      }
+    });
   }
 
   salvarSubscricao(fcmToken: string, times: string[], jogos: string[]): void {

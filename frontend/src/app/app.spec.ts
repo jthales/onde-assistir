@@ -137,6 +137,52 @@ describe('App', () => {
     expect(app.eHoje(dataBrt(1))).toBe(false);
   });
 
+  it('combina busca, data e plataforma e mostra estado vazio no DOM', () => {
+    responder();
+    app.busca.set('flamengo');
+    app.filtroData.set(dataBrt(5));
+    app.filtroPlataforma.set('SporTV');
+    expect(app.jogosFiltrados().map(j => j.timeMandante)).toEqual(['Flamengo']);
+    app.filtroPlataforma.set('ESPN');
+    fixture.detectChanges();
+    expect(app.jogosFiltrados()).toEqual([]);
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelectorAll('.jogo-card').length).toBe(0);
+    expect(el.querySelector('.state-text')?.textContent).toContain('Nenhum jogo');
+  });
+
+  it('busca e filtros via DOM atualizam a lista e o aria-pressed do chip', () => {
+    responder();
+    const el = fixture.nativeElement as HTMLElement;
+    const input = el.querySelector('.descoberta-busca') as HTMLInputElement;
+    input.value = 'corinthians';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(el.querySelectorAll('.jogo-card').length).toBe(1);
+    (el.querySelector('.descoberta-limpar') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(el.querySelectorAll('.jogo-card').length).toBe(3);
+    const todos = el.querySelector('.time-chip--todos') as HTMLButtonElement;
+    expect(todos.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('eHoje respeita America/Sao_Paulo na virada de dia UTC (23:30 BRT)', () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-10-16T02:30:00Z')); // 23:30 de 15/10 em BRT
+      expect(app.eHoje('2026-10-15')).toBe(true);
+      expect(app.eHoje('2026-10-16')).toBe(false);
+      expect(app.formatarData('2026-10-16')).toBe('Amanhã');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('WhatsApp usa "a confirmar" quando não há canal nem streaming', () => {
+    const texto = decodeURIComponent(app.buildWhatsappUrl(jogo({ canal: [], streaming: [] })).split('?text=')[1]);
+    expect(texto).toContain('Onde assistir: a confirmar');
+  });
+
   it('gera link do WhatsApp com jogo, canais e link do site', () => {
     const url = app.buildWhatsappUrl(JOGOS[0]);
     expect(url.startsWith('https://wa.me/?text=')).toBe(true);
