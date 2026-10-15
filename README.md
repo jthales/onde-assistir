@@ -5,20 +5,20 @@ Aplicação web que exibe os jogos de futebol da semana no Brasil com informaç�
 ## Como funciona
 
 ```
-ESPN API ──► populate.ts ──► Firestore ──► Backend API ──► Frontend Angular
+ESPN API ──► populate.ts ──► MongoDB ──► Backend API ──► Frontend Angular
                + Gemini
              (transmissões)
 ```
 
-1. **`npm run populate`** busca os fixtures reais da ESPN, enriquece com informações de transmissão via Gemini e salva no Firestore.
-2. O **backend** serve os dados do Firestore via `GET /api/jogos`.
+1. **`npm run populate`** busca os fixtures reais da ESPN, enriquece com informações de transmissão via Gemini e salva no MongoDB.
+2. O **backend** serve os dados do MongoDB via `GET /api/jogos`.
 3. O **frontend** Angular exibe os jogos com filtro visual por time.
 
 ## Stack
 
 - **Frontend:** Angular 21 (standalone, signals)
 - **Backend:** Node.js + Express + TypeScript
-- **Banco de dados:** Firebase Firestore
+- **Banco de dados:** MongoDB (jogos) + Firebase Cloud Messaging (push)
 - **Dados de jogos:** ESPN public API
 - **Transmissões:** Google Gemini (`gemini-3.1-flash-lite-preview`)
 
@@ -26,8 +26,8 @@ ESPN API ──► populate.ts ──► Firestore ──► Backend API ──�
 
 ### Pré-requisitos
 
-- Node.js 18+
-- Conta no Firebase (Firestore)
+- Node.js 20.19+ (veja `backend/.nvmrc`)
+- Banco MongoDB (`MONGODB_URI`) e projeto Firebase (push)
 - Chave de API do Google Gemini
 
 ### Backend
@@ -37,12 +37,9 @@ cd backend
 npm install
 ```
 
-Crie o arquivo `.env`:
-```env
-GEMINI_API_KEY=sua_chave_aqui
-```
-
-Adicione o arquivo `serviceAccount.json` na raiz do `backend/` com as credenciais do Firebase Admin SDK.
+Copie `backend/.env.example` para `backend/.env` e preencha `MONGODB_URI` (obrigatório para `/api/jogos`),
+`GEMINI_API_KEY` (populate com Gemini) e as variáveis `FIREBASE_*` (apenas rotas de push).
+Sem as variáveis do Firebase a API sobe normalmente; só as rotas de push retornam erro.
 
 ### Frontend
 
@@ -53,7 +50,7 @@ npm install
 
 ## Rodando localmente
 
-### 1. Popular o Firestore com os jogos da semana
+### 1. Popular o banco com os jogos da semana
 
 ```bash
 cd backend
@@ -80,7 +77,7 @@ ng serve
 
 | Comando | Descrição |
 |---|---|
-| `backend: npm run populate` | Busca jogos na ESPN + transmissões no Gemini e salva no Firestore |
+| `backend: npm run populate` | Busca jogos na ESPN + transmissões no Gemini e salva no MongoDB |
 | `backend: npm start` | Inicia o servidor Express |
 | `frontend: ng serve` | Inicia o servidor de desenvolvimento Angular |
 | `frontend: ng build` | Gera o build de produção |

@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { Jogo } from './types';
-import { messaging } from './firebase';
+import { getMessaging } from './firebase';
 import { getDb } from './mongodb';
 import { espnScoreboardUrlForLeague, espnCopaUrl, ESPN_LEAGUES, TEAM_NAME_MAP, TEAM_ESPN_ID_MAP, LIGA_SLUG_TO_ESPN, LIGA_SLUG_LABEL } from './constants';
 import copa2026Router from './copa-2026-routes';
@@ -93,7 +93,7 @@ app.post('/api/test-push', async (req, res) => {
     if (subscDocs.length === 0) { res.json({ ok: true, enviados: 0, msg: 'Nenhum assinante cadastrado' }); return; }
     const tokens = subscDocs.map(d => d['fcmToken'] as string).filter(Boolean);
     if (tokens.length === 0) { res.json({ ok: true, enviados: 0 }); return; }
-    const result = await messaging.sendEachForMulticast({
+    const result = await getMessaging().sendEachForMulticast({
       tokens,
       notification: {
         title: titulo ?? '⚽ GOL! (teste)',
@@ -204,7 +204,7 @@ async function dispararNotificacoesGol(placares: any[]): Promise<void> {
 
       const timeQueGolou = p.placarMandante > (prev?.mandante ?? 0) ? p.timeMandante : p.timeVisitante;
       const body = `${p.timeMandante} ${p.placarMandante} x ${p.placarVisitante} ${p.timeVisitante}`;
-      const result = await messaging.sendEachForMulticast({
+      const result = await getMessaging().sendEachForMulticast({
         tokens: uniqueTokens,
         notification: {
           title: `⚽ GOL! ${timeQueGolou}`,
