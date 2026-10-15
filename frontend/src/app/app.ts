@@ -14,7 +14,7 @@ import { translateCountry } from './copa-2026/country-names';
 import { Copa2026Service } from './services/copa-2026.service';
 import { APP_VERSION } from './version';
 import { JogoCardComponent } from './components/jogo-card/jogo-card.component';
-import { buildJogoUrl, findJogoBySlug, slugify } from './jogo-url';
+import { buildJogoSlug, buildJogoUrl, findJogoBySlug, slugify } from './jogo-url';
 
 interface Regressiva { dias: number; horas: number; minutos: number; segundos: number }
 
@@ -50,9 +50,10 @@ export class App implements OnInit, OnDestroy {
     if (this.loading()) return 'Carregando partida';
     if (this.error()) return 'Não foi possível carregar a partida';
     const jogo = this.jogoSelecionado();
-    return jogo
-      ? `${translateCountry(jogo.timeMandante)} x ${translateCountry(jogo.timeVisitante)}`
-      : 'Partida não encontrada';
+    if (!jogo) return 'Partida não encontrada';
+    const campeonato = this.slugJogo() !== buildJogoSlug(jogo)
+      ? ` (${jogo.campeonato || 'Sem campeonato'})` : '';
+    return `${translateCountry(jogo.timeMandante)} x ${translateCountry(jogo.timeVisitante)}${campeonato}`;
   });
   timeSelecionado = signal<string>('');
   filtroAoVivo = signal(false);
@@ -750,6 +751,7 @@ ${this.BASE_URL}${url}`;
   private atualizarMetaCopa(): void {
     this.atualizarMetaPagina('Copa do Mundo 2026 — Onde Assistir',
       'Jogos, classificação e onde assistir à Copa do Mundo 2026 no Brasil.', '/copa-2026');
+    this.atualizarSportsEvents([]);
   }
 
   formatarDataPartida(jogo: Jogo): string {
@@ -817,7 +819,7 @@ ${this.BASE_URL}${url}`;
   private atualizarSportsEvents(jogos: Jogo[]): void {
     const existing = this.document.querySelector<HTMLScriptElement>('script[data-seo="sports-events"]');
     if (existing) existing.remove();
-    if (jogos.length === 0) return;
+    if (this.isCopa2026Route() || jogos.length === 0) return;
     const graph = jogos.map(jogo => {
       const hora = jogo.hora && jogo.hora !== '00:00' ? jogo.hora : '00:00';
       const event: Record<string, unknown> = {

@@ -17,8 +17,12 @@ export function buildSitemapXml(jogos: readonly JogoSlug[], frontendUrl: string,
   const hoje = dataBrt(agora);
   const times = new Set<string>();
   for (const jogo of jogos) {
-    if (jogo.timeMandante) times.add(slugify(jogo.timeMandante));
-    if (jogo.timeVisitante) times.add(slugify(jogo.timeVisitante));
+    if (typeof jogo.timeMandante !== 'string' || !jogo.timeMandante.trim()
+      || typeof jogo.timeVisitante !== 'string' || !jogo.timeVisitante.trim()) continue;
+    for (const nome of [jogo.timeMandante, jogo.timeVisitante]) {
+      const slug = slugify(nome);
+      if (slug) times.add(slug);
+    }
   }
   const futuros = jogos.filter(jogo => jogo.timeMandante && jogo.timeVisitante
     && /^\d{4}-\d{2}-\d{2}$/.test(jogo.data) && jogo.data >= hoje);

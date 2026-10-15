@@ -114,3 +114,21 @@ test('sitemap vazio preserva URLs estáticas e escapa conteúdo XML', () => {
   assert.ok(xml.includes('a&amp;b/'));
   assert.equal(entradas(xml)[0].loc, 'https://example.test/a&b/');
 });
+
+test('sitemap ignora times de documentos incompletos e preserva URLs históricas válidas', () => {
+  const incompletos = [
+    { ...jogo, timeMandante: '', timeVisitante: 'Sem Mandante' },
+    { ...jogo, timeMandante: 'Sem Visitante', timeVisitante: '' },
+    { ...jogo, timeMandante: '  ', timeVisitante: 'Outro Incompleto' },
+    { ...jogo, timeMandante: 'Incompleto Também', timeVisitante: '\t' },
+  ];
+  const historicos = [
+    { ...jogo, data: '2026-01-01', timeMandante: 'Grêmio', timeVisitante: 'São Paulo' },
+    { ...jogo, data: '2026-01-01', timeMandante: 'A&B FC', timeVisitante: 'C/A' },
+  ];
+  const urls = entradas(buildSitemapXml([...incompletos, ...historicos, jogo], origem, instante))
+    .filter(item => item.priority === '0.8').map(item => item.loc);
+  assert.deepEqual(urls, ['ab-fc', 'atletico-mg', 'ca', 'gremio', 'sao-paulo'].map(slug => origem + '/' + slug));
+  assert.ok(!urls.includes(origem + '/sem-mandante'));
+  assert.ok(!urls.includes(origem + '/sem-visitante'));
+});

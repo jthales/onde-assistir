@@ -283,6 +283,57 @@ describe('Página individual da partida', () => {
     expect(view.nativeElement.querySelector('.btn-detalhes')?.getAttribute('href')).toBe(caminho + '-libertadores');
   });
 
+  it('inclui o campeonato no title, og:title e h1 somente quando a URL tem sufixo', () => {
+    const view = abrir(caminho + '-libertadores');
+    responder([partida, { ...partida, campeonato: 'Libertadores' }]);
+    expect(location.pathname).toBe(caminho + '-libertadores');
+    expect(view.nativeElement.querySelector('h1')?.textContent).toBe('São Paulo x Atlético-MG (Libertadores)');
+    expect(document.title).toBe('São Paulo x Atlético-MG (Libertadores) — Onde Assistir');
+    expect(document.querySelector('meta[property="og:title"]')?.getAttribute('content')).toBe(document.title);
+  });
+
+  it.each([false, true])('preserva title/h1 sem sufixo, inclusive no alias legado (colisão: %s)', colisao => {
+    const view = abrir();
+    responder(colisao ? [partida, { ...partida, campeonato: 'Libertadores' }] : [partida]);
+    expect(location.pathname).toBe(caminho);
+    expect(view.nativeElement.querySelector('h1')?.textContent).toBe('São Paulo x Atlético-MG');
+    expect(document.title).toBe('São Paulo x Atlético-MG — Onde Assistir');
+    expect(document.querySelector('meta[property="og:title"]')?.getAttribute('content')).toBe(document.title);
+  });
+
+  it('não publica SportsEvent doméstico no acesso direto à Copa após carregar os jogos da home', () => {
+    abrir('/copa-2026');
+    responder();
+    expect(document.querySelector('script[data-seo="sports-events"]')).toBeNull();
+    fixture!.componentInstance.recarregar();
+    responder();
+    expect(document.querySelector('script[data-seo="sports-events"]')).toBeNull();
+  });
+
+  it('limpa SportsEvent ao entrar na Copa e preserva sua geração na home e em ao-vivo', () => {
+    const view = abrir('/');
+    responder();
+    const eventos = () => {
+      const script = document.querySelector('script[data-seo="sports-events"]');
+      return script ? JSON.parse(script.textContent!)['@graph'] : [];
+    };
+    expect(eventos()).toHaveLength(jogos.length);
+    view.componentInstance.navegarParaCampeonato('Copa do Mundo 2026');
+    responder();
+    expect(document.querySelector('script[data-seo="sports-events"]')).toBeNull();
+    view.componentInstance.voltarParaHome();
+    view.detectChanges();
+    expect(eventos()).toHaveLength(jogos.length);
+    const placar: Placar = {
+      timeMandante: partida.timeMandante, timeVisitante: partida.timeVisitante, data: partida.data,
+      status: 'em-andamento', placarMandante: 0, placarVisitante: 0, gols: [],
+    };
+    view.componentInstance.placares.set(new Map([[`${partida.data}_${partida.timeMandante}_${partida.timeVisitante}`, placar]]));
+    view.componentInstance.toggleFiltroAoVivo();
+    expect(eventos()).toHaveLength(1);
+    expect(eventos()[0].name).toBe('São Paulo x Atlético-MG');
+  });
+
   it.each([
     ['/ao-vivo', 'Ao Vivo — Onde Assistir'],
     ['/copa-2026', 'Copa do Mundo 2026 — Onde Assistir'],

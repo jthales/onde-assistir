@@ -6,6 +6,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.3.1] — 2026-10-15
+
+### Corrigido
+
+- Campeonato incluído no title, og:title e h1 das partidas acessadas por slug desambiguado; títulos de URLs sem sufixo preservados.
+- URLs de times no sitemap geradas apenas a partir de documentos com mandante e visitante preenchidos, preservando times históricos válidos.
+- Removidos os SportsEvent da agenda doméstica em /copa-2026, inclusive na navegação interna, sem alterar os eventos da home, /ao-vivo e páginas de partidas.
+
+---
+
 ## [1.3.0] — 2026-10-15
 
 ### Adicionado
