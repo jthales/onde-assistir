@@ -516,6 +516,8 @@ export class App implements OnInit, OnDestroy {
     document.addEventListener('touchend', this.onTouchEnd, { passive: true });
 
     this.regressivaTimer = setInterval(() => this.regressiva.set(this.calcularRegressiva()), 1000);
+    // Canonical já na carga inicial (antes só era definido após navegação interna)
+    this.setCanonical(this.BASE_URL + window.location.pathname);
     this.carregarDados();
     if (this.isCopaPeriod()) {
       this.copa2026Service.getClassificacao().subscribe({

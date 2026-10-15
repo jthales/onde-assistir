@@ -5,10 +5,10 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 
 ## Fase 1 — Estabilização e experiência básica
 - [x] APIs em produção carregam — `/api/jogos` (11 jogos), `/api/placar`, `/api/copa-2026/jogos` retornam 200 (checado 2026-10-15)
-- [~] Loading / erro / sem jogos — existem os 3 estados (`app.html:428-448`); Lote A: `role=status`/`role=alert` e botão "Tentar novamente" (`tentarNovamente()`). Build OK; pendente de validação visual
-- [~] Hoje / amanhã / próximos dias — "Hoje" e (Lote A) "Amanhã" em `formatarData`; falta agrupamento/abas por dia
+- [x] Loading / erro / sem jogos — `role=status`/`role=alert` + "Tentar novamente". Validado em Chrome headless (API bloqueada → alerta+botão; após retry 11 cards)
+- [~] Hoje / amanhã / próximos dias — validado em browser: Hoje, Amanhã, Sábado 17/10…; falta agrupamento/abas por dia
 - [~] Horários America/Sao_Paulo — Lote A: `eHoje`/`dataBrt` usam `Intl` com `America/Sao_Paulo`; restam offsets `-03:00` fixos em `app.ts` (comparações de início de jogo)
-- [~] Responsividade e acessibilidade — Lote A: zoom liberado no viewport, `aria-pressed` nos filtros/chips, `aria-label`+`role=article` nos cards. Pendente: contraste, foco por teclado, leitor de tela (sem validação)
+- [~] Responsividade e acessibilidade — Lote A: zoom liberado, `aria-pressed` em todos os chips/filtros, `role=article`+`aria-label` em 11/11 cards (validado em Chrome headless 390px, sem scroll horizontal). Pendente: contraste, foco por teclado, leitor de tela
 
 ## Fase 2 — Descoberta e navegação
 - [~] Filtros — por time (chips), ao vivo, "jogos do Brasil", campeonato (`/campeonato/:slug`); faltam data e plataforma
@@ -26,7 +26,7 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 
 ## Fase 4 — SEO e crescimento
 - [ ] SSR/prerender — sem `@angular/ssr`; SPA (compensado por `/og` no backend e metas dinâmicas)
-- [x] Sitemap dinâmico e canonical — sitemap (`backend/src/index.ts:960`) e `setCanonical` em `app.ts` (corrigido: auditoria inicial errou ao dizer que não havia canonical)
+- [x] Sitemap dinâmico e canonical — sitemap (`backend/src/index.ts:960`) e `setCanonical` em `app.ts` (Lote A: canonical agora definido já na carga inicial; antes só após navegação — validado: `https://ondeassistir.space/`)
 - [~] Dados estruturados — `WebSite` (`index.html:46`) e `SportsEvent` dinâmico (`atualizarSportsEvents`, `app.ts`); falta validar no Rich Results Test
 - [ ] Core Web Vitals — não medido
 - [~] Monitoramento — `@vercel/analytics` com eventos (`app.ts:26,544,587`); sem monitor de erros (Sentry/Datadog)
@@ -46,4 +46,4 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 
 ## Log
 - 2026-10-15: Etapa 0 concluída por Athena. Hephaestus não respondeu (prompts ficam no input do Codex).
-- 2026-10-15: Lote A em `feat/ux-basico`: build OK; `ng test` falha igual na `main` (2 testes, `messaging/unsupported-browser` em jsdom) — pré-existente, não relacionado.
+- 2026-10-15: Lote A validado em Chrome headless via Puppeteer (extensão Chrome indisponível). Em `feat/ux-basico`: build OK; `ng test` falha igual na `main` (2 testes, `messaging/unsupported-browser` em jsdom) — pré-existente, não relacionado.

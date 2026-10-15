@@ -380,7 +380,7 @@
     <!-- ── Homepage ─────────────────────────────────────────────────────────── -->
     @if (!isCopaPeriod()) {
     <div class="times-picker">
-      <button class="time-chip time-chip--todos" [class.ativo]="timeSelecionado() === ''" (click)="selecionarTime('')">
+      <button class="time-chip time-chip--todos" [class.ativo]="timeSelecionado() === ''" [attr.aria-pressed]="timeSelecionado() === ''" (click)="selecionarTime('')">
         Todos os times
       </button>
       <div class="times-grid">
