@@ -6,6 +6,32 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.1.0] — 2026-10-15
+
+### Adicionado
+
+- **Busca**: campo para buscar jogos por time ou campeonato, sem diferenciar acentos nem maiúsculas.
+- **Filtros de data e canal/plataforma**: seletores com apenas as datas e os canais presentes nos jogos carregados, mais botão "Limpar filtros".
+- **Compartilhar no WhatsApp**: botão em cada card com jogo, horário, canais de transmissão e link do site.
+- **"Amanhã"** na exibição da data dos jogos (além de "Hoje").
+- **Estado de erro com "Tentar novamente"** para recarregar os jogos sem atualizar a página.
+- **Acessibilidade**: `aria-pressed` em filtros e chips de times, `aria-label`/`role="article"` nos cards, `role="status"`/`role="alert"` nos estados de carga e erro.
+- **ROADMAP.md** com o estado real das funcionalidades e `.env.example` completo (MongoDB, Firebase, `ADMIN_SECRET`).
+
+### Alterado
+
+- **Zoom liberado no mobile**: removidos `maximum-scale=1` e `user-scalable=no` do viewport.
+- **Datas em America/Sao_Paulo** calculadas via `Intl` (antes por deslocamento manual de -3h).
+- **README** atualizado: banco MongoDB, Node 20.19+ e variáveis de ambiente.
+
+### Corrigido
+
+- **Populate quebrado (`ESPN API error: 400`)**: a ESPN passou a rejeitar intervalos `dates=YYYYMMDD-YYYYMMDD`. Criado `fetchEspn`, que busca o ano e filtra pelo período, aplicado ao populate, placar, ligas e Copa 2026. Sem isso o `/api/jogos` retornava lista vazia.
+- **Backend não iniciava sem credenciais do Firebase**: a inicialização do Firebase agora é sob demanda e a falta de `MONGODB_URI` gera erro explícito.
+- **Canonical ausente na carga inicial da home**: agora é definido já ao abrir a página.
+
+---
+
 ## [1.0.3] — 2026-06-24
 
 ### Corrigido
