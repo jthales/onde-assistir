@@ -6,6 +6,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.1.2] — 2026-10-15
+
+### Alterado
+
+- Extração do card de jogo para o componente standalone `JogoCardComponent`, sem mudança visual ou de comportamento.
+
+---
+
 ## [1.1.1] — 2026-10-15
 
 ### Corrigido

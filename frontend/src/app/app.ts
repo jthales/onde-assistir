@@ -13,6 +13,7 @@ import { Copa2026Component } from './copa-2026/copa-2026.component';
 import { translateCountry } from './copa-2026/country-names';
 import { Copa2026Service } from './services/copa-2026.service';
 import { APP_VERSION } from './version';
+import { JogoCardComponent } from './components/jogo-card/jogo-card.component';
 
 interface Regressiva { dias: number; horas: number; minutos: number; segundos: number }
 
@@ -37,7 +38,7 @@ function analyticsTrack(event: string, params: Record<string, string | number | 
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, Copa2026Component],
+  imports: [CommonModule, Copa2026Component, JogoCardComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -838,31 +839,6 @@ ${this.BASE_URL}/`;
 
   private placarKey(mandante: string, visitante: string, data: string): string {
     return `${data}_${mandante}_${visitante}`;
-  }
-
-  private readonly STREAMING_URLS: Record<string, string> = {
-    'Globoplay':          'https://globoplay.globo.com',
-    'Premiere':           'https://globoplay.globo.com',
-    'SporTV':             'https://globoplay.globo.com',
-    'SporTV 2':           'https://globoplay.globo.com',
-    'SporTV 3':           'https://globoplay.globo.com',
-    'Cazé TV':            'https://www.youtube.com/cazetv',
-    'CazéTV':             'https://www.youtube.com/cazetv',
-    'Ge TV':              'https://www.youtube.com/geglobo',
-    'Paramount+':         'https://www.paramountplus.com/br',
-    'Amazon Prime Video': 'https://www.primevideo.com',
-    'Prime Video':        'https://www.primevideo.com',
-    'Disney+':            'https://www.disneyplus.com/pt-br',
-    'DAZN':               'https://www.dazn.com/pt-BR',
-    'TNT Sports':         'https://tntbrasil.com.br',
-    'ESPN':               'https://www.espn.com.br',
-    'Record':             'https://www.r7.com/ao-vivo',
-    'Record TV':          'https://www.r7.com/ao-vivo',
-    'SBT':                'https://www.sbt.com.br/ao-vivo',
-  };
-
-  getStreamingUrl(plataforma: string): string | null {
-    return this.STREAMING_URLS[plataforma] ?? null;
   }
 
   private atualizarPlacar(): void {

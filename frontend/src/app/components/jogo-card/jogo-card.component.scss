@@ -1,0 +1,555 @@
+@use '../../mixins' as *;
+
+// Mantém o card como item do grid, sem uma caixa extra no layout.
+:host { display: contents; }
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+}
+
+a, button, [role="button"] {
+  touch-action: manipulation;
+}
+
+// ── Card ─────────────────────────────────────────────────────────────────────
+
+.h3-seo {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.jogo-card {
+  @include flex-col(1rem);
+  position: relative;
+  background: #fff;
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  border: 1px solid #f1f3f5;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  min-width: 0;
+}
+
+.jogo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+.jogo-card--ao-vivo { overflow: hidden; }
+
+.barra-vivo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 16px 16px 0 0;
+}
+
+.barra-vivo::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, #16a34a, transparent);
+  animation: barra-vivo 1.8s ease-in-out infinite;
+}
+
+@keyframes barra-vivo {
+  0%   { left: -60%; }
+  100% { left: 110%; }
+}
+
+.card-top {
+  @include flex(0.5rem, flex-start, space-between);
+}
+
+.card-top-left {
+  @include flex-col(0.3rem);
+}
+
+.campeonato-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #6d28d9;
+  background: #ede9fe;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.data-hora {
+  @include flex(0.4rem);
+}
+
+.data {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.data--hoje {
+  font-weight: 700;
+  color: #1d6f42;
+}
+
+.hora {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #fff;
+  background: #1d6f42;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+}
+
+.ao-vivo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #fff;
+  background: #dc2626;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+}
+
+.ao-vivo-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  animation: pulsar 1.2s ease-in-out infinite;
+}
+
+@keyframes pulsar {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+
+.placar-ao-vivo {
+  @include flex-col(0.15rem, center);
+}
+
+.placar-encerrado .placar-numeros {
+  color: #374151;
+}
+
+.encerrado-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.placar-numeros {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
+.placar-tempo {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+// ── Gols ao vivo ─────────────────────────────────────────────────────────────
+
+.gols-section {
+  @include flex(0.5rem);
+  margin-top: -0.25rem;
+}
+
+.gols-col {
+  @include flex-col(0.2rem);
+  flex: 1;
+}
+
+.gols-col--visitante { text-align: right; }
+
+.gol-item {
+  font-size: 0.72rem;
+  color: #374151;
+  line-height: 1.3;
+}
+
+// ── Confronto ────────────────────────────────────────────────────────────────
+
+.confronto {
+  @include flex(0.5rem);
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 0.75rem 0.5rem;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.time-col {
+  @include flex-col(0.25rem, flex-start);
+  flex: 1;
+  min-width: 0;
+}
+
+.visitante-col {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.time-logo {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 0.25rem;
+}
+
+.logo-img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.logo-initials {
+  @include flex($justify: center);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #6b7280;
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+.time-nome {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #111827;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.time-label {
+  font-size: 0.65rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+}
+
+.vs-col {
+  @include flex($justify: center);
+  flex-shrink: 0;
+}
+
+.vs {
+  @include flex($justify: center);
+  font-weight: 800;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  background: #e5e7eb;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  letter-spacing: 0.05em;
+}
+
+// ── Estádio ──────────────────────────────────────────────────────────────────
+
+.estadio {
+  @include flex(0.35rem);
+  font-size: 0.78rem;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  svg { flex-shrink: 0; color: #d1d5db; }
+}
+
+// ── Onde assistir ────────────────────────────────────────────────────────────
+
+.onde-assistir {
+  @include flex-col(0.5rem);
+  border-top: 1px solid #f1f3f5;
+  padding-top: 0.875rem;
+}
+
+.onde-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+}
+
+.onde-row {
+  @include flex(0.5rem, $wrap: wrap);
+}
+
+.onde-tipo {
+  @include flex(0.25rem);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #6b7280;
+  min-width: 64px;
+  flex-shrink: 0;
+}
+
+.badges {
+  @include flex(0.35rem, $wrap: wrap);
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.badge-tv         { background: #dbeafe; color: #1d4ed8; }
+.badge-tv--link {
+  text-decoration: none;
+  cursor: pointer;
+  &::after { content: ' ↗'; font-size: 0.75em; opacity: 0.65; }
+  &:hover { filter: brightness(0.88); }
+}
+.badge-confirmar  { background: #f3f4f6; color: #9ca3af; font-weight: 400; }
+
+.badge-streaming {
+  background: #ede9fe;
+  color: #6d28d9;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.75rem;
+}
+
+.badge-streaming--link {
+  text-decoration: none;
+  cursor: pointer;
+  &::after { content: ' ↗'; font-size: 0.75em; opacity: 0.65; }
+  &:hover { filter: brightness(0.88); }
+}
+
+// ── Calendário ───────────────────────────────────────────────────────────────
+
+.calendario-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f1f3f5;
+}
+
+.btn-calendario {
+  @include flex(0.3rem);
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6d28d9;
+  text-decoration: none;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #ede9fe;
+  border-radius: 6px;
+  background: #faf5ff;
+  &:hover { background: #ede9fe; }
+}
+
+.btn-notif-jogo {
+  @include flex(0.3rem);
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-3);
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+
+  &:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+  &.ativo {
+    border-color: var(--color-primary);
+    background: var(--color-primary-muted);
+    color: var(--color-primary);
+  }
+}
+
+// ── Odds Bet365 ──────────────────────────────────────────────────────────────
+
+.odds-row {
+  @include flex(0.25rem);
+  flex-direction: column;
+  align-items: flex-start;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f1f3f5;
+}
+
+.odds-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.odds-values {
+  @include flex(0.3rem);
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.odds-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1d6f42;
+  background: #f0fdf4;
+  padding: 0.25rem 0.4rem;
+  border-radius: 5px;
+}
+
+.odds-key {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #86efac;
+  margin-right: 0.1rem;
+}
+
+.odds-sep { font-size: 0.7rem; color: #d1d5db; }
+
+@media (min-width: 480px) {
+  .time-nome { font-size: 0.8rem; }
+}
+
+@media (min-width: 768px) {
+  .jogo-card { padding: 1rem; }
+  .confronto { padding: 1rem 0.75rem; }
+}
+
+@media (min-width: 1100px) {
+  .time-nome { font-size: 0.8rem; }
+}
+
+.campeonato-badge--btn {
+  border: none;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.1s;
+
+  &:hover  { filter: brightness(0.88); transform: scale(1.05); }
+  &:active { transform: scale(0.97); }
+}
+
+@media (prefers-color-scheme: dark) {
+  // Cards de jogo
+  .jogo-card {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.45);
+  }
+  .confronto { background: #0f172a; }
+  .logo-initials {
+    background: #334155;
+    color: #94a3b8;
+  }
+  .vs {
+    background: #334155;
+    color: #94a3b8;
+  }
+  .time-nome { color: #f1f5f9; }
+  .time-label { color: #64748b; }
+
+  // Data / hora / badges de status
+  .data { color: #cbd5e1; }
+  .data--hoje { color: #22c55e; }
+  .hora { background: #15803d; }
+  .encerrado-badge {
+    background: #334155;
+    color: #94a3b8;
+  }
+  .campeonato-badge {
+    background: #2e1065;
+    color: #a78bfa;
+  }
+
+  // Placar
+  .placar-numeros { color: #f1f5f9; }
+  .placar-encerrado .placar-numeros { color: #cbd5e1; }
+  .placar-tempo { color: #94a3b8; }
+
+  // Gols
+  .gol-item { color: #cbd5e1; }
+
+  // Onde assistir
+  .onde-assistir { border-top-color: #334155; }
+  .onde-tipo { color: #94a3b8; }
+  .onde-label { color: #64748b; }
+  .badge-tv {
+    background: #1e3a5f;
+    color: #60a5fa;
+  }
+  .badge-confirmar {
+    background: #334155;
+    color: #64748b;
+  }
+  .badge-streaming {
+    background: #2e1065;
+    color: #a78bfa;
+  }
+
+  // Calendário
+  .calendario-row { border-top-color: #334155; }
+  .btn-calendario {
+    color: #a78bfa;
+    border-color: #2e1065;
+    background: #1a0a2e;
+    &:hover { background: #2e1065; }
+  }
+
+  // Odds
+  .odds-row { border-top-color: #334155; }
+  .odds-label { color: #64748b; }
+  .odds-item {
+    background: #0a2e1a;
+    color: #22c55e;
+  }
+  .odds-key { color: #166534; }
+  .odds-sep { color: #475569; }
+
+}
+
+.btn-whatsapp { text-decoration: none; }
