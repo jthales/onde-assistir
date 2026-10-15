@@ -21,8 +21,11 @@ body {
 
 .page {
   @include flex-col;
-  min-height: 100vh;
+  min-height: 100svh;
 }
+
+// O rodapé mantém sua caixa no flex, mas só fica visível na posição definitiva.
+.page--carregando .site-footer { visibility: hidden; }
 
 // ── Pull to Refresh ───────────────────────────────────────────────────────────
 
@@ -104,6 +107,12 @@ body {
 }
 
 .hero-title-accent { color: #86efac; }
+
+// Reserva temporária: os títulos carregados (inclusive 404) voltam à altura natural.
+.partida-titulo--carregando {
+  min-height: 2.1em;
+  @media (min-width: 1100px) { min-height: 1.05em; }
+}
 
 .hero-subtitle {
   margin-top: 0.75rem;

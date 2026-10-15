@@ -40,6 +40,21 @@ export function buildJogoUrl(jogo: JogoSlug, jogos: readonly JogoSlug[] = []): s
   return `/jogo/${buildJogoSlug(jogo, jogos)}`;
 }
 
+/** Agrupa colisões uma vez por lista; consultas dos cards passam a ser O(1). */
+export function buildJogoUrlMap<T extends JogoSlug>(jogos: readonly T[]): ReadonlyMap<T, string> {
+  const grupos = new Map<string, T[]>();
+  for (const jogo of jogos) {
+    const base = baseJogoSlug(jogo);
+    if (!grupos.has(base)) grupos.set(base, []);
+    grupos.get(base)!.push(jogo);
+  }
+  const urls = new Map<T, string>();
+  for (const grupo of grupos.values()) {
+    for (const jogo of grupo) urls.set(jogo, buildJogoUrl(jogo, grupo));
+  }
+  return urls;
+}
+
 export function findJogoBySlug<T extends JogoSlug>(slug: string, jogos: readonly T[]): T | undefined {
   return jogos.find(jogo => buildJogoSlug(jogo, jogos) === slug)
     ?? jogos.find(jogo => baseJogoSlug(jogo) === slug);

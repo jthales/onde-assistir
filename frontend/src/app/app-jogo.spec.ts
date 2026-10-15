@@ -80,6 +80,38 @@ describe('Página individual da partida', () => {
     expect(buildJogoUrl(partida)).toBe(caminho);
   });
 
+  it('reutiliza URLs entre ciclos de filtros e invalida o cache quando a lista muda', () => {
+    const view = abrir('/');
+    responder();
+    const nome = vi.fn(() => partida.timeMandante);
+    const observado: Jogo = { ...partida, get timeMandante() { return nome(); } };
+    const app = view.componentInstance;
+    app.jogos.set([observado]);
+    expect(app.jogoUrl(observado)).toBe(caminho);
+    nome.mockClear();
+    app.filtroFavoritos.set(true);
+    app.busca.set('São Paulo');
+    for (let i = 0; i < 10; i++) expect(app.jogoUrl(observado)).toBe(caminho);
+    expect(nome).not.toHaveBeenCalled();
+    app.jogos.set([observado, { ...partida, campeonato: 'Libertadores' }]);
+    expect(app.jogoUrl(observado)).toBe(caminho + '-brasileirao');
+  });
+
+  it('reserva dimensões dos logos e mantém os três primeiros cards sem lazy', () => {
+    const view = abrir('/');
+    responder([0, 1, 2, 3].map(dia => ({ ...partida, data: `2026-10-${20 + dia}` })));
+    const cards = Array.from((view.nativeElement as HTMLElement).querySelectorAll('.jogo-card'));
+    expect(cards.length).toBe(4);
+    cards.forEach((card, i) => {
+      for (const img of card.querySelectorAll('img.logo-img')) {
+        expect(img.getAttribute('width')).toBe('44');
+        expect(img.getAttribute('height')).toBe('44');
+        expect(img.getAttribute('decoding')).toBe('async');
+        expect(img.getAttribute('loading')).toBe(i < 3 ? 'eager' : 'lazy');
+      }
+    });
+  });
+
   it('abre a URL direta com loading e encontra apenas a partida da data solicitada', () => {
     const view = abrir();
     const el: HTMLElement = view.nativeElement;
@@ -97,6 +129,38 @@ describe('Página individual da partida', () => {
     expect(el.querySelector('.badge-streaming--link')?.getAttribute('href')).toBe('https://www.disneyplus.com/pt-br');
     expect(el.querySelector('.partida-voltar')?.getAttribute('href')).toBe('/');
     expect(el.querySelector('.btn-detalhes')).toBeNull();
+  });
+
+  it('limita a reserva do título e a invisibilidade do rodapé ao carregamento', () => {
+    const view = abrir();
+    const el: HTMLElement = view.nativeElement;
+    expect(el.querySelector('h1')?.classList.contains('partida-titulo--carregando')).toBe(true);
+    expect(getComputedStyle(el.querySelector('footer')!).visibility).toBe('hidden');
+    responder();
+    expect(el.querySelector('h1')?.classList.contains('partida-titulo--carregando')).toBe(false);
+    expect(getComputedStyle(el.querySelector('footer')!).visibility).not.toBe('hidden');
+  });
+
+  it('remove a reserva do título e revela o rodapé também no 404', () => {
+    const view = abrir('/jogo/inexistente');
+    responder();
+    const el: HTMLElement = view.nativeElement;
+    expect(el.querySelector('h1')?.textContent).toBe('Partida não encontrada');
+    expect(el.querySelector('h1')?.classList.contains('partida-titulo--carregando')).toBe(false);
+    expect(getComputedStyle(el.querySelector('footer')!).visibility).not.toBe('hidden');
+  });
+
+  it('encaminha a falha do logo do card para a URL original antes de ocultar', () => {
+    const view = abrir();
+    const original = 'https://a.espncdn.com/i/teamlogos/soccer/500/819.png';
+    responder([{ ...partida, logoMandante: original }]);
+    const img = view.nativeElement.querySelector('img.logo-img') as HTMLImageElement;
+    expect(img.getAttribute('src')).toContain('/combiner/');
+    img.dispatchEvent(new Event('error'));
+    expect(img.getAttribute('src')).toBe(original);
+    expect(img.style.display).toBe('');
+    img.dispatchEvent(new Event('error'));
+    expect(img.style.display).toBe('none');
   });
 
   it('mostra Partida não encontrada e link para a home sem publicar SportsEvent incorreto', () => {

@@ -6,6 +6,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.4.1] — 2026-10-15
+
+### Alterado
+
+- Logos ESPN servidos pelo combiner em resolução proporcional ao tamanho exibido, com dimensões explícitas, decodificação assíncrona e carregamento tardio nas listas; três primeiros cards da agenda mantidos sem lazy.
+- URLs das partidas memoizadas por lista para evitar recalcular slugs a cada ciclo de filtros, preservando permalinks e desambiguação.
+
+### Corrigido
+
+- **Revisão do QA E1**: removida a altura mínima de uma viewport do main, restaurando altura e rodapé das páginas curtas; rodapé revelado após o loading no layout flex existente. Reserva do título da partida limitada ao carregamento, sem linhas extras após carregar ou no 404. Logos tentam a URL original uma vez antes de ocultar em caso de falha do combiner.
+
+---
+
 ## [1.4.0] — 2026-10-15
 
 ### Adicionado
