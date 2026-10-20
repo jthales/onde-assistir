@@ -448,7 +448,7 @@ describe('Página individual da partida', () => {
     expect(document.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe('https://ondeassistir.space/');
   });
 
-  it.each(['/', '/ao-vivo', '/sao-paulo', '/campeonato/libertadores', '/copa-2026'])(
+  it.each(['/', '/ao-vivo', '/sao-paulo', '/campeonato/libertadores', '/campeonato/champions-league', '/copa-2026'])(
     'preserva o acesso direto à URL existente %s', url => {
       const view = abrir(url);
       responder();
@@ -458,6 +458,7 @@ describe('Página individual da partida', () => {
       if (url === '/ao-vivo') expect(view.componentInstance.filtroAoVivo()).toBe(true);
       if (url === '/sao-paulo') expect(view.componentInstance.timeSelecionado()).toBe('São Paulo');
       if (url === '/campeonato/libertadores') expect(view.componentInstance.campeonatoSelecionado()).toBe('libertadores');
+      if (url === '/campeonato/champions-league') expect(view.componentInstance.campeonatoSelecionado()).toBe('champions-league');
       if (url === '/copa-2026') expect(view.nativeElement.querySelector('app-copa-2026')).toBeTruthy();
     },
   );

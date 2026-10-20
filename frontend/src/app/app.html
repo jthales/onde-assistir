@@ -179,12 +179,23 @@
             <div class="spinner"></div>
             <p class="state-text">Carregando classificação...</p>
           </div>
+        } @else if (erroCampeonato()) {
+          <div class="state-error" role="alert">
+            <div class="state-error-icon" aria-hidden="true">⚠️</div>
+            <p>Não foi possível carregar este campeonato. Tente novamente.</p>
+            <button type="button" class="filtro-vivo-btn" (click)="tentarNovamenteCampeonato()">Tentar novamente</button>
+          </div>
         } @else {
           <div class="campeonato-layout">
 
             <!-- Coluna principal: classificação + notícias -->
             <div class="campeonato-main">
-              @if (classificacaoCampeonato(); as classif) {
+              @if (campeonatoVazio()) {
+                <div class="state-wrapper">
+                  <p class="state-text">Nenhuma partida ou classificação disponível para este campeonato no momento.</p>
+                </div>
+              }
+              @if (classificacaoExibivel(); as classif) {
                 @if (classif.tipo === 'tabela-unica') {
                   <aside class="classificacao classificacao--destaque">
                     <div class="classificacao-header">

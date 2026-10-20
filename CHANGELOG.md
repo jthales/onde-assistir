@@ -6,6 +6,24 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.5.0] — 2026-10-20
+
+### Adicionado
+
+- UEFA Champions League: jogos da ESPN (`uefa.champions`) no populate, sem filtro de times brasileiros, e no placar/odds ao vivo.
+- Página `/campeonato/champions-league` com tabela da fase de liga, próximos jogos e notícias, além de entrada no sitemap e em busca, filtro e favoritos de campeonato.
+- Rótulo "Fase de Liga" para a fase atual nos jogos do campeonato.
+
+### Corrigido
+
+- **Revisão do QA (Champions)**: página de campeonato com alerta e "Tentar novamente" quando classificação e jogos falham (falha parcial tolerada), estado vazio e sem tabela incompleta, JSON-LD só com partidas do campeonato da rota; Gemini nunca é fonte de transmissão da Champions.
+
+### Observações
+
+- Sem transmissão confirmada para a Champions no Brasil: o populate não inventa canais e deixa a lista vazia quando as fontes existentes não informam.
+
+---
+
 ## [1.4.1] — 2026-10-15
 
 ### Alterado

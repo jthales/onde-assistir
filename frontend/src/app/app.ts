@@ -2,8 +2,8 @@ import { Component, OnInit, OnDestroy, signal, computed, ElementRef, Inject } fr
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { Meta, Title } from '@angular/platform-browser';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
-import { filter } from 'rxjs/operators';
-import { interval, forkJoin } from 'rxjs';
+import { filter, catchError } from 'rxjs/operators';
+import { interval, forkJoin, of } from 'rxjs';
 import { JogosService } from './services/jogos.service';
 import { PushNotificacaoService } from './services/push-notificacao.service';
 import { Jogo, Placar, Odds, ClassificacaoEntry, Noticia, ClassificacaoResponse, JogoCampeonato, GrupoClassificacao } from './models/jogo';
@@ -96,6 +96,7 @@ export class App implements OnInit, OnDestroy {
   jogosCampeonato = signal<JogoCampeonato[]>([]);
   noticiasCampeonato = signal<Noticia[]>([]);
   loadingCampeonato = signal(false);
+  erroCampeonato = signal(false);
 
   readonly timesOrdenados = computed(() => {
     const times = this.classificacao();
@@ -181,6 +182,8 @@ export class App implements OnInit, OnDestroy {
     'CONMEBOL LIBERTADORES': 'Copa Libertadores',
     'SUL-AMERICANA':         'Copa Sul-Americana',
     'COPA SUL-AMERICANA':    'Copa Sul-Americana',
+    'CHAMPIONS LEAGUE':      'UEFA Champions League',
+    'UEFA CHAMPIONS LEAGUE': 'UEFA Champions League',
   };
 
   private readonly CAMP_SLUG_MAP: Record<string, string> = {
@@ -192,6 +195,8 @@ export class App implements OnInit, OnDestroy {
     'SUL-AMERICANA':         'sul-americana',
     'COPA SUL-AMERICANA':    'sul-americana',
     'CONMEBOL SULAMERICANA': 'sul-americana',
+    'CHAMPIONS LEAGUE':      'champions-league',
+    'UEFA CHAMPIONS LEAGUE': 'champions-league',
     'COPA DO BRASIL':        'copa-do-brasil',
     'COPA DO MUNDO 2026':    'copa-2026',
   };
@@ -200,6 +205,7 @@ export class App implements OnInit, OnDestroy {
     'brasileirao':    'Brasileirão Série A',
     'libertadores':   'Copa Libertadores',
     'sul-americana':  'Copa Sul-Americana',
+    'champions-league': 'UEFA Champions League',
     'copa-do-brasil': 'Copa do Brasil',
   };
 
@@ -238,6 +244,7 @@ export class App implements OnInit, OnDestroy {
     this.campeonatoSelecionado.set(slug);
     history.replaceState(null, '', `/campeonato/${slug}`);
     this.atualizarMetaCampeonato(slug);
+    this.atualizarSportsEvents(this.jogosParaSeo());
     this.carregarDadosCampeonato(slug);
     analyticsTrack('ver_campeonato', { campeonato: slug });
   }
@@ -247,6 +254,7 @@ export class App implements OnInit, OnDestroy {
     this.slugJogo.set(null);
     this.campeonatoSelecionado.set('');
     this.isCopa2026Route.set(false);
+    this.erroCampeonato.set(false);
     this.classificacaoCampeonato.set(null);
     this.jogosCampeonato.set([]);
     this.noticiasCampeonato.set([]);
@@ -258,20 +266,28 @@ export class App implements OnInit, OnDestroy {
 
   private carregarDadosCampeonato(liga: string): void {
     this.loadingCampeonato.set(true);
+    this.erroCampeonato.set(false);
     this.classificacaoCampeonato.set(null);
     this.jogosCampeonato.set([]);
     this.noticiasCampeonato.set([]);
     clearInterval(this.campeonatoClassifInterval);
 
+    // Falha parcial é tolerada (ex.: notícias fora do ar não derrubam tabela e jogos);
+    // o erro só aparece quando classificação e jogos falham juntos.
     forkJoin({
-      classif:  this.jogosService.getClassificacaoCampeonato(liga),
-      jogos:    this.jogosService.getJogosCampeonato(liga),
-      noticias: this.jogosService.getNoticiasCampeonato(liga),
+      classif:  this.jogosService.getClassificacaoCampeonato(liga).pipe(catchError(() => of(null))),
+      jogos:    this.jogosService.getJogosCampeonato(liga).pipe(catchError(() => of(null))),
+      noticias: this.jogosService.getNoticiasCampeonato(liga).pipe(catchError(() => of(null))),
     }).subscribe({
       next: ({ classif, jogos, noticias }) => {
+        if (!classif && !jogos) {
+          this.erroCampeonato.set(true);
+          this.loadingCampeonato.set(false);
+          return;
+        }
         this.classificacaoCampeonato.set(classif);
-        this.jogosCampeonato.set(jogos);
-        this.noticiasCampeonato.set(noticias);
+        this.jogosCampeonato.set(jogos ?? []);
+        this.noticiasCampeonato.set(noticias ?? []);
         this.loadingCampeonato.set(false);
         this.campeonatoClassifInterval = setInterval(() => {
           this.jogosService.getClassificacaoCampeonato(liga).subscribe({
@@ -279,8 +295,37 @@ export class App implements OnInit, OnDestroy {
           });
         }, 30_000);
       },
-      error: () => this.loadingCampeonato.set(false),
+      error: () => {
+        this.erroCampeonato.set(true);
+        this.loadingCampeonato.set(false);
+      },
     });
+  }
+
+  tentarNovamenteCampeonato(): void {
+    const slug = this.campeonatoSelecionado();
+    if (slug) this.carregarDadosCampeonato(slug);
+  }
+
+  /** Classificação pronta para exibir; null quando vazia ou sem times (evita tabela incompleta). */
+  readonly classificacaoExibivel = computed<ClassificacaoResponse | null>(() => {
+    const c = this.classificacaoCampeonato();
+    if (!c) return null;
+    if (c.tipo === 'mata-mata') return c.confrontos?.length ? c : null;
+    const grupos = (c.grupos ?? []).filter(g => g.times?.length > 0);
+    if (grupos.length === 0) return null;
+    return c.tipo === 'tabela-unica' ? { ...c, grupos: [grupos[0]] } : { ...c, grupos };
+  });
+
+  readonly campeonatoVazio = computed(() =>
+    !this.loadingCampeonato() && !this.erroCampeonato() && !this.classificacaoExibivel()
+    && this.jogosCampeonato().length === 0 && this.noticiasCampeonato().length === 0);
+
+  /** Jogos do JSON-LD: na página de campeonato, só as partidas dele. */
+  private jogosParaSeo(): Jogo[] {
+    const jogos = this.jogosFiltrados();
+    const camp = this.campeonatoSelecionado();
+    return camp ? jogos.filter(j => this.slugifyCampeonato(j.campeonato ?? '') === camp) : jogos;
   }
 
   private atualizarMetaCampeonato(slug: string): void {
@@ -671,7 +716,7 @@ ${this.BASE_URL}${url}`;
             this.carregarNoticias(slug);
           }
         }
-        if (this.slugJogo() === null) this.atualizarSportsEvents(this.jogosFiltrados());
+        if (this.slugJogo() === null) this.atualizarSportsEvents(this.jogosParaSeo());
         this.atualizarPlacar();
         this.pollingInterval = setInterval(() => this.atualizarPlacar(), 10_000);
         this.atualizarOdds();
@@ -896,6 +941,8 @@ ${this.BASE_URL}${url}`;
       'CONMEBOL LIBERTADORES': 'CONMEBOL',
       'SUL-AMERICANA':         'CONMEBOL',
       'COPA SUL-AMERICANA':    'CONMEBOL',
+      'CHAMPIONS LEAGUE':      'UEFA',
+      'UEFA CHAMPIONS LEAGUE': 'UEFA',
     };
     return map[key] ?? 'CBF';
   }
