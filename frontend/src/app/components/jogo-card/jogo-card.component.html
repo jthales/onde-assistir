@@ -7,10 +7,16 @@
   <div class="card-top">
     <div class="card-top-left">
       @if (jogo.campeonato) {
-        <button class="campeonato-badge campeonato-badge--btn"
-                (click)="navegarParaCampeonato.emit(jogo.campeonato); $event.stopPropagation()">
-          {{ jogo.campeonato === 'Copa do Mundo 2026' ? 'Copa do Mundo' : jogo.campeonato }}
-        </button>
+        @let rotuloCampeonato = jogo.campeonato === 'Copa do Mundo 2026' ? 'Copa do Mundo' : jogo.campeonato;
+        @if (campeonatoUrl()) {
+          <a class="campeonato-badge campeonato-badge--btn" [href]="campeonatoUrl()"
+             (click)="abrirCampeonato($event, jogo.campeonato)">{{ rotuloCampeonato }}</a>
+        } @else {
+          <button class="campeonato-badge campeonato-badge--btn"
+                  (click)="navegarParaCampeonato.emit(jogo.campeonato); $event.stopPropagation()">
+            {{ rotuloCampeonato }}
+          </button>
+        }
       }
     </div>
     <div class="data-hora">

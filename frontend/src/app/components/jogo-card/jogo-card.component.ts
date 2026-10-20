@@ -32,10 +32,20 @@ export class JogoCardComponent {
   readonly logoUrl = logoUrl;
   readonly onLogoError = onLogoError;
   readonly urlPartida = input('');
+  /** Rota da página do campeonato; quando informada o badge vira link real (rastreável), com navegação SPA no clique simples. */
+  readonly campeonatoUrl = input('');
   readonly detalhesUrl = computed(() => this.urlPartida() || buildJogoUrl(this.jogo()));
 
   readonly navegarParaCampeonato = output<string>();
   readonly toggleNotificacaoJogo = output<Jogo>();
+
+  abrirCampeonato(evento: MouseEvent, campeonato: string): void {
+    evento.stopPropagation();
+    // Cliques com modificador/botão do meio seguem o comportamento nativo do link (nova aba).
+    if (evento.defaultPrevented || evento.button !== 0 || evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.altKey) return;
+    evento.preventDefault();
+    this.navegarParaCampeonato.emit(campeonato);
+  }
 
   readonly getInitials = teamInitials;
   readonly translateCountry = translateCountry;

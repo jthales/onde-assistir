@@ -145,6 +145,7 @@
           <app-jogo-card
             [jogo]="jogo"
             [urlPartida]="jogoUrl(jogo)"
+            [campeonatoUrl]="campeonatoUrl(jogo.campeonato)"
             [modoDetalhes]="true"
             [aoVivo]="eAoVivo(jogo)"
             [encerrado]="eEncerrado(jogo)"
@@ -585,6 +586,7 @@
             [jogo]="jogo"
             [logosLazy]="i >= 3"
             [urlPartida]="jogoUrl(jogo)"
+            [campeonatoUrl]="campeonatoUrl(jogo.campeonato)"
             [aoVivo]="eAoVivo(jogo)"
             [encerrado]="eEncerrado(jogo)"
             [hoje]="eHoje(jogo.data)"
@@ -786,6 +788,20 @@
         <span class="site-footer-dot">·</span>
         <a href="https://ondeassistir.space/ao-vivo" class="site-footer-link">Ao Vivo</a>
       </nav>
+      <nav class="site-footer-links" aria-label="Campeonatos">
+        @for (camp of campeonatosRodape; track camp.url; let ultimo = $last) {
+          <a [href]="camp.url" class="site-footer-link">{{ camp.label }}</a>
+          @if (!ultimo) { <span class="site-footer-dot" aria-hidden="true">·</span> }
+        }
+      </nav>
+      @if (timesRodape().length > 0) {
+        <nav class="site-footer-links" aria-label="Times">
+          @for (time of timesRodape(); track time.url; let ultimo = $last) {
+            <a [href]="time.url" class="site-footer-link">{{ time.nome }}</a>
+            @if (!ultimo) { <span class="site-footer-dot" aria-hidden="true">·</span> }
+          }
+        </nav>
+      }
       <p class="site-footer-copy">
         © {{ currentYear }} <a href="https://ondeassistir.space/" class="site-footer-link">ondeassistir.space</a> · Todos os direitos reservados
       </p>

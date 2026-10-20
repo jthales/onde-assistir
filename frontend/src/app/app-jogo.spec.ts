@@ -412,7 +412,7 @@ describe('Página individual da partida', () => {
     view.componentInstance.voltarParaHome();
     view.detectChanges();
     expect(location.pathname).toBe('/');
-    expect(document.title).toBe('Onde Assistir — Futebol ao Vivo: TV e Streaming no Brasil');
+    expect(document.title).toBe('Onde Assistir — Jogos de Futebol Hoje e da Semana: TV e Streaming');
     expect(document.querySelector('meta[property="og:title"]')?.getAttribute('content')).toBe(document.title);
     expect(document.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe('https://ondeassistir.space/');
     expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://ondeassistir.space/');
@@ -444,7 +444,7 @@ describe('Página individual da partida', () => {
     expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://ondeassistir.space/copa-2026');
     view.componentInstance.voltarParaHome();
     view.detectChanges();
-    expect(document.title).toBe('Onde Assistir — Futebol ao Vivo: TV e Streaming no Brasil');
+    expect(document.title).toBe('Onde Assistir — Jogos de Futebol Hoje e da Semana: TV e Streaming');
     expect(document.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe('https://ondeassistir.space/');
   });
 
@@ -462,4 +462,126 @@ describe('Página individual da partida', () => {
       if (url === '/copa-2026') expect(view.nativeElement.querySelector('app-copa-2026')).toBeTruthy();
     },
   );
+
+  describe('SEO: robots, canonical, links e JSON-LD', () => {
+    const meta = (nome: string, atributo: 'name' | 'property' = 'name') =>
+      document.querySelector(`meta[${atributo}="${nome}"]`)?.getAttribute('content');
+    const canonicalAtual = () => document.querySelector('link[rel="canonical"]')?.getAttribute('href');
+    const eventos = () => {
+      const script = document.querySelector('script[data-seo="sports-events"]');
+      return script ? JSON.parse(script.textContent!)['@graph'] : [];
+    };
+    const futuro = { ...partida, data: '2099-03-04', hora: '16:00' };
+
+    afterEach(() => document.querySelector('meta[name="robots"]')?.remove());
+
+    it('rota desconhecida sai do índice e aponta o canonical para a home', () => {
+      abrir('/pagina-que-nao-existe');
+      responder();
+      expect(meta('robots')).toBe('noindex, follow');
+      expect(canonicalAtual()).toBe('https://ondeassistir.space/');
+      expect(meta('og:url', 'property')).toBe('https://ondeassistir.space/');
+    });
+
+    it('campeonato inexistente é reconhecido antes da API e fica noindex', () => {
+      abrir('/campeonato/inexistente');
+      expect(meta('robots')).toBe('noindex, follow');
+      expect(canonicalAtual()).toBe('https://ondeassistir.space/');
+      responder();
+    });
+
+    it('normaliza caixa e barra final em /campeonato/* e em páginas de time', () => {
+      abrir('/campeonato/Libertadores/');
+      responder();
+      expect(location.pathname).toBe('/campeonato/libertadores');
+      expect(canonicalAtual()).toBe('https://ondeassistir.space/campeonato/libertadores');
+      expect(meta('robots')).toBe('index, follow');
+      abrir('/Sao-Paulo/');
+      responder();
+      expect(location.pathname).toBe('/sao-paulo');
+      expect(canonicalAtual()).toBe('https://ondeassistir.space/sao-paulo');
+      expect(meta('robots')).toBe('index, follow');
+    });
+
+    it('partida inexistente fica noindex com canonical na home e partida válida volta a index', () => {
+      abrir('/jogo/foo-x-bar-2026-01-01');
+      responder();
+      expect(meta('robots')).toBe('noindex, follow');
+      expect(canonicalAtual()).toBe('https://ondeassistir.space/');
+      abrir();
+      responder();
+      expect(meta('robots')).toBe('index, follow');
+      expect(canonicalAtual()).toBe(canonical);
+      expect(meta('og:image', 'property')).toBe(partida.logoMandante);
+      expect(meta('twitter:image')).toBe(partida.logoMandante);
+    });
+
+    it('description do campeonato usa o próximo jogo real (BRT) e só cita canais confirmados', () => {
+      abrir('/campeonato/brasileirao');
+      responder([futuro]);
+      expect(meta('description')).toContain('Próximo jogo: São Paulo x Atlético-MG, 04/03 às 16:00 (Brasília). Onde assistir: SporTV, Disney+.');
+      expect(document.title).toBe('Brasileirão Série A — Tabela e Jogos | Onde Assistir');
+      abrir('/campeonato/brasileirao');
+      responder([{ ...futuro, canal: [], streaming: [] }]);
+      expect(meta('description')).toContain('Transmissão a confirmar.');
+      expect(meta('description')).not.toContain('Onde assistir:');
+    });
+
+    it('home cobre hoje e a semana sem prometer jogos específicos', () => {
+      const view = abrir('/');
+      responder();
+      view.componentInstance.navegarParaCampeonato('Brasileirão');
+      responder();
+      view.componentInstance.voltarParaHome();
+      expect(meta('description')).toContain('jogos de futebol de hoje e da semana');
+      expect(document.title).toContain('Hoje e da Semana');
+      expect(meta('robots')).toBe('index, follow');
+    });
+
+    it('JSON-LD traz eventStatus, homeTeam/awayTeam e inLanguage; organizer só quando mapeado', () => {
+      abrir('/');
+      responder([futuro, { ...futuro, timeMandante: 'Time A', timeVisitante: 'Time B', campeonato: 'Liga Desconhecida' },
+        { ...futuro, timeMandante: 'Time C', timeVisitante: 'Time D', campeonato: 'Champions League' }]);
+      const lista = eventos();
+      const por = (nome: string) => lista.find((e: { name: string }) => e.name === nome);
+      const mapeado = por('São Paulo x Atlético-MG');
+      expect(mapeado.eventStatus).toBe('https://schema.org/EventScheduled');
+      expect(mapeado.inLanguage).toBe('pt-BR');
+      expect(mapeado.homeTeam).toEqual({ '@type': 'SportsTeam', 'name': 'São Paulo' });
+      expect(mapeado.awayTeam).toEqual({ '@type': 'SportsTeam', 'name': 'Atlético-MG' });
+      expect(mapeado.competitor).toHaveLength(2);
+      expect(mapeado.organizer.name).toBe('CBF');
+      expect('organizer' in por('Time A x Time B')).toBe(false);
+      expect(por('Time C x Time D').organizer.name).toBe('UEFA');
+    });
+
+    it('badge do campeonato é link real com navegação SPA no clique simples', () => {
+      const view = abrir('/');
+      responder([futuro]);
+      const badge = view.nativeElement.querySelector('.campeonato-badge--btn') as HTMLAnchorElement;
+      expect(badge.tagName).toBe('A');
+      expect(badge.getAttribute('href')).toBe('/campeonato/brasileirao');
+      const modificado = new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true });
+      badge.dispatchEvent(modificado);
+      expect(modificado.defaultPrevented).toBe(false);
+      expect(location.pathname).toBe('/');
+      const simples = new MouseEvent('click', { bubbles: true, cancelable: true });
+      badge.dispatchEvent(simples);
+      expect(simples.defaultPrevented).toBe(true);
+      expect(location.pathname).toBe('/campeonato/brasileirao');
+      responder();
+    });
+
+    it('rodapé lista campeonatos e times com página como links rastreáveis', () => {
+      const view = abrir('/');
+      responder();
+      const hrefs = (rotulo: string) => Array.from<HTMLAnchorElement>(
+        view.nativeElement.querySelectorAll(`.site-footer-links[aria-label="${rotulo}"] a`)).map(a => a.getAttribute('href'));
+      expect(hrefs('Campeonatos')).toEqual([
+        '/campeonato/brasileirao', '/campeonato/libertadores', '/campeonato/sul-americana',
+        '/campeonato/champions-league', '/campeonato/copa-do-brasil',
+      ]);
+      expect(hrefs('Times')).toEqual(['/sao-paulo']);
+    });
+  });
 });
