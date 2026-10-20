@@ -15,6 +15,14 @@ function escapeXml(valor: string): string {
 export interface JogoSitemap extends JogoSlug {
   /** Data/hora da última gravação do jogo no populate (ISO). Vira o lastmod da partida. */
   lastUpdated?: string;
+  /** Horário de início (HH:MM, BRT). Ausente ou 00:00 = horário desconhecido. */
+  hora?: string;
+}
+
+/** Mesma regra do eJogoFuturo do frontend (app.ts): horário desconhecido conta como futuro. */
+function naoComecou(jogo: JogoSitemap, agora: Date): boolean {
+  if (!jogo.hora || jogo.hora === '00:00') return true;
+  return agora < new Date(`${jogo.data}T${jogo.hora}:00-03:00`);
 }
 
 export interface OpcoesSitemap {
@@ -49,7 +57,9 @@ export function buildSitemapXml(
   const futuros = jogos.filter(jogo => jogo.timeMandante && jogo.timeVisitante
     && /^\d{4}-\d{2}-\d{2}$/.test(jogo.data) && jogo.data >= hoje);
   const partidas = new Map<string, string | undefined>();
-  for (const jogo of futuros) {
+  // O contexto de colisão de slugs é "hoje em diante" (como a agenda do frontend); só entram no sitemap
+  // as partidas que ainda não começaram (data e horário em BRT).
+  for (const jogo of futuros.filter(j => naoComecou(j, agora))) {
     const url = origem + buildJogoUrl(jogo, futuros);
     const lastmod = lastmodDe(jogo);
     const atual = partidas.get(url);

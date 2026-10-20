@@ -968,6 +968,7 @@ app.get('/sitemap.xml', async (_req, res) => {
       timeVisitante: d['timeVisitante'] ?? '',
       data: d['data'] ?? '',
       campeonato: d['campeonato'] ?? '',
+      hora: typeof d['hora'] === 'string' ? d['hora'] : undefined,
       lastUpdated: typeof d['lastUpdated'] === 'string' ? d['lastUpdated'] : undefined,
     }));
     // A SPA só tem página de time para quem está na tabela do Brasileirão (app.ts: classificacao().find(slugify(nome) === slug)).

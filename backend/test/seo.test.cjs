@@ -209,7 +209,7 @@ test('cache imutável só para arquivos com hash do build (B5)', () => {
   const vercel = JSON.parse(require('node:fs').readFileSync(join(__dirname, '../../frontend/vercel.json'), 'utf8'));
   const regra = vercel.headers.find(h => h.headers.some(c => c.value === 'public, max-age=31536000, immutable'));
   const re = new RegExp('^' + regra.source + '$');
-  for (const arquivo of ['main-XZ5JGCIJ.js', 'chunk-AB12CD34.js', 'polyfills-ABCDEFGH.js', 'styles-TKKZADJH.css']) {
+  for (const arquivo of ['main-XZ5JGCIJ.js', 'chunk-AB12CD34.js', 'polyfills-ABCDEFGH.js', 'styles-TKKZADJH.css', 'chunk-a1b2c3d4.js', 'styles-abcdefgh.css', 'main-Ab3dE5g7.js']) {
     assert.ok(re.test('/' + arquivo), arquivo);
   }
   for (const arquivo of ['index.html', 'ngsw.json', 'ngsw-worker.js', 'safety-worker.js', 'worker-basic.min.js', 'ads.txt',
@@ -220,7 +220,28 @@ test('cache imutável só para arquivos com hash do build (B5)', () => {
   const dist = join(__dirname, '../../frontend/dist/frontend/browser');
   if (require('node:fs').existsSync(dist)) {
     for (const f of require('node:fs').readdirSync(dist)) {
-      assert.equal(re.test('/' + f), /^(main|polyfills|chunk|styles|scripts)-[A-Z0-9]{8}.(js|css)$/.test(f), f);
+      assert.equal(re.test('/' + f), /^(main|polyfills|chunk|styles|scripts)-[A-Za-z0-9]{8}.(js|css)$/.test(f), f);
     }
   }
+});
+
+test('sitemap não inclui partida cujo início já passou (data + horário BRT) — BUG-01', () => {
+  // 15/10 às 12:00 BRT = 15:00Z
+  const meioDia = new Date('2026-10-15T15:00:00Z');
+  const base = { timeMandante: 'Flamengo', timeVisitante: 'Palmeiras', campeonato: 'Brasileirão', data: '2026-10-15' };
+  const jogos = [
+    { ...base, hora: '11:59' },                                   // já começou
+    { ...base, timeVisitante: 'Santos', hora: '12:00' },          // começa agora: já não é futura
+    { ...base, timeVisitante: 'Vasco', hora: '12:01' },           // ainda não começou
+    { ...base, timeVisitante: 'Bahia', hora: '00:00' },           // horário desconhecido: mantém (como o frontend)
+    { ...base, timeVisitante: 'Gremio' },                         // sem hora: mantém
+    { ...base, timeVisitante: 'Cruzeiro', data: '2026-10-16', hora: '09:00' },
+  ];
+  const partidas = entradas(buildSitemapXml(jogos, origem, meioDia)).filter(i => i.loc.includes('/jogo/')).map(i => i.loc.split('/jogo/')[1]);
+  assert.deepEqual(partidas.sort(), [
+    'flamengo-x-bahia-2026-10-15', 'flamengo-x-cruzeiro-2026-10-16', 'flamengo-x-gremio-2026-10-15', 'flamengo-x-vasco-2026-10-15',
+  ]);
+  const vasco = (instante) => entradas(buildSitemapXml(jogos, origem, instante)).filter(i => i.loc.includes('-x-vasco')).length;
+  assert.equal(vasco(new Date('2026-10-15T15:00:30Z')), 1);
+  assert.equal(vasco(new Date('2026-10-15T15:01:00Z')), 0); // 12:01 BRT: a partida de 12:01 já começou
 });
