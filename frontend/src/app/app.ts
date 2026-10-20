@@ -256,7 +256,7 @@ export class App implements OnInit, OnDestroy {
     this.campeonatoSelecionado.set(slug);
     history.replaceState(null, '', `/campeonato/${slug}`);
     this.atualizarMetaCampeonato(slug);
-    this.atualizarSportsEvents(this.jogosParaSeo());
+    this.atualizarSportsEvents([]); // o grafo do campeonato só é escrito depois do load, conforme o que a página mostra
     this.carregarDadosCampeonato(slug);
     analyticsTrack('ver_campeonato', { campeonato: slug });
   }
@@ -295,6 +295,7 @@ export class App implements OnInit, OnDestroy {
         if (!classif && !jogos) {
           this.erroCampeonato.set(true);
           this.loadingCampeonato.set(false);
+          this.atualizarSportsEvents([]);
           return;
         }
         this.classificacaoCampeonato.set(classif);
@@ -302,6 +303,8 @@ export class App implements OnInit, OnDestroy {
         this.noticiasCampeonato.set(noticias ?? []);
         if (this.campeonatoSelecionado() === liga) this.atualizarMetaCampeonato(liga);
         this.loadingCampeonato.set(false);
+        // JSON-LD só com o que a página mostra: vazio (nada exibido) não emite grafo.
+        this.atualizarSportsEvents(this.campeonatoVazio() ? [] : this.jogosParaSeo());
         this.campeonatoClassifInterval = setInterval(() => {
           this.jogosService.getClassificacaoCampeonato(liga).subscribe({
             next: (c) => this.classificacaoCampeonato.set(c),
@@ -311,6 +314,7 @@ export class App implements OnInit, OnDestroy {
       error: () => {
         this.erroCampeonato.set(true);
         this.loadingCampeonato.set(false);
+        this.atualizarSportsEvents([]);
       },
     });
   }
@@ -375,12 +379,16 @@ export class App implements OnInit, OnDestroy {
     return `${mandante} x ${visitante}, ${d}/${m}${horario}`;
   }
 
+  /** Última rota aplicada está fora do índice (noindex): não emitimos o grafo global de partidas nela. */
+  private semIndice = false;
+
   private readonly DEFAULT_TITLE = 'Onde Assistir — Jogos de Futebol Hoje e da Semana: TV e Streaming';
   private readonly DEFAULT_DESC = 'Veja onde assistir aos jogos de futebol de hoje e da semana no Brasil: Brasileirão, Libertadores, Sul-Americana e Champions League, com canais de TV e plataformas de streaming.';
   private readonly DEFAULT_IMAGE = 'https://ondeassistir.space/favicon/android-icon-192x192.png';
 
   /** Único ponto que escreve title/description/OG/Twitter/canonical/robots, para as rotas nunca divergirem. */
   private aplicarMeta(m: { title: string; description: string; path: string; imagem?: string; indexar?: boolean }): void {
+    this.semIndice = m.indexar === false;
     const url = this.BASE_URL + m.path;
     const imagem = m.imagem || this.DEFAULT_IMAGE;
     this.titleService.setTitle(m.title);
@@ -405,6 +413,7 @@ export class App implements OnInit, OnDestroy {
       path: '/',
       indexar: false,
     });
+    this.atualizarSportsEvents([]);
   }
 
   /** Caminho sem barras nas pontas e em minúsculas — a forma canônica das rotas. */
@@ -798,7 +807,10 @@ ${this.BASE_URL}${url}`;
             this.atualizarMetaDesconhecida();
           }
         }
-        if (this.slugJogo() === null) this.atualizarSportsEvents(this.jogosParaSeo());
+        if (this.slugJogo() === null) {
+          // Campeonato: carregarDadosCampeonato escreve o grafo depois do load. Rotas fora do índice não emitem grafo.
+          this.atualizarSportsEvents(this.semIndice || this.campeonatoSelecionado() ? [] : this.jogosParaSeo());
+        }
         this.atualizarPlacar();
         this.pollingInterval = setInterval(() => this.atualizarPlacar(), 10_000);
         this.atualizarOdds();
@@ -890,8 +902,8 @@ ${this.BASE_URL}${url}`;
     return this.jogosUrls().get(jogo) ?? buildJogoUrl(jogo, this.jogos());
   }
 
-  private atualizarMetaPagina(title: string, description: string, path: string): void {
-    this.aplicarMeta({ title, description, path });
+  private atualizarMetaPagina(title: string, description: string, path: string, indexar = true): void {
+    this.aplicarMeta({ title, description, path, indexar });
   }
 
   private atualizarMetaAoVivo(): void {
@@ -901,7 +913,8 @@ ${this.BASE_URL}${url}`;
 
   private atualizarMetaFavoritos(): void {
     this.atualizarMetaPagina('Meus favoritos — Onde Assistir',
-      'Próximos jogos dos seus times e campeonatos favoritos. Salvos neste navegador, sem cadastro.', '/favoritos');
+      'Próximos jogos dos seus times e campeonatos favoritos. Salvos neste navegador, sem cadastro.', '/favoritos',
+      false); // conteúdo depende do localStorage de cada visitante: fora do índice, canonical na própria URL
   }
 
   private atualizarMetaCopa(): void {
@@ -918,6 +931,11 @@ ${this.BASE_URL}${url}`;
     return `${data} · ${horaConhecida ? jogo.hora : 'Horário a confirmar'} · Horário de Brasília (America/Sao_Paulo)`;
   }
 
+  /** Encerrada, ou iniciada e fora da janela "ao vivo" (mesmas regras de eEncerrado/eJogoFuturo/eAoVivo). */
+  private partidaPassada(jogo: Jogo): boolean {
+    return this.eEncerrado(jogo) || (!this.eJogoFuturo(jogo) && !this.eAoVivo(jogo));
+  }
+
   private atualizarMetaJogo(): void {
     const jogo = !this.loading() && !this.error() ? this.jogoSelecionado() : undefined;
     const title = `${this.tituloPaginaJogo()} — Onde Assistir`;
@@ -928,12 +946,18 @@ ${this.BASE_URL}${url}`;
       : this.loading() ? 'Carregando os detalhes da partida.'
       : this.error() ? 'Não foi possível carregar a partida. Tente novamente.'
       : 'Esta partida não está disponível na agenda atual. Veja os jogos da semana.';
-    // Partida inexistente ou fora da agenda: fora do índice, canonical na home.
+    // Fora do índice (noindex, follow):
+    //  - partida inexistente/fora da agenda: canonical na home (a URL nem existe como conteúdo);
+    //  - partida encerrada ou cujo início já passou sem estar ao vivo: canonical na PRÓPRIA URL. A URL continua
+    //    válida, então não a apontamos para a home (noindex + canonical para outra página enviaria sinais
+    //    conflitantes ao Google). Partida ao vivo continua indexável até terminar (status do placar, ou a
+    //    janela de 2 h após o início quando ainda não há placar).
+    const passada = !!jogo && this.partidaPassada(jogo);
     this.aplicarMeta({
       title, description,
       path: naoEncontrada ? '/' : (jogo ? this.jogoUrl(jogo) : `/jogo/${this.slugJogo()}`),
       imagem: jogo?.logoMandante || jogo?.logoVisitante || undefined,
-      indexar: !naoEncontrada,
+      indexar: !naoEncontrada && !passada,
     });
     this.atualizarSportsEvents(jogo ? [jogo] : []);
   }
@@ -972,7 +996,6 @@ ${this.BASE_URL}${url}`;
         'url': this.BASE_URL + this.jogoUrl(jogo),
         'name': `${jogo.timeMandante} x ${jogo.timeVisitante}`,
         'startDate': `${jogo.data}T${hora}:00-03:00`,
-        'eventStatus': 'https://schema.org/EventScheduled',
         'inLanguage': 'pt-BR',
         'homeTeam': { '@type': 'SportsTeam', 'name': jogo.timeMandante },
         'awayTeam': { '@type': 'SportsTeam', 'name': jogo.timeVisitante },
@@ -981,11 +1004,14 @@ ${this.BASE_URL}${url}`;
           { '@type': 'SportsTeam', 'name': jogo.timeVisitante },
         ],
         'sport': 'Futebol',
-        'broadcaster': [
-          ...jogo.canal.map(c => ({ '@type': 'Organization', 'name': c })),
-          ...jogo.streaming.map(s => ({ '@type': 'Organization', 'name': s })),
-        ].filter(b => b.name),
       };
+      // schema.org só tem Scheduled/Cancelled/Postponed/Rescheduled/MovedOnline (sem "ao vivo" nem "encerrado").
+      // Futura ou ao vivo = não cancelada nem adiada, logo EventScheduled; encerrada/passada: campo omitido
+      // (não há valor correto) e não há dado confiável de cancelamento/adiamento.
+      if (!this.partidaPassada(jogo)) event['eventStatus'] = 'https://schema.org/EventScheduled';
+      // "broadcaster" não é propriedade de SportsEvent: canais vão em texto na description, só quando confirmados.
+      const canais = [...jogo.canal, ...jogo.streaming].filter(Boolean);
+      if (canais.length > 0) event['description'] = `Transmissão: ${canais.join(', ')}.`;
       const organizador = this.getOrganizer(jogo.campeonato);
       if (organizador) event['organizer'] = { '@type': 'Organization', 'name': organizador };
       if (jogo.estadio) event['location'] = { '@type': 'Place', 'name': jogo.estadio };
@@ -1099,6 +1125,7 @@ ${this.BASE_URL}${url}`;
         }
         this.verificarGols(map);
         this.placares.set(map);
+        if (this.slugJogo() !== null && !this.loading() && !this.error()) this.atualizarMetaJogo();
       },
       complete: () => { this.isLoadingPlacar = false; },
       error: () => { this.isLoadingPlacar = false; },

@@ -209,10 +209,26 @@ describe('App', () => {
       const ucl = jogo({ timeMandante: 'Real Madrid', timeVisitante: 'Barcelona', campeonato: 'Champions League', canal: [], streaming: [] });
       responder([...JOGOS, ucl]);
       app.navegarParaCampeonato('Champions League');
+      // BUG-03: antes do load do campeonato não há grafo (nem o global da home).
+      expect(document.querySelector('script[data-seo="sports-events"]')).toBeNull();
+      responderCampeonato({ jogos: [UCL_JOGO] });
       const ld = document.querySelector('script[data-seo="sports-events"]');
       expect(ld).toBeTruthy();
       const nomes = JSON.parse(ld!.textContent!)['@graph'].map((e: { name: string }) => e.name);
       expect(nomes).toEqual(['Real Madrid x Barcelona']);
+    });
+
+    it('JSON-LD é limpo no erro e no estado vazio do campeonato (BUG-03)', () => {
+      const ucl = jogo({ timeMandante: 'Real Madrid', timeVisitante: 'Barcelona', campeonato: 'Champions League', canal: [], streaming: [] });
+      responder([...JOGOS, ucl]);
+      app.navegarParaCampeonato('Champions League');
+      responderCampeonato({ falhar: ['classif', 'jogos', 'noticias'] });
+      expect(app.erroCampeonato()).toBe(true);
+      expect(document.querySelector('script[data-seo="sports-events"]')).toBeNull();
+      app.tentarNovamenteCampeonato();
+      responderCampeonato({ classif: { tipo: 'tabela-unica', grupos: [] }, jogos: [], noticias: [] });
+      expect(app.campeonatoVazio()).toBe(true);
+      expect(document.querySelector('script[data-seo="sports-events"]')).toBeNull();
     });
   });
 

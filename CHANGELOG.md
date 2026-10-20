@@ -22,6 +22,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - JSON-LD `SportsEvent` com `eventStatus`, `homeTeam`/`awayTeam` e `inLanguage`; `organizer` omitido quando a competição não está mapeada (sem fallback para a CBF).
 - `Cache-Control: public, max-age=31536000, immutable` apenas para `main/polyfills/chunk/styles-<hash>`.
 
+### Corrigido
+
+- **Revisão do QA (SEO)**: sitemap sem partidas cujo horário de início já passou (data + hora BRT); partidas encerradas ou passadas ficam `noindex, follow` com canonical na própria URL (ao vivo continua indexável); JSON-LD da página de campeonato só depois do load e limpo no erro e no estado vazio; `eventStatus` somente em partidas que não passaram; regex de cache imutável aceita hashes em maiúsculas, minúsculas e dígitos.
+- `/favoritos` passa a `noindex, follow`; `broadcaster` removido do `SportsEvent` (canais vão em `description`, só quando confirmados); links do rodapé com alvo de toque de 24 px ou mais.
+
 ### Observações
 
 - `trailingSlash` do Vercel não foi alterado (não verificável sem preview); a barra final é normalizada no cliente.

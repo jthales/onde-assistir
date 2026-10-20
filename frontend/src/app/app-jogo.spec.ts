@@ -551,6 +551,9 @@ describe('Página individual da partida', () => {
       const por = (nome: string) => lista.find((e: { name: string }) => e.name === nome);
       const mapeado = por('São Paulo x Atlético-MG');
       expect(mapeado.eventStatus).toBe('https://schema.org/EventScheduled');
+      expect(mapeado.broadcaster).toBeUndefined();
+      expect(mapeado.description).toBe('Transmissão: SporTV, Disney+.');
+      expect(por('Time A x Time B').description).toBe('Transmissão: SporTV, Disney+.');
       expect(mapeado.inLanguage).toBe('pt-BR');
       expect(mapeado.homeTeam).toEqual({ '@type': 'SportsTeam', 'name': 'São Paulo' });
       expect(mapeado.awayTeam).toEqual({ '@type': 'SportsTeam', 'name': 'Atlético-MG' });
@@ -558,6 +561,69 @@ describe('Página individual da partida', () => {
       expect(mapeado.organizer.name).toBe('CBF');
       expect('organizer' in por('Time A x Time B')).toBe(false);
       expect(por('Time C x Time D').organizer.name).toBe('UEFA');
+    });
+
+    it('partida encerrada/passada fica noindex com canonical na própria URL; ao vivo continua indexável (BUG-02)', () => {
+      const passada = { ...partida, data: '2026-10-19', hora: '20:00' };
+      const urlPassada = '/jogo/sao-paulo-x-atletico-mg-2026-10-19';
+      abrir(urlPassada);
+      responder([passada]);
+      expect(meta('robots')).toBe('noindex, follow');
+      expect(canonicalAtual()).toBe('https://ondeassistir.space' + urlPassada);
+      // 20:30 BRT: a partida das 20:00 está dentro da janela ao vivo.
+      vi.setSystemTime(new Date('2026-10-20T20:30:00-03:00'));
+      abrir();
+      responder([partida]);
+      expect(meta('robots')).toBe('index, follow');
+      expect(canonicalAtual()).toBe(canonical);
+      // 22:30 BRT: passou da janela e não há placar: sai do índice.
+      vi.setSystemTime(new Date('2026-10-20T22:30:00-03:00'));
+      abrir();
+      responder([partida]);
+      expect(meta('robots')).toBe('noindex, follow');
+      expect(canonicalAtual()).toBe(canonical);
+    });
+
+    it('eventStatus só em partidas que não passaram; sem valor válido o campo é omitido (BUG-04)', () => {
+      abrir('/');
+      responder([futuro, { ...futuro, timeVisitante: 'Time Passado', data: '2026-10-19' }]);
+      const lista = eventos();
+      const por = (nome: string) => lista.find((e: { name: string }) => e.name === nome);
+      expect(por('São Paulo x Atlético-MG').eventStatus).toBe('https://schema.org/EventScheduled');
+      expect('eventStatus' in por('São Paulo x Time Passado')).toBe(false);
+    });
+
+    it('sem canais confirmados o JSON-LD não traz description de transmissão (E2)', () => {
+      abrir('/');
+      responder([{ ...futuro, canal: [], streaming: [] }]);
+      expect('description' in eventos()[0]).toBe(false);
+      expect('broadcaster' in eventos()[0]).toBe(false);
+    });
+
+    it('/favoritos fica noindex com canonical na própria URL (E1)', () => {
+      abrir('/favoritos');
+      responder();
+      expect(meta('robots')).toBe('noindex, follow');
+      expect(canonicalAtual()).toBe('https://ondeassistir.space/favoritos');
+    });
+
+    it('robots e canonical não ficam presos nas transições internas noindex <-> válida (E4)', () => {
+      const view = abrir('/pagina-que-nao-existe');
+      responder();
+      expect(meta('robots')).toBe('noindex, follow');
+      view.componentInstance.voltarParaHome();
+      expect(meta('robots')).toBe('index, follow');
+      expect(canonicalAtual()).toBe('https://ondeassistir.space/');
+      view.componentInstance.toggleFiltroFavoritos();
+      expect(meta('robots')).toBe('noindex, follow');
+      expect(canonicalAtual()).toBe('https://ondeassistir.space/favoritos');
+      view.componentInstance.toggleFiltroFavoritos();
+      expect(meta('robots')).toBe('index, follow');
+      expect(canonicalAtual()).toBe('https://ondeassistir.space/');
+      view.componentInstance.navegarParaCampeonato('Brasileirão');
+      responder();
+      expect(meta('robots')).toBe('index, follow');
+      expect(canonicalAtual()).toBe('https://ondeassistir.space/campeonato/brasileirao');
     });
 
     it('badge do campeonato é link real com navegação SPA no clique simples', () => {
