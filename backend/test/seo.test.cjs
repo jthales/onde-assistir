@@ -203,3 +203,24 @@ test('sitemap ignora documentos incompletos e não deriva páginas de time dos j
   for (const slug of ['gremio', 'sao-paulo']) assert.ok(urls.includes(origem + '/' + slug));
   for (const slug of ['sem-mandante', 'sem-visitante', 'atletico-mg']) assert.ok(!urls.includes(origem + '/' + slug), slug);
 });
+
+test('cache imutável só para arquivos com hash do build (B5)', () => {
+  const { join } = require('node:path');
+  const vercel = JSON.parse(require('node:fs').readFileSync(join(__dirname, '../../frontend/vercel.json'), 'utf8'));
+  const regra = vercel.headers.find(h => h.headers.some(c => c.value === 'public, max-age=31536000, immutable'));
+  const re = new RegExp('^' + regra.source + '$');
+  for (const arquivo of ['main-XZ5JGCIJ.js', 'chunk-AB12CD34.js', 'polyfills-ABCDEFGH.js', 'styles-TKKZADJH.css']) {
+    assert.ok(re.test('/' + arquivo), arquivo);
+  }
+  for (const arquivo of ['index.html', 'ngsw.json', 'ngsw-worker.js', 'safety-worker.js', 'worker-basic.min.js', 'ads.txt',
+    'robots.txt', 'sitemap.xml', 'favicon/manifest.json', 'favicon/android-icon-192x192.png', 'google2731f870aa0f9d17.html', 'main.js']) {
+    assert.ok(!re.test('/' + arquivo), arquivo);
+  }
+  // Nomes reais do último build, quando existir.
+  const dist = join(__dirname, '../../frontend/dist/frontend/browser');
+  if (require('node:fs').existsSync(dist)) {
+    for (const f of require('node:fs').readdirSync(dist)) {
+      assert.equal(re.test('/' + f), /^(main|polyfills|chunk|styles|scripts)-[A-Z0-9]{8}.(js|css)$/.test(f), f);
+    }
+  }
+});
