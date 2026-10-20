@@ -71,24 +71,47 @@ test('data BRT na virada UTC e na meia-noite de Brasília', () => {
   assert.equal(dataBrt(new Date('2026-10-16T03:00:00Z')), '2026-10-16');
 });
 
-test('sitemap mantém home, campeonatos e times históricos e só inclui partidas de hoje em diante', () => {
+test('sitemap mantém home, campeonatos e só inclui partidas de hoje em diante, com lastmod real', () => {
   const passados = { ...jogo, timeMandante: 'Grêmio', data: '2026-10-14' };
-  const futuro = { ...jogo, data: '2026-10-16' };
+  const futuro = { ...jogo, data: '2026-10-16', lastUpdated: '2026-10-15T12:00:00.000Z' };
   const lista = entradas(buildSitemapXml([passados, jogo, futuro], origem, instante));
   const urls = lista.map(item => item.loc);
   assert.ok(urls.includes(origem + '/'));
-  for (const campeonato of ['brasileirao', 'libertadores', 'sul-americana', 'champions-league']) {
-    assert.ok(urls.includes(origem + '/campeonato/' + campeonato));
+  for (const campeonato of ['brasileirao', 'libertadores', 'sul-americana', 'champions-league', 'copa-do-brasil']) {
+    assert.ok(urls.includes(origem + '/campeonato/' + campeonato), campeonato);
   }
-  assert.ok(urls.includes(origem + '/gremio'));
+  for (const rota of ['/copa-2026', '/ao-vivo']) assert.ok(urls.includes(origem + rota), rota);
   const partidas = lista.filter(item => item.loc.includes('/jogo/'));
   assert.equal(partidas.length, 2);
   for (const item of partidas) {
-    assert.equal(item.lastmod, '2026-10-15');
     assert.equal(item.changefreq, 'daily');
     assert.equal(item.priority, '0.7');
   }
+  // lastmod só quando o documento tem lastUpdated; nunca "hoje" por padrão.
+  assert.equal(partidas.find(item => item.loc.endsWith('2026-10-16')).lastmod, '2026-10-15');
+  assert.equal(partidas.find(item => item.loc.endsWith('2026-10-15')).lastmod, '');
   assert.ok(!urls.some(url => url.includes('/jogo/') && url.includes('2026-10-14')));
+});
+
+test('sitemap só lista páginas de time que a SPA resolve e não usa lastmod nas páginas fixas', () => {
+  const jogos = [{ ...jogo, timeMandante: 'Alemanha', timeVisitante: 'Boca Juniors' }];
+  const comLista = entradas(buildSitemapXml(jogos, origem, instante, { timesComPagina: ['flamengo', 'coritiba', 'flamengo'] }));
+  const times = comLista.filter(item => item.priority === '0.8' && !item.loc.endsWith('/ao-vivo')).map(item => item.loc);
+  assert.deepEqual(times, [origem + '/coritiba', origem + '/flamengo']);
+  assert.ok(!comLista.some(item => item.loc.endsWith('/alemanha') || item.loc.endsWith('/boca-juniors')));
+  for (const item of comLista.filter(i => !i.loc.includes('/jogo/'))) assert.equal(item.lastmod, '', item.loc);
+  // Fallback estático: chaves de TEAM_ESPN_ID_MAP.
+  const { TEAM_ESPN_ID_MAP } = require('../src/constants.ts');
+  const padrao = entradas(buildSitemapXml([], origem, instante)).filter(i => i.priority === '0.8' && !i.loc.endsWith('/ao-vivo'));
+  assert.equal(padrao.length, Object.keys(TEAM_ESPN_ID_MAP).length);
+});
+
+test('lista de campeonatos do sitemap está em paridade com o frontend (CAMP_SLUG_LABEL)', () => {
+  const { CAMPEONATOS_SITEMAP } = require('../src/sitemap.ts');
+  const fonte = require('node:fs').readFileSync(require('node:path').join(__dirname, '../../frontend/src/app/app.ts'), 'utf8');
+  const bloco = fonte.match(/CAMP_SLUG_LABEL[^{]*\{([\s\S]*?)\};/)[1];
+  const slugsFrontend = [...bloco.matchAll(/'([a-z0-9-]+)':/g)].map(m => m[1]).sort();
+  assert.deepEqual([...CAMPEONATOS_SITEMAP].sort(), slugsFrontend);
 });
 
 test('Champions League mapeia slug, id ESPN e rótulo nas constantes do backend', () => {
@@ -145,7 +168,6 @@ test('Champions é reconhecida por aliases e demais campeonatos não mudam (R3-0
 test('sitemap exclui o dia anterior depois da meia-noite de Brasília', () => {
   const lista = entradas(buildSitemapXml([jogo, { ...jogo, data: '2026-10-16' }], origem,
     new Date('2026-10-16T03:00:00Z')));
-  assert.equal(lista.filter(item => item.loc.includes('/jogo/')).length, 1);
   assert.ok(lista.find(item => item.loc.endsWith('2026-10-16')));
 });
 
@@ -160,26 +182,24 @@ test('sitemap deduplica e usa exatamente os permalinks de colisão do frontend',
 
 test('sitemap vazio preserva URLs estáticas e escapa conteúdo XML', () => {
   const lista = entradas(buildSitemapXml([], origem, instante));
-  assert.equal(lista.length, 5);
+  const { CAMPEONATOS_SITEMAP } = require('../src/sitemap.ts');
+  const { TEAM_ESPN_ID_MAP } = require('../src/constants.ts');
+  assert.equal(lista.length, 1 + CAMPEONATOS_SITEMAP.length + 2 + Object.keys(TEAM_ESPN_ID_MAP).length);
   const xml = buildSitemapXml([jogo], 'https://example.test/a&b/', instante);
   assert.ok(xml.includes('a&amp;b/'));
   assert.equal(entradas(xml)[0].loc, 'https://example.test/a&b/');
 });
 
-test('sitemap ignora times de documentos incompletos e preserva URLs históricas válidas', () => {
+test('sitemap ignora documentos incompletos e não deriva páginas de time dos jogos', () => {
   const incompletos = [
     { ...jogo, timeMandante: '', timeVisitante: 'Sem Mandante' },
     { ...jogo, timeMandante: 'Sem Visitante', timeVisitante: '' },
     { ...jogo, timeMandante: '  ', timeVisitante: 'Outro Incompleto' },
     { ...jogo, timeMandante: 'Incompleto Também', timeVisitante: '\t' },
   ];
-  const historicos = [
-    { ...jogo, data: '2026-01-01', timeMandante: 'Grêmio', timeVisitante: 'São Paulo' },
-    { ...jogo, data: '2026-01-01', timeMandante: 'A&B FC', timeVisitante: 'C/A' },
-  ];
-  const urls = entradas(buildSitemapXml([...incompletos, ...historicos, jogo], origem, instante))
-    .filter(item => item.priority === '0.8').map(item => item.loc);
-  assert.deepEqual(urls, ['ab-fc', 'atletico-mg', 'ca', 'gremio', 'sao-paulo'].map(slug => origem + '/' + slug));
-  assert.ok(!urls.includes(origem + '/sem-mandante'));
-  assert.ok(!urls.includes(origem + '/sem-visitante'));
+  const historicos = [{ ...jogo, data: '2026-01-01', timeMandante: 'Grêmio', timeVisitante: 'São Paulo' }];
+  const lista = entradas(buildSitemapXml([...incompletos, ...historicos, jogo], origem, instante, { timesComPagina: ['gremio', 'sao-paulo'] }));
+  const urls = lista.map(item => item.loc);
+  for (const slug of ['gremio', 'sao-paulo']) assert.ok(urls.includes(origem + '/' + slug));
+  for (const slug of ['sem-mandante', 'sem-visitante', 'atletico-mg']) assert.ok(!urls.includes(origem + '/' + slug), slug);
 });

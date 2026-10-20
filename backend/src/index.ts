@@ -492,38 +492,41 @@ app.get('/api/odds', async (_req, res) => {
 let classificacaoCache: { dados: any[]; fetchedAt: number } | null = null;
 const CLASSIFICACAO_CACHE_TTL_MS = 5 * 60_000;
 
-app.get('/api/classificacao', async (_req, res) => {
+/** Tabela do Brasileirão (ESPN), com cache de 5 min; compartilhada pela rota e pelo sitemap. */
+async function obterClassificacaoBrasileirao(): Promise<any[]> {
   const agora = Date.now();
-
   if (classificacaoCache && agora - classificacaoCache.fetchedAt < CLASSIFICACAO_CACHE_TTL_MS) {
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
-    res.json(classificacaoCache.dados);
-    return;
+    return classificacaoCache.dados;
   }
 
+  const resp = await fetch('https://site.api.espn.com/apis/v2/sports/soccer/bra.1/standings');
+  const data: any = await resp.json();
+
+  const entries = data.children?.[0]?.standings?.entries ?? [];
+  const getStat = (stats: any[], name: string) =>
+    stats?.find((s: any) => s.name === name)?.value ?? 0;
+
+  const dados = entries.map((entry: any) => ({
+    posicao:      getStat(entry.stats, 'rank'),
+    nome:         TEAM_NAME_MAP[entry.team.displayName] ?? entry.team.displayName,
+    logo:         entry.team.logos?.[0]?.href ?? null,
+    jogos:        getStat(entry.stats, 'gamesPlayed'),
+    vitorias:     getStat(entry.stats, 'wins'),
+    empates:      getStat(entry.stats, 'ties'),
+    derrotas:     getStat(entry.stats, 'losses'),
+    gols:         getStat(entry.stats, 'pointsFor'),
+    golsSofridos: getStat(entry.stats, 'pointsAgainst'),
+    saldo:        getStat(entry.stats, 'pointDifferential'),
+    pontos:       getStat(entry.stats, 'points'),
+  }));
+
+  classificacaoCache = { dados, fetchedAt: agora };
+  return dados;
+}
+
+app.get('/api/classificacao', async (_req, res) => {
   try {
-    const resp = await fetch('https://site.api.espn.com/apis/v2/sports/soccer/bra.1/standings');
-    const data: any = await resp.json();
-
-    const entries = data.children?.[0]?.standings?.entries ?? [];
-    const getStat = (stats: any[], name: string) =>
-      stats?.find((s: any) => s.name === name)?.value ?? 0;
-
-    const dados = entries.map((entry: any) => ({
-      posicao:      getStat(entry.stats, 'rank'),
-      nome:         TEAM_NAME_MAP[entry.team.displayName] ?? entry.team.displayName,
-      logo:         entry.team.logos?.[0]?.href ?? null,
-      jogos:        getStat(entry.stats, 'gamesPlayed'),
-      vitorias:     getStat(entry.stats, 'wins'),
-      empates:      getStat(entry.stats, 'ties'),
-      derrotas:     getStat(entry.stats, 'losses'),
-      gols:         getStat(entry.stats, 'pointsFor'),
-      golsSofridos: getStat(entry.stats, 'pointsAgainst'),
-      saldo:        getStat(entry.stats, 'pointDifferential'),
-      pontos:       getStat(entry.stats, 'points'),
-    }));
-
-    classificacaoCache = { dados, fetchedAt: agora };
+    const dados = await obterClassificacaoBrasileirao();
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
     res.json(dados);
   } catch (error) {
@@ -965,8 +968,17 @@ app.get('/sitemap.xml', async (_req, res) => {
       timeVisitante: d['timeVisitante'] ?? '',
       data: d['data'] ?? '',
       campeonato: d['campeonato'] ?? '',
+      lastUpdated: typeof d['lastUpdated'] === 'string' ? d['lastUpdated'] : undefined,
     }));
-    const xml = buildSitemapXml(jogosSitemap, FRONTEND_URL, new Date());
+    // A SPA só tem página de time para quem está na tabela do Brasileirão (app.ts: classificacao().find(slugify(nome) === slug)).
+    // Se a ESPN falhar, o sitemap cai no fallback estático (TEAM_ESPN_ID_MAP).
+    let timesComPagina: string[] | undefined;
+    try {
+      timesComPagina = (await obterClassificacaoBrasileirao()).map((t: any) => slugifyFull(String(t.nome))).filter(Boolean);
+    } catch (e) {
+      console.error('Sitemap: classificação indisponível, usando fallback estático de times:', e);
+    }
+    const xml = buildSitemapXml(jogosSitemap, FRONTEND_URL, new Date(), { timesComPagina });
 
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=7200');
