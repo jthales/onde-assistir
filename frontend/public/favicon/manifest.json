@@ -1,7 +1,7 @@
 {
   "name": "Onde Assistir — Futebol",
   "short_name": "Onde Assistir",
-  "description": "Veja onde assistir os jogos de futebol da semana no Brasil: Brasileirão, Libertadores, Sul-Americana.",
+  "description": "Veja onde assistir os jogos de futebol da semana no Brasil: Brasileirão, Libertadores, Sul-Americana e Champions League.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

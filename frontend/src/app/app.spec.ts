@@ -128,6 +128,94 @@ describe('App', () => {
     expect(el.querySelectorAll('.jogo-card').length).toBe(3);
   });
 
+  it('mapeia a UEFA Champions League para slug, rótulo e filtro por campeonato', () => {
+    const ucl = jogo({ timeMandante: 'Real Madrid', timeVisitante: 'Barcelona', campeonato: 'Champions League', canal: [], streaming: [] });
+    responder([...JOGOS, ucl]);
+    expect(app.slugifyCampeonato('Champions League')).toBe('champions-league');
+    expect(app.slugifyCampeonato('UEFA Champions League')).toBe('champions-league');
+    expect(app.getLabelCampeonato('champions-league')).toBe('UEFA Champions League');
+    app.busca.set('champions');
+    expect(app.jogosFiltrados().map(j => j.timeMandante)).toEqual(['Real Madrid']);
+  });
+
+  describe('página de campeonato', () => {
+    const UCL_JOGO: JogoCampeonato = {
+      timeMandante: 'Real Madrid', timeVisitante: 'Barcelona', logoMandante: null, logoVisitante: null,
+      data: dataBrt(5), hora: '16:00', status: 'agendado', rodada: null, fase: 'Fase de Liga',
+      placarMandante: null, placarVisitante: null, estadio: 'Bernabéu', campeonato: 'UEFA Champions League',
+    };
+
+    afterEach(() => {
+      app.voltarParaHome();
+      document.querySelector('script[data-seo="sports-events"]')?.remove();
+      history.replaceState(null, '', '/');
+    });
+
+    function abrirChampions(): void {
+      responder();
+      app.navegarParaCampeonato('Champions League');
+    }
+
+    function responderCampeonato(partes: { classif?: unknown; jogos?: unknown; noticias?: unknown; falhar?: ('classif' | 'jogos' | 'noticias')[] }): void {
+      const rotas = { classif: '/api/classificacao/champions-league', jogos: '/api/jogos-campeonato/champions-league', noticias: '/api/noticias-campeonato/champions-league' } as const;
+      for (const chave of ['classif', 'jogos', 'noticias'] as const) {
+        for (const req of http.match(r => r.url.endsWith(rotas[chave]))) {
+          if (partes.falhar?.includes(chave)) req.flush('erro', { status: 500, statusText: 'Server Error' });
+          else req.flush(partes[chave] ?? (chave === 'classif' ? null : []));
+        }
+      }
+      fixture.detectChanges();
+    }
+
+    it('mostra alerta e tenta novamente quando todas as chamadas falham (QA-01)', () => {
+      abrirChampions();
+      responderCampeonato({ falhar: ['classif', 'jogos', 'noticias'] });
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('.campeonato-page [role="alert"]')).toBeTruthy();
+      (el.querySelector('.campeonato-page [role="alert"] button') as HTMLButtonElement).click();
+      expect(app.loadingCampeonato()).toBe(true);
+      responderCampeonato({ classif: { tipo: 'tabela-unica', grupos: [] }, jogos: [UCL_JOGO] });
+      expect(app.erroCampeonato()).toBe(false);
+      expect(el.querySelector('.campeonato-page [role="alert"]')).toBeNull();
+      expect(el.querySelectorAll('.campeonato-sidebar .jogo-camp-card').length).toBe(1);
+    });
+
+    it('tolera falha parcial: notícias fora do ar não derrubam jogos (QA-01)', () => {
+      abrirChampions();
+      responderCampeonato({ jogos: [UCL_JOGO], falhar: ['noticias'] });
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('.campeonato-page [role="alert"]')).toBeNull();
+      expect(el.querySelectorAll('.campeonato-sidebar .jogo-camp-card').length).toBe(1);
+    });
+
+    it('mostra estado vazio e não renderiza tabela sem times (QA-02)', () => {
+      abrirChampions();
+      responderCampeonato({ classif: { tipo: 'tabela-unica', grupos: [] }, jogos: [], noticias: [] });
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.textContent).toContain('Nenhuma partida ou classificação disponível para este campeonato no momento.');
+      expect(el.querySelector('.campeonato-page table')).toBeNull();
+    });
+
+    it('descarta grupos sem times e não mostra vazio quando há jogos (QA-02)', () => {
+      abrirChampions();
+      responderCampeonato({ classif: { tipo: 'grupos', grupos: [{ nome: 'Grupo A', times: [] }] }, jogos: [UCL_JOGO] });
+      const el = fixture.nativeElement as HTMLElement;
+      expect(app.classificacaoExibivel()).toBeNull();
+      expect(el.querySelector('.campeonato-page table')).toBeNull();
+      expect(el.textContent).not.toContain('Nenhuma partida ou classificação');
+    });
+
+    it('JSON-LD só traz partidas do campeonato da rota (QA-03)', () => {
+      const ucl = jogo({ timeMandante: 'Real Madrid', timeVisitante: 'Barcelona', campeonato: 'Champions League', canal: [], streaming: [] });
+      responder([...JOGOS, ucl]);
+      app.navegarParaCampeonato('Champions League');
+      const ld = document.querySelector('script[data-seo="sports-events"]');
+      expect(ld).toBeTruthy();
+      const nomes = JSON.parse(ld!.textContent!)['@graph'].map((e: { name: string }) => e.name);
+      expect(nomes).toEqual(['Real Madrid x Barcelona']);
+    });
+  });
+
   it('busca ignora acentos e caixa e também casa campeonato', () => {
     responder();
     app.busca.set('SAO paulo');

@@ -11,6 +11,7 @@ import { GoogleGenAI } from '@google/genai';
 import { Jogo } from './types';
 import { getDb } from './mongodb';
 import { espnScoreboardUrlForLeague, fetchEspn, ESPN_LEAGUES, TEAM_NAME_MAP } from './constants';
+import { geminiPermitido, filtrarRespostaGemini, transmissaoPermitida } from './broadcast-guard';
 import { buscarDadosRodada, buscarOndeAssistir, buscarFutebolExpert, buscarFutebolExpertCampeonato } from './scraper';
 
 const DRY_RUN    = process.argv.includes('--dry-run');
@@ -24,6 +25,7 @@ const ESPN_LEAGUE_LABELS: Record<string, string> = {
   'bra.1':                  'Brasileirão',
   'conmebol.libertadores':  'Libertadores',
   'conmebol.sudamericana':  'Sul-Americana',
+  'uefa.champions':         'Champions League',
   'bra.copa_do_brazil':     'Copa do Brasil',
 };
 
@@ -36,6 +38,7 @@ const LEAGUE_NAME_MAP: Record<string, string> = {
   'Brazil Serie B':           'Brasileirão Série B',
   'CONMEBOL Libertadores':    'Libertadores',
   'CONMEBOL Sudamericana':    'Sul-Americana',
+  'UEFA Champions League':    'Champions League',
   'Copa Do Brasil':           'Copa do Brasil',
   'Copa do Brasil':           'Copa do Brasil',
   'Brazilian Cup':            'Copa do Brasil',
@@ -118,6 +121,7 @@ async function fetchFixturesFromEspn(): Promise<EspnFixture[]> {
     { id: ESPN_LEAGUES.libertadores, filtrarBR: true,  janelaDias: 5 },
     { id: ESPN_LEAGUES.sudamericana, filtrarBR: true,  janelaDias: 5 },
     { id: ESPN_LEAGUES.copadobrasil, filtrarBR: false, janelaDias: 5 },
+    { id: ESPN_LEAGUES.championsleague, filtrarBR: false, janelaDias: 5 },
   ];
 
   const todas: EspnFixture[] = [];
@@ -158,6 +162,7 @@ Direitos de transmissão atuais (temporada 2025/2026):
   - "Cazé TV": transmite ao vivo no YouTube jogos do Brasileirão Série A (jogos de grande audiência), Copa do Brasil e Libertadores.
   - "Ge TV": canal do YouTube do Ge/Globo Esporte que transmite alguns jogos ao vivo gratuitamente.
   - "Amazon Prime Video": transmite alguns jogos do Brasileirão Série A.
+- UEFA Champions League: os direitos de transmissão no Brasil NÃO estão confirmados nesta lista. Use [] para canal e streaming dos jogos da Champions League.
 - Se não tiver certeza sobre um canal ou plataforma específica, use [].
 
 Jogos:
@@ -317,7 +322,8 @@ async function runPopulate(): Promise<void> {
   if (failedFixtures.length > 0) {
     const limite = new Date(hoje.getTime() + GEMINI_JANELA_DIAS * 24 * 60 * 60 * 1000);
 
-    const paraGemini = failedFixtures.filter(f => new Date(f.data) <= limite);
+    // Champions League nunca vai ao Gemini (ver broadcast-guard.ts); fica sem transmissão se os scrapers não confirmarem
+    const paraGemini = failedFixtures.filter(f => new Date(f.data) <= limite && geminiPermitido(f.campeonato));
     const semDefinicao = failedFixtures.filter(f => new Date(f.data) > limite);
 
     if (semDefinicao.length > 0) {
@@ -338,7 +344,7 @@ async function runPopulate(): Promise<void> {
 
     if (paraGemini.length > 0 && !NO_GEMINI) {
       console.log(`\n── Gemini (fallback para ${paraGemini.length} jogo(s) em até ${GEMINI_JANELA_DIAS} dias) ──`);
-      const geminiResults = await fetchBroadcastFromGemini(paraGemini);
+      const geminiResults = filtrarRespostaGemini(paraGemini, await fetchBroadcastFromGemini(paraGemini));
       for (const [key, broadcast] of geminiResults) {
         broadcastMap.set(key, broadcast);
         const channels = [...broadcast.canal, ...broadcast.streaming].join(', ');
@@ -358,7 +364,7 @@ async function runPopulate(): Promise<void> {
 
   for (const fixture of fixtures) {
     const key = `${fixture.timeMandante}|${fixture.timeVisitante}`;
-    const broadcast = broadcastMap.get(key);
+    const broadcast = transmissaoPermitida(fixture.campeonato, sourceMap.get(key), broadcastMap.get(key));
     const streaming = broadcast?.streaming ?? [];
 
     jogosParaSalvar.push({

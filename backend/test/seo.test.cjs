@@ -77,7 +77,7 @@ test('sitemap mantém home, campeonatos e times históricos e só inclui partida
   const lista = entradas(buildSitemapXml([passados, jogo, futuro], origem, instante));
   const urls = lista.map(item => item.loc);
   assert.ok(urls.includes(origem + '/'));
-  for (const campeonato of ['brasileirao', 'libertadores', 'sul-americana']) {
+  for (const campeonato of ['brasileirao', 'libertadores', 'sul-americana', 'champions-league']) {
     assert.ok(urls.includes(origem + '/campeonato/' + campeonato));
   }
   assert.ok(urls.includes(origem + '/gremio'));
@@ -89,6 +89,57 @@ test('sitemap mantém home, campeonatos e times históricos e só inclui partida
     assert.equal(item.priority, '0.7');
   }
   assert.ok(!urls.some(url => url.includes('/jogo/') && url.includes('2026-10-14')));
+});
+
+test('Champions League mapeia slug, id ESPN e rótulo nas constantes do backend', () => {
+  const { ESPN_LEAGUES, LIGA_SLUG_TO_ESPN, LIGA_SLUG_LABEL } = require('../src/constants.ts');
+  assert.equal(ESPN_LEAGUES.championsleague, 'uefa.champions');
+  assert.equal(LIGA_SLUG_TO_ESPN['champions-league'], 'uefa.champions');
+  assert.equal(LIGA_SLUG_LABEL['champions-league'], 'UEFA Champions League');
+});
+
+test('Gemini nunca é fonte para a Champions League (QA-04)', () => {
+  const { geminiPermitido, filtrarRespostaGemini, transmissaoPermitida } = require('../src/broadcast-guard.ts');
+  assert.equal(geminiPermitido('Champions League'), false);
+  assert.equal(geminiPermitido('Brasileirão'), true);
+  assert.equal(geminiPermitido('Libertadores'), true);
+  const ucl = { timeMandante: 'Liverpool', timeVisitante: 'Villarreal', campeonato: 'Champions League' };
+  const bra = { timeMandante: 'Flamengo', timeVisitante: 'Santos', campeonato: 'Brasileirão' };
+  const globo = { canal: ['Globo'], streaming: ['Globoplay'] };
+  const paraGemini = [bra]; // a Champions nunca é enviada
+  // Gemini devolve o jogo pedido E uma entrada extra da Champions que ninguém pediu.
+  const resposta = new Map([['Flamengo|Santos', globo], ['Liverpool|Villarreal', globo], ['Outro|Time', globo]]);
+  const limpo = filtrarRespostaGemini(paraGemini, resposta);
+  assert.deepEqual([...limpo.keys()], ['Flamengo|Santos']);
+  // Consumo final: Champions nunca recebe canal/streaming vindos do Gemini, outros campeonatos ficam iguais.
+  assert.deepEqual(transmissaoPermitida(ucl.campeonato, 'gemini', globo), { canal: [], streaming: [] });
+  assert.deepEqual(transmissaoPermitida(ucl.campeonato, undefined, globo), { canal: [], streaming: [] });
+  assert.equal(transmissaoPermitida(ucl.campeonato, 'futebolexpert', globo), globo);
+  assert.equal(transmissaoPermitida(bra.campeonato, 'gemini', globo), globo);
+  assert.equal(transmissaoPermitida(bra.campeonato, 'gemini', limpo.get('Flamengo|Santos')), globo);
+  assert.equal(transmissaoPermitida(bra.campeonato, undefined, undefined), undefined);
+  // Mesmo se a entrada extra sobrevivesse no mapa, o consumo a anula.
+  assert.deepEqual(transmissaoPermitida(ucl.campeonato, undefined, resposta.get('Liverpool|Villarreal')), { canal: [], streaming: [] });
+});
+
+test('Champions é reconhecida por aliases e demais campeonatos não mudam (R3-01)', () => {
+  const { geminiPermitido, filtrarRespostaGemini, transmissaoPermitida } = require('../src/broadcast-guard.ts');
+  const globo = { canal: ['Globo'], streaming: ['Globoplay'] };
+  const vazio = { canal: [], streaming: [] };
+  for (const alias of ['UEFA Champions League', 'CHAMPIONS LEAGUE', 'Champions League ', '  uefa   champions  league']) {
+    assert.equal(geminiPermitido(alias), false, alias);
+    assert.deepEqual(transmissaoPermitida(alias, 'gemini', globo), vazio, alias);
+    assert.deepEqual(transmissaoPermitida(alias, undefined, globo), vazio, alias);
+    for (const fonte of ['futebolexpert', 'rodada', 'scrape']) {
+      assert.equal(transmissaoPermitida(alias, fonte, globo), globo, alias + ' ' + fonte);
+    }
+    const enviados = [{ timeMandante: 'A', timeVisitante: 'B', campeonato: alias }];
+    assert.equal(filtrarRespostaGemini(enviados, new Map([['A|B', globo]])).size, 0, alias);
+  }
+  for (const outro of ['Brasileirão', 'Libertadores', 'Sul-Americana', 'Copa do Brasil']) {
+    assert.equal(geminiPermitido(outro), true, outro);
+    assert.equal(transmissaoPermitida(outro, 'gemini', globo), globo, outro);
+  }
 });
 
 test('sitemap exclui o dia anterior depois da meia-noite de Brasília', () => {
@@ -109,7 +160,7 @@ test('sitemap deduplica e usa exatamente os permalinks de colisão do frontend',
 
 test('sitemap vazio preserva URLs estáticas e escapa conteúdo XML', () => {
   const lista = entradas(buildSitemapXml([], origem, instante));
-  assert.equal(lista.length, 4);
+  assert.equal(lista.length, 5);
   const xml = buildSitemapXml([jogo], 'https://example.test/a&b/', instante);
   assert.ok(xml.includes('a&amp;b/'));
   assert.equal(entradas(xml)[0].loc, 'https://example.test/a&b/');

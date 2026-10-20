@@ -63,3 +63,4 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 - 2026-10-15: patch 1.3.1 publicado (título com campeonato nas colisões, sitemap sem documentos incompletos, /copa-2026 sem SportsEvent doméstico); aprovado pelo Argus (63 testes front, 13 back).
 - 2026-10-15: Lote D1 (favoritos, v1.4.0) publicado após QA do Argus com 1 rodada de correção (delta de 44px eliminado, favoritos válidos preservados, estrela estável).
 - 2026-10-15: baseline de Core Web Vitals (Argus, 80 execuções) e lote E1 (v1.4.1, performance de imagens e CLS) publicado após QA com 1 rodada de correção (min-height 100svh removido, fallback de logo); smoke em produção aprovado.
+- 2026-10-20: Champions League (v1.5.0) implementada em `feat/champions-league` (ESPN `uefa.champions`, slug `champions-league`); build e testes OK localmente, aguardando QA e aprovação. Não publicada.

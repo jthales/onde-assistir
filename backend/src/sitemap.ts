@@ -29,7 +29,7 @@ export function buildSitemapXml(jogos: readonly JogoSlug[], frontendUrl: string,
   const urlsPartidas = [...new Set(futuros.map(jogo => origem + buildJogoUrl(jogo, futuros)))].sort();
   const entradas = [
     { url: `${origem}/`, priority: '1.0' },
-    ...['brasileirao', 'libertadores', 'sul-americana'].map(slug => ({
+    ...['brasileirao', 'libertadores', 'sul-americana', 'champions-league'].map(slug => ({
       url: `${origem}/campeonato/${slug}`, priority: '0.9',
     })),
     ...[...times].sort().map(slug => ({ url: `${origem}/${slug}`, priority: '0.8' })),

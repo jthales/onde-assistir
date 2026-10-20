@@ -298,12 +298,13 @@ app.get('/api/placar', async (_req, res) => {
   }
 
   try {
-    const [dataBra, dataLib, dataSul, dataCopa, dataCopa2026] = await Promise.all([
+    const [dataBra, dataLib, dataSul, dataCopa, dataCopa2026, dataUcl] = await Promise.all([
       fetchEspn(espnScoreboardUrlForLeague(ESPN_LEAGUES.brasileirao, 1)).then(r => r.json()),
       fetchEspn(espnScoreboardUrlForLeague(ESPN_LEAGUES.libertadores, 1)).then(r => r.json()),
       fetchEspn(espnScoreboardUrlForLeague(ESPN_LEAGUES.sudamericana, 1)).then(r => r.json()),
       fetchEspn(espnScoreboardUrlForLeague(ESPN_LEAGUES.copadobrasil, 1)).then(r => r.json()),
       fetchEspn(espnCopaUrl()).then(r => r.json()),
+      fetchEspn(espnScoreboardUrlForLeague(ESPN_LEAGUES.championsleague, 1)).then(r => r.json()),
     ]);
     const allEvents = [
       ...(dataBra.events ?? []),
@@ -311,6 +312,7 @@ app.get('/api/placar', async (_req, res) => {
       ...(dataSul.events ?? []),
       ...(dataCopa.events ?? []),
       ...(dataCopa2026.events ?? []),
+      ...(dataUcl.events ?? []),
     ];
 
     const placares = allEvents.map((event: any) => {
@@ -404,6 +406,7 @@ app.get('/api/odds', async (_req, res) => {
       ESPN_LEAGUES.libertadores,
       ESPN_LEAGUES.sudamericana,
       ESPN_LEAGUES.copadobrasil,
+      ESPN_LEAGUES.championsleague,
     ];
 
     const ligaResults = await Promise.allSettled(
@@ -533,6 +536,7 @@ app.get('/api/classificacao', async (_req, res) => {
 // ── Endpoints de campeonato (ESPN direto, sem Firestore) ─────────────────────
 
 const FASE_SLUG_TO_PT: Record<string, string> = {
+  'league-phase':  'Fase de Liga',
   'first-round':   'Primeira Fase',
   'second-round':  'Segunda Fase',
   'third-round':   'Terceira Fase',
