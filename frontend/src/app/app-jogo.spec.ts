@@ -54,6 +54,10 @@ describe('Página individual da partida', () => {
   }
 
   beforeEach(async () => {
+    // As fixtures usam datas fixas (partida em 2026-10-20 20:00): congela só o Date, antes da partida,
+    // para os testes não dependerem do relógio real (timers continuam reais).
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-20T12:00:00-03:00'));
     urlAnterior = location.pathname + location.search + location.hash;
     tituloAnterior = document.title;
     await TestBed.configureTestingModule({
@@ -67,6 +71,7 @@ describe('Página individual da partida', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     fixture?.destroy();
     fixture = undefined;
     http.verify({ ignoreCancelled: true });
