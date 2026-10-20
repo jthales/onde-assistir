@@ -33,6 +33,7 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 
 ## Fase 5 — Diferenciais
 - [~] Agenda semanal por competição — `/campeonato/:slug` + `/api/jogos-campeonato/:liga`; sem visão semanal dedicada
+- [~] UEFA Champions League — v1.5.0: populate (ESPN `uefa.champions`, sem filtro BR), `/campeonato/champions-league`, placar/odds/sitemap; Gemini nunca é fonte de transmissão (`broadcast-guard.ts`). Aprovada em QA com ressalvas; falta validar populate real e UI em produção
 - [ ] Histórico de transmissões por time
 - [~] Notificações — push FCM (`/api/subscricao`, `firebase-messaging-sw.js`, `push-notificacao.service.ts`); alertas de mudança de horário/transmissão não existem (sem validação ponta a ponta)
 - [x] PWA instalável — `manifest.json` + `ngsw-config.json` + `provideServiceWorker` (sem validação visual no celular)
@@ -63,4 +64,4 @@ Auditoria feita por leitura de código + checagem em produção. Itens "(sem val
 - 2026-10-15: patch 1.3.1 publicado (título com campeonato nas colisões, sitemap sem documentos incompletos, /copa-2026 sem SportsEvent doméstico); aprovado pelo Argus (63 testes front, 13 back).
 - 2026-10-15: Lote D1 (favoritos, v1.4.0) publicado após QA do Argus com 1 rodada de correção (delta de 44px eliminado, favoritos válidos preservados, estrela estável).
 - 2026-10-15: baseline de Core Web Vitals (Argus, 80 execuções) e lote E1 (v1.4.1, performance de imagens e CLS) publicado após QA com 1 rodada de correção (min-height 100svh removido, fallback de logo); smoke em produção aprovado.
-- 2026-10-20: Champions League (v1.5.0) implementada em `feat/champions-league` (ESPN `uefa.champions`, slug `champions-league`); build e testes OK localmente, aguardando QA e aprovação. Não publicada.
+- 2026-10-20: Champions League (v1.5.0) em `feat/champions-league` (ESPN `uefa.champions`, slug `champions-league`) aprovada em QA pela Noelle (3 rodadas, `RELATORIO-QA*.md`); veredito final APROVADO COM RESSALVAS. Ressalvas: QA-05 (alvos de toque) fora do escopo; transmissão da Champions sem fonte confirmada, exibida como "A confirmar"; populate real e UI com dados de produção ainda NÃO validados. Não validada em produção.
