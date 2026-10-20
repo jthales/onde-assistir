@@ -6,6 +6,29 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.6.0] — 2026-10-20
+
+### Adicionado
+
+- Sitemap só com páginas de time que a SPA resolve (tabela do Brasileirão), com `/campeonato/copa-do-brasil`, `/copa-2026` e `/ao-vivo`; `lastmod` real das partidas (campo `lastUpdated`) e sem `lastmod` nas páginas fixas.
+- Badge de campeonato como link real (navegação SPA no clique simples) e links para campeonatos e times no rodapé.
+- Arquivo de verificação do Google Search Console (branch `chore/gsc-verification`).
+
+### Alterado
+
+- Rotas desconhecidas, campeonatos inexistentes e partidas fora da agenda passam a `noindex, follow` com canonical na home; caixa e barra final das rotas são normalizadas.
+- Metas centralizadas por rota (title, description, Open Graph, Twitter, canonical, robots); description de `/campeonato/*` com o próximo jogo (horário de Brasília) e canais só quando confirmados; `og:image` com escudo em times e partidas.
+- Home com title e description cobrindo "hoje e da semana".
+- JSON-LD `SportsEvent` com `eventStatus`, `homeTeam`/`awayTeam` e `inLanguage`; `organizer` omitido quando a competição não está mapeada (sem fallback para a CBF).
+- `Cache-Control: public, max-age=31536000, immutable` apenas para `main/polyfills/chunk/styles-<hash>`.
+
+### Observações
+
+- `trailingSlash` do Vercel não foi alterado (não verificável sem preview); a barra final é normalizada no cliente.
+- Não há SSR/prerender: title, canonical e JSON-LD por rota continuam dependendo de JavaScript.
+
+---
+
 ## [1.5.0] — 2026-10-20
 
 ### Adicionado
