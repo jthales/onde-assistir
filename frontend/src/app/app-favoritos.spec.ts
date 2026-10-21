@@ -195,7 +195,7 @@ describe('Favoritos no App', () => {
     view.detectChanges();
     expect(location.pathname).toBe('/');
     expect(view.componentInstance.filtroFavoritos()).toBe(false);
-    expect(document.title).toBe('Onde Assistir — Futebol ao Vivo: TV e Streaming no Brasil');
+    expect(document.title).toBe('Onde Assistir — Jogos de Futebol Hoje e da Semana: TV e Streaming');
     expect(document.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe('https://ondeassistir.space/');
     expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://ondeassistir.space/');
   });

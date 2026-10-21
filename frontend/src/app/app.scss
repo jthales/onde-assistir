@@ -420,6 +420,10 @@ body {
   color: rgba(255, 255, 255, 0.55);
   text-decoration: none;
   transition: color 0.15s;
+  // Alvo de toque >= 24px de altura sem mexer no espaçamento do layout (padding compensado pela margem negativa)
+  display: inline-block;
+  padding: 0.4rem 0.25rem;
+  margin: -0.4rem -0.25rem;
   &:hover { color: #fff; }
   &--accent {
     color: var(--color-primary-light);
