@@ -6,6 +6,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.6.1] — 2026-10-20
+
+### Corrigido
+
+- Regra de `Cache-Control: immutable` do `frontend/vercel.json` não casava em produção (`main-BMDJMNYD.js` respondia `max-age=0, must-revalidate`): o quantificador `{8}` do `source` é lido como grupo opcional pela Vercel. O padrão passou a `[A-Za-z0-9]+`, sem chaves, e o teste agora falha se o `source` contiver `{` ou `}`.
+
+---
+
 ## [1.6.0] — 2026-10-20
 
 ### Adicionado

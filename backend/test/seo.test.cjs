@@ -208,8 +208,10 @@ test('cache imutável só para arquivos com hash do build (B5)', () => {
   const { join } = require('node:path');
   const vercel = JSON.parse(require('node:fs').readFileSync(join(__dirname, '../../frontend/vercel.json'), 'utf8'));
   const regra = vercel.headers.find(h => h.headers.some(c => c.value === 'public, max-age=31536000, immutable'));
+  // A Vercel (path-to-regexp) lê {n} como grupo opcional e a regra deixa de casar: sem chaves no source.
+  assert.ok(!/[{}]/.test(regra.source), 'source sem chaves: ' + regra.source);
   const re = new RegExp('^' + regra.source + '$');
-  for (const arquivo of ['main-XZ5JGCIJ.js', 'chunk-AB12CD34.js', 'polyfills-ABCDEFGH.js', 'styles-TKKZADJH.css', 'chunk-a1b2c3d4.js', 'styles-abcdefgh.css', 'main-Ab3dE5g7.js']) {
+  for (const arquivo of ['main-XZ5JGCIJ.js', 'chunk-AB12CD34.js', 'polyfills-ABCDEFGH.js', 'styles-TKKZADJH.css', 'chunk-a1b2c3d4.js', 'styles-abcdefgh.css', 'main-Ab3dE5g7.js', 'main-BMDJMNYD.js']) {
     assert.ok(re.test('/' + arquivo), arquivo);
   }
   for (const arquivo of ['index.html', 'ngsw.json', 'ngsw-worker.js', 'safety-worker.js', 'worker-basic.min.js', 'ads.txt',
@@ -220,7 +222,7 @@ test('cache imutável só para arquivos com hash do build (B5)', () => {
   const dist = join(__dirname, '../../frontend/dist/frontend/browser');
   if (require('node:fs').existsSync(dist)) {
     for (const f of require('node:fs').readdirSync(dist)) {
-      assert.equal(re.test('/' + f), /^(main|polyfills|chunk|styles|scripts)-[A-Za-z0-9]{8}.(js|css)$/.test(f), f);
+      assert.equal(re.test('/' + f), /^(main|polyfills|chunk|styles|scripts)-[A-Za-z0-9]+.(js|css)$/.test(f), f);
     }
   }
 });
