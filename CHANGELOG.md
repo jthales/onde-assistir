@@ -13,6 +13,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - Páginas de campeonato em fase eliminatória (Libertadores, Sul-Americana, Champions League) exibiam a tabela de grupos/liga já encerrada. O backend passa a detectar a fase atual pelo próximo jogo da ESPN e, quando é mata-mata, devolve os confrontos (antes isso só valia para a Copa do Brasil).
 - Mata-mata agrupado por fase (fase atual primeiro, anteriores abaixo), com suporte a jogo único (final), pênaltis e vencedor pelo agregado quando a ESPN não informa a série; a final mostra "Campeão".
 - Janela de busca ampliada para incluir as fases anteriores da temporada, descartando jogos da temporada seguinte.
+- Deploy do frontend falhava na Vercel desde a 1.6.1 (`Header at index 0 has invalid source pattern`): os colchetes do `source` de cache imutável ficaram fora de um grupo do path-to-regexp. O padrão passou a `/(main|polyfills|chunk|styles|scripts)-([A-Za-z0-9]+)\\.(js|css)` e o teste agora compila todos os `source` com o path-to-regexp 6.1.0, o mesmo da Vercel.
 
 ---
 

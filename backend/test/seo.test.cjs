@@ -210,7 +210,10 @@ test('cache imutável só para arquivos com hash do build (B5)', () => {
   const regra = vercel.headers.find(h => h.headers.some(c => c.value === 'public, max-age=31536000, immutable'));
   // A Vercel (path-to-regexp) lê {n} como grupo opcional e a regra deixa de casar: sem chaves no source.
   assert.ok(!/[{}]/.test(regra.source), 'source sem chaves: ' + regra.source);
-  const re = new RegExp('^' + regra.source + '$');
+  // Compila como a Vercel (path-to-regexp 6.1.0): source inválido derruba o deploy inteiro.
+  const { pathToRegexp } = require('path-to-regexp-vercel');
+  for (const h of [...vercel.headers, ...vercel.rewrites]) assert.doesNotThrow(() => pathToRegexp(h.source), h.source);
+  const re = pathToRegexp(regra.source);
   for (const arquivo of ['main-XZ5JGCIJ.js', 'chunk-AB12CD34.js', 'polyfills-ABCDEFGH.js', 'styles-TKKZADJH.css', 'chunk-a1b2c3d4.js', 'styles-abcdefgh.css', 'main-Ab3dE5g7.js', 'main-BMDJMNYD.js']) {
     assert.ok(re.test('/' + arquivo), arquivo);
   }

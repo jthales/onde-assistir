@@ -38,6 +38,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.5.0",
+    "path-to-regexp-vercel": "npm:path-to-regexp@6.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
