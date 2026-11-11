@@ -188,6 +188,38 @@ describe('App', () => {
       expect(el.querySelectorAll('.campeonato-sidebar .jogo-camp-card').length).toBe(1);
     });
 
+    it('fase eliminatória: confrontos por fase, final em jogo único e sem sidebar de rodadas', () => {
+      const leg = (mandante: string, visitante: string, data: string, pm: number | null, pv: number | null, status: 'agendado' | 'encerrado') => ({
+        mandante, logoMandante: null, visitante, logoVisitante: null, data, hora: '21:30',
+        placarMandante: pm, placarVisitante: pv, status, estadio: 'Monumental',
+      });
+      abrirChampions();
+      responderCampeonato({
+        classif: {
+          tipo: 'mata-mata', faseAtual: 'Final', grupos: [],
+          confrontos: [
+            { fase: 'Final', jogoUnico: true, time1: { nome: 'Palmeiras', logo: null }, time2: { nome: 'Flamengo', logo: null },
+              ida: leg('Palmeiras', 'Flamengo', dataBrt(17), null, null, 'agendado'), volta: null,
+              agregadoTime1: null, agregadoTime2: null, vencedor: null },
+            { fase: 'Semifinal', time1: { nome: 'River Plate', logo: null }, time2: { nome: 'Palmeiras', logo: null },
+              ida: leg('River Plate', 'Palmeiras', '2026-10-21', 1, 1, 'encerrado'), volta: leg('Palmeiras', 'River Plate', '2026-10-28', 2, 0, 'encerrado'),
+              agregadoTime1: 1, agregadoTime2: 3, vencedor: 'time2' },
+          ],
+        },
+        jogos: [UCL_JOGO],
+      });
+      const el = fixture.nativeElement as HTMLElement;
+      const titulos = Array.from(el.querySelectorAll('.mata-mata-section .classificacao-titulo')).map(h => h.textContent?.trim());
+      expect(titulos).toEqual(['Final', 'Semifinal']);
+      const [final, semi] = Array.from(el.querySelectorAll('.mm-card'));
+      expect(final.querySelector('.mm-leg-tag')?.textContent).toContain('Jogo único');
+      expect(final.querySelector('.mm-vs')).toBeTruthy();
+      expect(semi.querySelector('.mm-score')?.textContent).toContain('1 – 3');
+      expect(semi.querySelector('.mm-classified')?.textContent).toContain('Palmeiras');
+      expect(el.querySelector('.campeonato-sidebar')).toBeNull();
+      expect(el.querySelector('.campeonato-page table')).toBeNull();
+    });
+
     it('mostra estado vazio e não renderiza tabela sem times (QA-02)', () => {
       abrirChampions();
       responderCampeonato({ classif: { tipo: 'tabela-unica', grupos: [] }, jogos: [], noticias: [] });

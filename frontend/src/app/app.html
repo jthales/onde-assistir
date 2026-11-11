@@ -32,7 +32,7 @@
           Voltar
         </button>
         <h1 class="hero-title">{{ getLabelCampeonato(campeonatoSelecionado()) }}</h1>
-        <p class="hero-subtitle">{{ campeonatoSelecionado() === 'copa-do-brasil' ? 'Mata-Mata · Notícias' : 'Tabela de Classificação · Próximos Jogos · Notícias' }}</p>
+        <p class="hero-subtitle">{{ campeonatoEmMataMata() ? 'Mata-Mata · Notícias' : 'Tabela de Classificação · Próximos Jogos · Notícias' }}</p>
         <app-favorito-button [nome]="getLabelCampeonato(campeonatoSelecionado())"
           [ativo]="favoritos.eCampeonatoFavorito(campeonatoSelecionado())"
           (alternar)="favoritos.toggleCampeonato(campeonatoSelecionado())" />
@@ -245,16 +245,17 @@
                     </table>
                   </aside>
                 } @else if (classif.tipo === 'mata-mata') {
-                  <!-- Mata-Mata (Copa do Brasil) -->
+                  <!-- Mata-Mata: fase atual primeiro, fases anteriores abaixo -->
+                  @for (fase of fasesMataMata(); track fase.nome) {
                   <div class="mata-mata-section">
                     <div class="classificacao-header">
-                      <h2 class="classificacao-titulo">{{ classif.faseAtual }}</h2>
+                      <h2 class="classificacao-titulo">{{ fase.nome }}</h2>
                     </div>
                     <div class="confrontos-grid">
-                      @for (c of classif.confrontos ?? []; track c.time1.nome + c.time2.nome) {
+                      @for (c of fase.confrontos; track c.time1.nome + c.time2.nome) {
                         <div class="mm-card" [class.mm-card--encerrado]="c.vencedor">
 
-                          <!-- Times + Placar Agregado -->
+                          <!-- Times + Placar (agregado na ida e volta) -->
                           <div class="mm-teams">
                             <div class="mm-team mm-team--left" [class.mm-team--winner]="c.vencedor === 'time1'">
                               @if (c.time1.logo) {
@@ -264,9 +265,17 @@
                             </div>
 
                             <div class="mm-center">
-                              @if (c.agregadoTime1 !== null) {
+                              @if (!c.volta && c.ida && c.ida.status !== 'agendado' && c.ida.placarMandante !== null) {
+                                <span class="mm-score">{{ c.ida.placarMandante }} – {{ c.ida.placarVisitante }}</span>
+                                @if (c.ida.penaltisMandante != null && c.ida.penaltisVisitante != null) {
+                                  <span class="mm-score-label">pên. {{ c.ida.penaltisMandante }} – {{ c.ida.penaltisVisitante }}</span>
+                                }
+                              } @else if (c.volta && c.agregadoTime1 !== null) {
                                 <span class="mm-score">{{ c.agregadoTime1 }} – {{ c.agregadoTime2 }}</span>
                                 <span class="mm-score-label">agregado</span>
+                                @if (c.volta.penaltisMandante != null && c.volta.penaltisVisitante != null) {
+                                  <span class="mm-score-label">pên. {{ c.volta.penaltisVisitante }} – {{ c.volta.penaltisMandante }}</span>
+                                }
                               } @else {
                                 <span class="mm-vs">vs</span>
                               }
@@ -280,15 +289,15 @@
                             </div>
                           </div>
 
-                          <!-- Jogos: Ida e Volta -->
+                          <!-- Jogos: Ida e Volta, ou jogo único -->
                           <div class="mm-legs">
                             @if (c.ida) {
                               <div class="mm-leg" [class.mm-leg--live]="c.ida.status === 'em-andamento'">
-                                <span class="mm-leg-tag">Ida</span>
+                                <span class="mm-leg-tag">{{ c.volta ? 'Ida' : 'Jogo único' }}</span>
                                 <span class="mm-leg-detail">{{ formatarData(c.ida.data) }} · {{ c.ida.hora }}</span>
                                 @if (c.ida.status === 'em-andamento') {
                                   <span class="ao-vivo-badge mm-badge-live">AO VIVO</span>
-                                } @else if (c.ida.status === 'encerrado') {
+                                } @else if (c.ida.status === 'encerrado' && c.volta) {
                                   <span class="mm-leg-result">{{ c.ida.placarMandante }} – {{ c.ida.placarVisitante }}</span>
                                 }
                               </div>
@@ -309,13 +318,14 @@
                           @if (c.vencedor) {
                             <div class="mm-classified">
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                              {{ c.vencedor === 'time1' ? c.time1.nome : c.time2.nome }}
+                              {{ fase.nome === 'Final' ? 'Campeão: ' : '' }}{{ c.vencedor === 'time1' ? c.time1.nome : c.time2.nome }}
                             </div>
                           }
                         </div>
                       }
                     </div>
                   </div>
+                  }
                 } @else {
                   <!-- Grupos (Libertadores / Sul-Americana) -->
                   <div class="grupos-grid">
@@ -382,8 +392,8 @@
 
             </div>
 
-            <!-- Sidebar: próximos jogos por rodada (max 10) — oculto no mata-mata -->
-            @if (jogosCampeonatoAgrupados().length > 0 && campeonatoSelecionado() !== 'copa-do-brasil') {
+            <!-- Sidebar: próximos jogos por rodada (max 10) — oculto no mata-mata (os cards já trazem as datas) -->
+            @if (jogosCampeonatoAgrupados().length > 0 && !campeonatoEmMataMata()) {
               <aside class="campeonato-sidebar">
                 <section>
                   <h2 class="camp-sidebar-titulo">Próximos Jogos</h2>

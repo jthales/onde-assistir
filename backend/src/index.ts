@@ -9,6 +9,7 @@ import { getMessaging } from './firebase';
 import { getDb } from './mongodb';
 import { espnScoreboardUrlForLeague, espnCopaUrl, fetchEspn, ESPN_LEAGUES, TEAM_NAME_MAP, TEAM_ESPN_ID_MAP, LIGA_SLUG_TO_ESPN, LIGA_SLUG_LABEL } from './constants';
 import copa2026Router from './copa-2026-routes';
+import { faseAtualSlug, faseLabel, isFaseClassificatoria, montarMataMata } from './mata-mata';
 const app = express();
 const PORT = process.env['PORT'] ?? 3000;
 
@@ -538,141 +539,30 @@ app.get('/api/classificacao', async (_req, res) => {
 
 // ── Endpoints de campeonato (ESPN direto, sem Firestore) ─────────────────────
 
-const FASE_SLUG_TO_PT: Record<string, string> = {
-  'league-phase':  'Fase de Liga',
-  'first-round':   'Primeira Fase',
-  'second-round':  'Segunda Fase',
-  'third-round':   'Terceira Fase',
-  'fourth-round':  'Quarta Fase',
-  'fifth-round':   'Quinta Fase',
-  'round-of-16':   'Oitavas de Final',
-  'quarterfinals': 'Quartas de Final',
-  'semifinals':    'Semifinal',
-  'final':         'Final',
-};
-
 const classificacaoCampeonatoCache = new Map<string, { dados: any; fetchedAt: number }>();
 
-function parseLegJogo(event: any, home: any, away: any) {
-  const comp = event.competitions?.[0];
-  const statusState: string = event.status?.type?.state ?? 'pre';
-  const statusCompleted: boolean = event.status?.type?.completed === true;
-  const status = (statusCompleted || statusState === 'post') ? 'encerrado'
-               : statusState === 'in' ? 'em-andamento' : 'agendado';
-  const brt = new Date(new Date(event.date).getTime() - 3 * 60 * 60 * 1000);
-  return {
-    mandante:       TEAM_NAME_MAP[home?.team?.displayName] ?? home?.team?.displayName ?? '',
-    logoMandante:   home?.team?.logo ?? null,
-    visitante:      TEAM_NAME_MAP[away?.team?.displayName] ?? away?.team?.displayName ?? '',
-    logoVisitante:  away?.team?.logo ?? null,
-    data:           brt.toISOString().slice(0, 10),
-    hora:           brt.toISOString().slice(11, 16),
-    placarMandante: home?.score != null ? Number(home.score) : null,
-    placarVisitante:away?.score != null ? Number(away.score) : null,
-    status,
-    estadio:        comp?.venue?.fullName ?? '',
-  };
-}
+/** Ligas que podem estar em fase eliminatória (as demais são só tabela de pontos). */
+const LIGAS_COM_MATA_MATA = new Set(['libertadores', 'sul-americana', 'champions-league', 'copa-do-brasil']);
 
-async function fetchMataMata(espnLeague: string) {
+/**
+ * Eventos da temporada corrente numa janela larga (fases anteriores + próximas).
+ * Descarta eventos de outra temporada (ex.: pré-Libertadores do ano seguinte junto da final).
+ */
+async function fetchEventosTemporada(espnLeague: string): Promise<any[]> {
   const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '');
   const brtNow = new Date(Date.now() - 3 * 60 * 60 * 1000);
-  const passado = new Date(brtNow.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const futuro  = new Date(brtNow.getTime() + 60 * 24 * 60 * 60 * 1000);
-  const base = `https://site.api.espn.com/apis/site/v2/sports/soccer/${espnLeague}/scoreboard`;
-
-  const [respPass, respFut] = await Promise.all([
-    fetchEspn(`${base}?dates=${fmt(passado)}-${fmt(brtNow)}`),
-    fetchEspn(`${base}?dates=${fmt(brtNow)}-${fmt(futuro)}`),
-  ]);
-  if (!respPass.ok) throw new Error(`ESPN scoreboard error: ${respPass.status}`);
-  if (!respFut.ok)  throw new Error(`ESPN scoreboard error: ${respFut.status}`);
-
-  const [dataPass, dataFut] = await Promise.all([respPass.json(), respFut.json()]);
-  const allEvents: any[] = [...(dataPass.events ?? []), ...(dataFut.events ?? [])];
-
-  const seriesMap = new Map<string, any[]>();
-  const seenEventIds = new Set<string>();
-  for (const event of allEvents) {
-    if (seenEventIds.has(event.id)) continue;
-    seenEventIds.add(event.id);
-    const comp = event.competitions?.[0];
-    const sc = comp?.series?.competitors ?? [];
-    if (sc.length < 2) continue;
-    const key = sc.map((c: any) => String(c.id)).sort().join('-');
-    if (!seriesMap.has(key)) seriesMap.set(key, []);
-    seriesMap.get(key)!.push(event);
-  }
-
-  const confrontos: any[] = [];
-  let faseAtual = '';
-
-  for (const [, events] of seriesMap) {
-    events.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    const ev1 = events[0];
-    const ev2 = events[1] ?? null;
-
-    const comp1 = ev1.competitions?.[0];
-    const home1 = comp1?.competitors?.find((c: any) => c.homeAway === 'home');
-    const away1 = comp1?.competitors?.find((c: any) => c.homeAway === 'away');
-
-    // time1 = mandante da ida, time2 = visitante da ida
-    const time1Id = String(home1?.team?.id ?? '');
-    const time2Id = String(away1?.team?.id ?? '');
-
-    if (!faseAtual && ev1.season?.slug) {
-      faseAtual = FASE_SLUG_TO_PT[ev1.season.slug] ?? ev1.season.slug;
-    }
-
-    let agregadoTime1: number | null = null;
-    let agregadoTime2: number | null = null;
-    let vencedor: 'time1' | 'time2' | null = null;
-
-    if (ev2) {
-      const comp2 = ev2.competitions?.[0];
-      const sc2 = comp2?.series?.competitors ?? [];
-      const sc2t1 = sc2.find((c: any) => String(c.id) === time1Id);
-      const sc2t2 = sc2.find((c: any) => String(c.id) === time2Id);
-      if (comp2?.series?.completed) {
-        const winner = sc2.find((c: any) => c.winner);
-        if (winner) vencedor = String(winner.id) === time1Id ? 'time1' : 'time2';
-      }
-
-      // Calcula agregado a partir dos placares das pernas (mais confiável, reflete ao vivo)
-      const home2 = comp2?.competitors?.find((c: any) => c.homeAway === 'home');
-      const away2 = comp2?.competitors?.find((c: any) => c.homeAway === 'away');
-      const score1Ida   = home1?.score != null ? Number(home1.score) : null;
-      const score2Ida   = away1?.score != null ? Number(away1.score) : null;
-      const score2Volta = home2?.score != null ? Number(home2.score) : null;
-      const score1Volta = away2?.score != null ? Number(away2.score) : null;
-      if (score1Ida !== null && score1Volta !== null) {
-        agregadoTime1 = score1Ida + score1Volta;
-        agregadoTime2 = (score2Ida ?? 0) + (score2Volta ?? 0);
-      } else if (sc2t1?.aggregateScore != null) {
-        agregadoTime1 = sc2t1.aggregateScore;
-        agregadoTime2 = sc2t2?.aggregateScore ?? null;
-      }
-    }
-
-    confrontos.push({
-      time1: { nome: TEAM_NAME_MAP[home1?.team?.displayName] ?? home1?.team?.displayName ?? '', logo: home1?.team?.logo ?? null },
-      time2: { nome: TEAM_NAME_MAP[away1?.team?.displayName] ?? away1?.team?.displayName ?? '', logo: away1?.team?.logo ?? null },
-      ida:   parseLegJogo(ev1, home1, away1),
-      volta: ev2 ? parseLegJogo(ev2, ev2.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home'), ev2.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away')) : null,
-      agregadoTime1,
-      agregadoTime2,
-      vencedor,
-    });
-  }
-
-  // Ordena: confrontos com jogos mais próximos primeiro
-  confrontos.sort((a, b) => {
-    const da = a.ida?.data ?? a.volta?.data ?? '';
-    const db2 = b.ida?.data ?? b.volta?.data ?? '';
-    return da.localeCompare(db2);
-  });
-
-  return { tipo: 'mata-mata', faseAtual, confrontos, grupos: [] };
+  const passado = new Date(brtNow.getTime() - 180 * 24 * 60 * 60 * 1000);
+  const futuro  = new Date(brtNow.getTime() + 90 * 24 * 60 * 60 * 1000);
+  const resp = await fetchEspn(
+    `https://site.api.espn.com/apis/site/v2/sports/soccer/${espnLeague}/scoreboard?dates=${fmt(passado)}-${fmt(futuro)}`
+  );
+  if (!resp.ok) throw new Error(`ESPN scoreboard error: ${resp.status}`);
+  const data: any = await resp.json();
+  const events: any[] = data.events ?? [];
+  const slug = faseAtualSlug(events);
+  const ref = events.find((e: any) => e.season?.slug === slug && e.season?.year != null);
+  const ano = ref?.season?.year;
+  return ano == null ? events : events.filter((e: any) => e.season?.year == null || e.season.year === ano);
 }
 
 app.get('/api/classificacao/:liga', async (req, res) => {
@@ -690,9 +580,17 @@ app.get('/api/classificacao/:liga', async (req, res) => {
   try {
     let resultado: any;
 
-    if (liga === 'copa-do-brasil') {
-      resultado = await fetchMataMata(espnLeague);
-    } else {
+    if (LIGAS_COM_MATA_MATA.has(liga)) {
+      // Na fase eliminatória a tabela de grupos/liga fica congelada: mostra os confrontos.
+      const events = await fetchEventosTemporada(espnLeague);
+      const slug = faseAtualSlug(events);
+      if (liga === 'copa-do-brasil' || (slug && !isFaseClassificatoria(slug))) {
+        const mm = montarMataMata(events, (n) => TEAM_NAME_MAP[n] ?? n);
+        if (mm.confrontos.length > 0 || liga === 'copa-do-brasil') resultado = mm;
+      }
+    }
+
+    if (!resultado) {
       const resp = await fetch(`https://site.api.espn.com/apis/v2/sports/soccer/${espnLeague}/standings`);
       const data: any = await resp.json();
       const children: any[] = data.children ?? [];
@@ -766,7 +664,7 @@ app.get('/api/jogos-campeonato/:liga', async (req, res) => {
         hora:            brtDate.toISOString().slice(11, 16),
         status,
         rodada:          event.week?.number ?? null,
-        fase:            FASE_SLUG_TO_PT[event.season?.slug] ?? event.season?.slug ?? null,
+        fase:            faseLabel(event.season?.slug),
         placarMandante:  home?.score != null ? Number(home.score) : null,
         placarVisitante: away?.score != null ? Number(away.score) : null,
         estadio:         comp?.venue?.fullName ?? '',

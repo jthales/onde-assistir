@@ -6,7 +6,7 @@ import { filter, catchError } from 'rxjs/operators';
 import { interval, forkJoin, of } from 'rxjs';
 import { JogosService } from './services/jogos.service';
 import { PushNotificacaoService } from './services/push-notificacao.service';
-import { Jogo, Placar, Odds, ClassificacaoEntry, Noticia, ClassificacaoResponse, JogoCampeonato, GrupoClassificacao } from './models/jogo';
+import { Jogo, Placar, Odds, ClassificacaoEntry, Noticia, ClassificacaoResponse, JogoCampeonato, GrupoClassificacao, ConfrontoMataMata } from './models/jogo';
 import { track } from '@vercel/analytics';
 import { teamInitials } from './team-logos';
 import { Copa2026Component } from './copa-2026/copa-2026.component';
@@ -332,6 +332,25 @@ export class App implements OnInit, OnDestroy {
     const grupos = (c.grupos ?? []).filter(g => g.times?.length > 0);
     if (grupos.length === 0) return null;
     return c.tipo === 'tabela-unica' ? { ...c, grupos: [grupos[0]] } : { ...c, grupos };
+  });
+
+  /** Campeonato exibido como mata-mata (fase eliminatória em andamento). */
+  readonly campeonatoEmMataMata = computed(() =>
+    this.classificacaoExibivel()?.tipo === 'mata-mata'
+    || (this.campeonatoSelecionado() === 'copa-do-brasil' && this.loadingCampeonato()));
+
+  /** Confrontos agrupados por fase, na ordem do backend (fase atual primeiro). */
+  readonly fasesMataMata = computed(() => {
+    const c = this.classificacaoExibivel();
+    if (c?.tipo !== 'mata-mata') return [];
+    const fases: { nome: string; confrontos: ConfrontoMataMata[] }[] = [];
+    for (const confronto of c.confrontos ?? []) {
+      const nome = confronto.fase || c.faseAtual || 'Mata-Mata';
+      let fase = fases.find(f => f.nome === nome);
+      if (!fase) fases.push(fase = { nome, confrontos: [] });
+      fase.confrontos.push(confronto);
+    }
+    return fases;
   });
 
   readonly campeonatoVazio = computed(() =>

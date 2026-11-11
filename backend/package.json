@@ -17,7 +17,7 @@
     "populate:copa:dry": "ts-node src/populate-copa-2026.ts --dry-run",
     "scrape:futebolexpert": "ts-node src/scraper-futebolexpert.ts",
     "scrape:caze-highlights": "ts-node src/scraper-caze-highlights.ts",
-    "test": "node --require ts-node/register --test test/seo.test.cjs"
+    "test": "node --require ts-node/register --test test/seo.test.cjs test/mata-mata.test.cjs"
   },
   "keywords": [],
   "author": "",

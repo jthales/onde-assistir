@@ -6,6 +6,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [1.6.2] — 2026-11-11
+
+### Corrigido
+
+- Páginas de campeonato em fase eliminatória (Libertadores, Sul-Americana, Champions League) exibiam a tabela de grupos/liga já encerrada. O backend passa a detectar a fase atual pelo próximo jogo da ESPN e, quando é mata-mata, devolve os confrontos (antes isso só valia para a Copa do Brasil).
+- Mata-mata agrupado por fase (fase atual primeiro, anteriores abaixo), com suporte a jogo único (final), pênaltis e vencedor pelo agregado quando a ESPN não informa a série; a final mostra "Campeão".
+- Janela de busca ampliada para incluir as fases anteriores da temporada, descartando jogos da temporada seguinte.
+
+---
+
 ## [1.6.1] — 2026-10-20
 
 ### Corrigido
