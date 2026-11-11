@@ -97,6 +97,8 @@ export interface JogoMataMata {
   hora: string;
   placarMandante: number | null;
   placarVisitante: number | null;
+  penaltisMandante?: number | null;
+  penaltisVisitante?: number | null;
   status: 'agendado' | 'em-andamento' | 'encerrado';
   estadio: string;
 }
@@ -105,6 +107,8 @@ export interface ConfrontoMataMata {
   time1: { nome: string; logo: string | null };
   time2: { nome: string; logo: string | null };
   fase?: string;
+  /** Sem jogo de volta (ex.: final em jogo único). */
+  jogoUnico?: boolean;
   ida: JogoMataMata | null;
   volta: JogoMataMata | null;
   agregadoTime1: number | null;
